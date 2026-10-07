@@ -3,6 +3,8 @@
 
     <!-- Necesario para comunicarse con el backend Ktor -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 17+: conectarse a la red local (10.0.2.2 del emulador o la IP de la computadora) -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
     <application
         android:allowBackup="true"
@@ -17,7 +19,6 @@
             android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
