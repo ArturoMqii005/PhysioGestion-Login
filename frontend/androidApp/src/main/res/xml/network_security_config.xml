@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Etapa local: el backend Ktor corre en la computadora con HTTP (sin HTTPS).
+  Android bloquea HTTP por defecto, así que aquí se permite solo durante el desarrollo.
+  En producción la API usará HTTPS (RI-01) y este permiso se elimina.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

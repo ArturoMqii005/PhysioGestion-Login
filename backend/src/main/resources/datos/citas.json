@@ -1,0 +1,8 @@
+[
+  { "id": 1, "hora": "09:00", "paciente": "Jorge Ramírez Cruz", "fisioterapeutaId": 2, "fisioterapeuta": "Ft. Carlos Ortega Luna", "motivo": "Rehabilitación de rodilla", "estado": "ATENDIDA" },
+  { "id": 2, "hora": "10:00", "paciente": "Patricia Hernández Gómez", "fisioterapeutaId": 2, "fisioterapeuta": "Ft. Carlos Ortega Luna", "motivo": "Dolor lumbar", "estado": "CONFIRMADA" },
+  { "id": 3, "hora": "11:30", "paciente": "Ricardo Flores Peña", "fisioterapeutaId": 3, "fisioterapeuta": "Ft. Mariana Soto Gil", "motivo": "Esguince de tobillo", "estado": "CONFIRMADA" },
+  { "id": 4, "hora": "12:30", "paciente": "Elena Castillo Ruiz", "fisioterapeutaId": 2, "fisioterapeuta": "Ft. Carlos Ortega Luna", "motivo": "Hombro doloroso", "estado": "PENDIENTE" },
+  { "id": 5, "hora": "16:00", "paciente": "Miguel Ángel Vargas", "fisioterapeutaId": 3, "fisioterapeuta": "Ft. Mariana Soto Gil", "motivo": "Postoperatorio de cadera", "estado": "PENDIENTE" },
+  { "id": 6, "hora": "17:00", "paciente": "Sofía Navarro León", "fisioterapeutaId": 3, "fisioterapeuta": "Ft. Mariana Soto Gil", "motivo": "Cervicalgia", "estado": "CANCELADA" }
+]

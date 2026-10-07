@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "usuario": "admin",
+    "contrasena": "Admin2026",
+    "nombre": "Laura Méndez Ríos",
+    "rol": "ADMINISTRADOR"
+  },
+  {
+    "id": 2,
+    "usuario": "fisio",
+    "contrasena": "Fisio2026",
+    "nombre": "Ft. Carlos Ortega Luna",
+    "rol": "FISIOTERAPEUTA"
+  },
+  {
+    "id": 3,
+    "usuario": "fisio2",
+    "contrasena": "Fisio2026",
+    "nombre": "Ft. Mariana Soto Gil",
+    "rol": "FISIOTERAPEUTA"
+  },
+  {
+    "id": 4,
+    "usuario": "recepcion",
+    "contrasena": "Recepcion2026",
+    "nombre": "Ana Torres Vega",
+    "rol": "RECEPCIONISTA"
+  },
+  {
+    "id": 5,
+    "usuario": "paciente",
+    "contrasena": "Paciente2026",
+    "nombre": "Jorge Ramírez Cruz",
+    "rol": "PACIENTE",
+    "pacienteId": 1
+  }
+]

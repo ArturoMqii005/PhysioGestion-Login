@@ -1,0 +1,49 @@
+[
+  {
+    "id": 101,
+    "pacienteId": 1,
+    "paciente": "Jorge Ramírez Cruz",
+    "fisioterapeuta": "Ft. Carlos Ortega Luna",
+    "metaFuncional": "Subir las escaleras de mi casa sin dolor",
+    "umbralDolor": 7,
+    "vigenteDesde": "28/09/2026",
+    "ejercicios": [
+      {
+        "id": 1,
+        "nombre": "Sentadilla asistida con silla",
+        "indicaciones": "Siéntate y levántate de una silla firme sin usar las manos. Mantén las rodillas alineadas con la punta de los pies.",
+        "series": 3,
+        "repeticiones": 10,
+        "descansoSegundos": 45,
+        "zonaCorporal": "Rodilla"
+      },
+      {
+        "id": 2,
+        "nombre": "Puente de glúteo",
+        "indicaciones": "Acostado boca arriba con las rodillas flexionadas, eleva la cadera hasta alinear hombros, cadera y rodillas. Sostén 3 segundos arriba.",
+        "series": 3,
+        "repeticiones": 12,
+        "descansoSegundos": 30,
+        "zonaCorporal": "Cadera"
+      },
+      {
+        "id": 3,
+        "nombre": "Elevación de talones",
+        "indicaciones": "De pie y apoyado en una pared, sube sobre las puntas de los pies y baja despacio.",
+        "series": 3,
+        "repeticiones": 15,
+        "descansoSegundos": 30,
+        "zonaCorporal": "Tobillo"
+      },
+      {
+        "id": 4,
+        "nombre": "Estiramiento de isquiotibiales",
+        "indicaciones": "Sentado en el borde de una silla, estira una pierna y lleva el pecho hacia adelante sin redondear la espalda. Sostén 30 segundos por lado.",
+        "series": 2,
+        "repeticiones": 1,
+        "descansoSegundos": 20,
+        "zonaCorporal": "Muslo"
+      }
+    ]
+  }
+]

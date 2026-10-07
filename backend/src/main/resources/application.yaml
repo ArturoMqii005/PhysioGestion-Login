@@ -1,0 +1,8 @@
+ktor:
+  deployment:
+    # 0.0.0.0 permite que el emulador (10.0.2.2) o un celular en la misma red se conecten.
+    host: 0.0.0.0
+    port: 8080
+  application:
+    modules:
+      - com.terapid.physiogestion.ApplicationKt.module
