@@ -74,5 +74,7 @@ class AutenticacionRepositorioTest {
 
         assertFailsWith<SesionVencida> { clinica.citas() }
         assertNull(gestor.sesion.value) // la navegación regresará al login
+        assertEquals("Tu sesión terminó. Inicia sesión de nuevo.", gestor.tomarAviso()) // y el login dirá por qué
+        assertNull(gestor.tomarAviso()) // solo una vez
     }
 }

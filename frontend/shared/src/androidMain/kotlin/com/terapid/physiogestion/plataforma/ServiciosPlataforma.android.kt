@@ -27,5 +27,13 @@ actual fun formatearFechaHora(millis: Long): String =
 actual fun claveDelDia(millis: Long): String =
     SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date(millis))
 
-/** El emulador de Android ve a la computadora (donde corre el backend) como 10.0.2.2. */
-actual fun urlServidorPorDefecto(): String = "http://10.0.2.2:8080"
+actual fun fechaHoraIso(millis: Long): String =
+    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT).format(Date(millis))
+
+/**
+ * El emulador de Android ve a la computadora (donde corre el backend) como 10.0.2.2.
+ * Si en local.properties se definió SERVIDOR_URL (por ejemplo, para un celular
+ * físico), se usa esa dirección.
+ */
+actual fun urlServidorPorDefecto(): String =
+    ContextoAndroid.servidorConfigurado.ifBlank { "http://10.0.2.2:8080" }

@@ -27,5 +27,8 @@ actual fun formatearFechaHora(millis: Long): String =
 actual fun claveDelDia(millis: Long): String =
     SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date(millis))
 
+actual fun fechaHoraIso(millis: Long): String =
+    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT).format(Date(millis))
+
 /** En escritorio la app y el backend corren en la misma computadora. */
 actual fun urlServidorPorDefecto(): String = "http://localhost:8080"

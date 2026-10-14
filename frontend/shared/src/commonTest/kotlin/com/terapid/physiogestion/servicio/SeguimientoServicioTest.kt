@@ -1,5 +1,6 @@
 package com.terapid.physiogestion.servicio
 
+import com.terapid.physiogestion.modelo.Semaforo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -75,5 +76,27 @@ class SeguimientoServicioTest {
         assertEquals(75, r.cumplimiento)
         assertEquals(30, r.puntos)
         assertNotNull(r.alerta)
+    }
+
+    @Test
+    fun semaforoComoLoCalculaElServidor() {
+        assertEquals(Semaforo.VERDE, servicio.semaforo(cumplimiento = 75, dolorDespues = 3, umbralDolor = 7))
+        assertEquals(Semaforo.AMARILLO, servicio.semaforo(cumplimiento = 50, dolorDespues = 3, umbralDolor = 7))
+        assertEquals(Semaforo.ROJO, servicio.semaforo(cumplimiento = 100, dolorDespues = 7, umbralDolor = 7))
+    }
+
+    @Test
+    fun laRachaSumaSoloEnDiasSeguidos() {
+        assertEquals(1, servicio.calcularRacha(0, null, hoy = "2026-10-14", ayer = "2026-10-13"))
+        assertEquals(4, servicio.calcularRacha(3, "2026-10-13", hoy = "2026-10-14", ayer = "2026-10-13"))
+        assertEquals(3, servicio.calcularRacha(3, "2026-10-14", hoy = "2026-10-14", ayer = "2026-10-13"))
+        assertEquals(1, servicio.calcularRacha(5, "2026-10-10", hoy = "2026-10-14", ayer = "2026-10-13"))
+    }
+
+    @Test
+    fun pasosDelDiaContraLaLecturaDeLaManana() {
+        assertEquals(0L to 15_000L, servicio.pasosDelDia(lectura = 15_000, base = null)) // primera lectura del día
+        assertEquals(1_200L to 15_000L, servicio.pasosDelDia(lectura = 16_200, base = 15_000))
+        assertEquals(300L to 0L, servicio.pasosDelDia(lectura = 300, base = 15_000)) // el teléfono se reinició
     }
 }

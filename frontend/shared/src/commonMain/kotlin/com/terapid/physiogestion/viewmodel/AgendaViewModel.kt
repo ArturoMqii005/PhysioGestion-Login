@@ -6,6 +6,7 @@ import com.terapid.physiogestion.datos.ClinicaRepositorio
 import com.terapid.physiogestion.datos.remoto.ErrorApi
 import com.terapid.physiogestion.modelo.Cita
 import com.terapid.physiogestion.modelo.EstadoCita
+import com.terapid.physiogestion.modelo.SesionTerapia
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,9 @@ data class AgendaUiState(
     val cargando: Boolean = true,
     val error: String? = null,
     val citas: List<Cita> = emptyList(),
+    /** Solo para el fisioterapeuta: sesiones que sus pacientes enviaron desde casa. */
+    val seguimiento: List<SesionTerapia> = emptyList(),
+    val errorSeguimiento: String? = null,
 ) {
     fun cuantas(estado: EstadoCita): Int = citas.count { it.estado == estado }
 
@@ -31,7 +35,11 @@ data class AgendaUiState(
  * VIEW MODEL de la agenda. Lo usan la vista del fisioterapeuta y la de
  * recepción; el backend decide qué citas recibe cada rol.
  */
-class AgendaViewModel(private val clinica: ClinicaRepositorio) : ViewModel() {
+class AgendaViewModel(
+    private val clinica: ClinicaRepositorio,
+    /** true para el fisioterapeuta: además de la agenda carga el seguimiento remoto. */
+    private val conSeguimiento: Boolean = false,
+) : ViewModel() {
 
     private val _estado = MutableStateFlow(AgendaUiState())
     val estado: StateFlow<AgendaUiState> = _estado.asStateFlow()
@@ -46,12 +54,24 @@ class AgendaViewModel(private val clinica: ClinicaRepositorio) : ViewModel() {
             try {
                 val citas = clinica.citas()
                 _estado.update { it.copy(cargando = false, citas = citas) }
+                if (conSeguimiento) cargarSeguimiento()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 val mensaje = (e as? ErrorApi)?.message ?: "No pudimos cargar la información. Inténtalo de nuevo."
                 _estado.update { it.copy(cargando = false, error = mensaje) }
             }
+        }
+    }
+
+    private suspend fun cargarSeguimiento() {
+        try {
+            val sesiones = clinica.sesionesDeMisPacientes()
+            _estado.update { it.copy(seguimiento = sesiones, errorSeguimiento = null) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _estado.update { it.copy(errorSeguimiento = (e as? ErrorApi)?.message ?: "No se pudo cargar el seguimiento.") }
         }
     }
 }

@@ -34,7 +34,7 @@ class RutinaRepositorio(
         } catch (e: CancellationException) {
             throw e
         } catch (e: SesionVencida) {
-            gestor.cerrar()
+            gestor.cerrar(e.message)
             throw e
         } catch (e: Exception) {
             val guardada = almacenamiento.leerRutina(pacienteId) ?: throw SinRutinaDisponible(e)

@@ -1,6 +1,9 @@
 package com.terapid.physiogestion.modelo
 
+import kotlinx.serialization.Serializable
+
 /** Dificultad percibida por el paciente al terminar la sesión (RFN-28). */
+@Serializable
 enum class Dificultad(val etiqueta: String) {
     BAJA("Fácil"),
     MEDIA("Regular"),
@@ -9,8 +12,9 @@ enum class Dificultad(val etiqueta: String) {
 
 /**
  * MODELO: una sesión de ejercicios realizada por el paciente (RFN-29).
- * Se guarda en la base de datos local; [pendienteEnvio] indica que aun
- * no se ha enviado al servidor (cola de envío, RFX-03).
+ * Se guarda primero en la base de datos local; [pendienteEnvio] indica que
+ * aún no llega al servidor (cola de envío, RFX-03) y [servidorId] es el id
+ * que asignó el backend cuando el POST tuvo éxito.
  */
 data class RegistroSesion(
     val id: Long = 0,
@@ -28,4 +32,7 @@ data class RegistroSesion(
     val puntos: Int,
     val alertaDolor: Boolean,
     val pendienteEnvio: Boolean = true,
+    val servidorId: Int? = null,
+    /** Repeticiones y ángulo de cada ejercicio (lo medido con sensores va marcado como verificado). */
+    val detalle: List<EjercicioRealizado> = emptyList(),
 )

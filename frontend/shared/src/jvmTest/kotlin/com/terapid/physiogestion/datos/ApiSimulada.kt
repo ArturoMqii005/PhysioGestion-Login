@@ -15,7 +15,7 @@ val jsonPrueba = Json { ignoreUnknownKeys = true }
 
 /** Cliente HTTP real de la app, pero con un servidor simulado (MockEngine). */
 fun clienteSimulado(manejador: MockRequestHandler): HttpClient =
-    crearClienteHttp(jsonPrueba, MockEngine(manejador))
+    crearClienteHttp(jsonPrueba, MockEngine(manejador), registro = false)
 
 /** Respuesta JSON del servidor simulado. */
 fun MockRequestHandleScope.json(texto: String, estado: HttpStatusCode = HttpStatusCode.OK) =

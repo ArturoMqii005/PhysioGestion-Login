@@ -28,6 +28,8 @@ actual fun formatearFechaHora(millis: Long): String = formatear(millis, "dd/MM/y
 
 actual fun claveDelDia(millis: Long): String = formatear(millis, "yyyy-MM-dd", "en_US_POSIX")
 
+actual fun fechaHoraIso(millis: Long): String = formatear(millis, "yyyy-MM-dd'T'HH:mm:ss", "en_US_POSIX")
+
 private fun formatear(millis: Long, patron: String, idioma: String): String {
     val formato = NSDateFormatter()
     formato.locale = NSLocale(localeIdentifier = idioma)

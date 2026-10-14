@@ -4,6 +4,11 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Textos de los diálogos de permisos (sin ellos, iOS cierra la app al pedirlos). -->
+	<key>NSCameraUsageDescription</key>
+	<string>PhysioGestion usa la cámara para verificar que realices bien tus ejercicios. Las imágenes no salen del teléfono.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>PhysioGestion usa los sensores de movimiento para contar tus repeticiones y tus pasos del día.</string>
 	<!-- Etapa local: permite HTTP solo hacia la red local (backend Ktor en la Mac). -->
 	<key>NSAppTransportSecurity</key>
 	<dict>

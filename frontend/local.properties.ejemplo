@@ -1,0 +1,21 @@
+# ============================================================
+#  VARIABLES DE ENTORNO DE PHYSIOGESTION (frontend)
+# ============================================================
+#
+#  Android Studio crea local.properties con sdk.dir. Para usar estas
+#  variables, copia la línea que necesites a TU local.properties.
+#  NUNCA subas local.properties al repositorio: está en .gitignore,
+#  porque cada integrante tiene su propia ruta del SDK y su propia IP.
+#
+#  build.gradle.kts de androidApp las lee y las entrega al código como
+#  BuildConfig.SERVIDOR_URL.
+# ============================================================
+
+# Ruta del SDK de Android (la escribe Android Studio)
+sdk.dir=D\:\\Android\\Sdk
+
+# Backend para un celular físico. Déjalo comentado para el emulador (usa 10.0.2.2).
+#  - Celular por cable con "adb reverse tcp:8080 tcp:8080":
+# SERVIDOR_URL=http://localhost:8080
+#  - Celular en la misma red Wi-Fi (IP de tu computadora, comando ipconfig):
+# SERVIDOR_URL=http://192.168.1.70:8080

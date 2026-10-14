@@ -1,0 +1,39 @@
+[
+  {
+    "id": 1,
+    "pacienteId": 1,
+    "paciente": "Jorge Ramírez Cruz",
+    "idRutina": 101,
+    "fechaHoraInicio": "2026-10-12T18:05:00",
+    "fechaHoraFin": "2026-10-12T18:32:00",
+    "dolorAntes": 4,
+    "dolorDespues": 3,
+    "dificultad": "MEDIA",
+    "observacion": "Me costó la sentadilla al final de la tercera serie.",
+    "ejercicios": [
+      { "idEjercicio": 1, "repeticionesRealizadas": 30, "anguloMaximo": 84, "verificado": true },
+      { "idEjercicio": 2, "repeticionesRealizadas": 36 },
+      { "idEjercicio": 3, "repeticionesRealizadas": 45 },
+      { "idEjercicio": 4, "repeticionesRealizadas": 2 }
+    ],
+    "porcentajeCumplimiento": 100,
+    "semaforo": "VERDE"
+  },
+  {
+    "id": 2,
+    "pacienteId": 1,
+    "paciente": "Jorge Ramírez Cruz",
+    "idRutina": 101,
+    "fechaHoraInicio": "2026-10-13T19:10:00",
+    "fechaHoraFin": "2026-10-13T19:24:00",
+    "dolorAntes": 3,
+    "dolorDespues": 4,
+    "dificultad": "BAJA",
+    "ejercicios": [
+      { "idEjercicio": 2, "repeticionesRealizadas": 36 },
+      { "idEjercicio": 4, "repeticionesRealizadas": 2 }
+    ],
+    "porcentajeCumplimiento": 50,
+    "semaforo": "AMARILLO"
+  }
+]

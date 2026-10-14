@@ -11,8 +11,14 @@ fun Application.configureHttp() {
     install(CORS) {
         allowMethod(HttpMethod.Options)
         allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Patch)
+        allowMethod(HttpMethod.Delete)
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
+        allowHeader("Idempotency-Key")
+        exposeHeader(HttpHeaders.Location)
+        exposeHeader("X-Total-Count")
         anyHost() // Solo para la etapa local; en producción se limita al dominio de la clínica.
     }
 }

@@ -10,15 +10,26 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.terapid.physiogestion.plataforma.ContextoAndroid
+import com.terapid.physiogestion.plataforma.permisos.SolicitanteDePermisos
 
 /**
- * Único archivo propio de la app Android: prepara la ventana y muestra
- * la interfaz compartida App(), que vive en el módulo shared.
+ * Único archivo propio de la app Android: prepara la ventana, entrega al
+ * código común lo que solo Android tiene (Context, BuildConfig y el
+ * lanzador de permisos) y muestra la interfaz compartida App().
  */
 class MainActivity : ComponentActivity() {
 
     /** Si el usuario niega el permiso, el login mostrará el mensaje de que no hay conexión. */
     private val pedirRedLocal = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    /**
+     * Permisos que pide el código común (cámara y actividad física). Se
+     * registra como propiedad porque Android exige hacerlo antes de que la
+     * Activity llegue a RESUMED.
+     */
+    private val pedirPermiso = registerForActivityResult(ActivityResultContracts.RequestPermission()) { concedido ->
+        SolicitanteDePermisos.entregarRespuesta(concedido)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Barras del sistema con iconos claros sobre el fondo oscuro de la app.
@@ -27,13 +38,26 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
-        // La base de datos local necesita el Context de Android para ubicar su archivo.
-        ContextoAndroid.inicializar(applicationContext)
+        // Context para la base de datos, las preferencias y los sensores; y las variables de BuildConfig.
+        ContextoAndroid.inicializar(
+            context = applicationContext,
+            esDepuracion = BuildConfig.DEBUG,
+            versionApp = BuildConfig.VERSION_NAME,
+            servidorConfigurado = BuildConfig.SERVIDOR_URL,
+        )
+        // El código común no tiene Activity: aquí se le presta la forma de pedir permisos.
+        SolicitanteDePermisos.lanzador = { permiso -> pedirPermiso.launch(permiso) }
         pedirPermisoRedLocal()
 
         setContent {
             App()
         }
+    }
+
+    override fun onDestroy() {
+        // Evita conservar una referencia a una Activity que ya no existe.
+        SolicitanteDePermisos.lanzador = null
+        super.onDestroy()
     }
 
     /**

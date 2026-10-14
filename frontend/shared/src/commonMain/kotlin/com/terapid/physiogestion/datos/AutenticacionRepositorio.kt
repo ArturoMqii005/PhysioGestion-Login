@@ -20,6 +20,9 @@ class AutenticacionRepositorio(
         return sesion
     }
 
+    /** Motivo por el que la sesión se cerró sola, para mostrarlo en el login (una sola vez). */
+    fun tomarAvisoDeCierre(): String? = gestor.tomarAviso()
+
     /** Avisa al servidor (si responde) y cierra la sesión local en cualquier caso. */
     suspend fun cerrarSesion() {
         val token = gestor.sesion.value?.token

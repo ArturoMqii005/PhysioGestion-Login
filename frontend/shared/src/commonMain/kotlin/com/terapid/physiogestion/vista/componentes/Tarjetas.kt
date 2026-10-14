@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -19,6 +21,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,6 +31,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.terapid.physiogestion.modelo.Ejercicio
+import com.terapid.physiogestion.modelo.MedicionEjercicio
 import com.terapid.physiogestion.vista.tema.ColoresPhysio
 
 /** Tarjeta base con el estilo de la app. */
@@ -66,13 +70,19 @@ fun Etiqueta(texto: String, color: Color, modifier: Modifier = Modifier) {
     }
 }
 
-/** Un ejercicio de la rutina; toda la fila se puede tocar (mínimo 48 dp, RC-14). */
+/**
+ * Un ejercicio de la rutina; toda la fila se puede tocar (mínimo 48 dp, RC-14).
+ * Si el ejercicio se puede medir con sensores, muestra el botón y la última medición de hoy.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TarjetaEjercicio(
     numero: Int,
     ejercicio: Ejercicio,
     realizado: Boolean,
     alCambiar: () -> Unit,
+    medicion: MedicionEjercicio? = null,
+    alMedir: (() -> Unit)? = null,
 ) {
     TarjetaPhysio(
         fondo = if (realizado) ColoresPhysio.Turquesa.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surface,
@@ -108,9 +118,25 @@ fun TarjetaEjercicio(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Etiqueta(
-            texto = if (realizado) "Realizado · ${ejercicio.zonaCorporal}" else "Pendiente · ${ejercicio.zonaCorporal}",
-            color = if (realizado) ColoresPhysio.Exito else ColoresPhysio.TextoSecundario,
-        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Etiqueta(
+                texto = if (realizado) "Realizado · ${ejercicio.zonaCorporal}" else "Pendiente · ${ejercicio.zonaCorporal}",
+                color = if (realizado) ColoresPhysio.Exito else ColoresPhysio.TextoSecundario,
+            )
+            if (ejercicio.admiteVerificacionPorCamara) Etiqueta("Verificable con cámara", ColoresPhysio.AzulClaro)
+        }
+        if (medicion != null) {
+            Etiqueta(
+                "Medido hoy: ${medicion.repeticiones} reps · ${medicion.anguloMaximo}°" +
+                    if (medicion.cumpleObjetivo) " · objetivo cumplido" else "",
+                if (medicion.cumpleObjetivo) ColoresPhysio.Exito else ColoresPhysio.Pendiente,
+            )
+        }
+        if (alMedir != null && ejercicio.medibleConSensores) {
+            OutlinedButton(onClick = alMedir, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                val angulo = ejercicio.anguloObjetivo?.let { " · objetivo $it°" } ?: ""
+                Text("Medir con sensores$angulo", color = ColoresPhysio.Turquesa)
+            }
+        }
     }
 }

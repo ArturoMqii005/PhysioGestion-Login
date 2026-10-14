@@ -15,4 +15,13 @@ data class Ejercicio(
     val repeticiones: Int,
     val descansoSegundos: Int,
     val zonaCorporal: String,
-)
+    /** Ángulo que se espera en cada repetición, en grados; null si no aplica. */
+    val anguloObjetivo: Int? = null,
+    /** true si se puede medir con el acelerómetro y el giroscopio (RFN-26). */
+    val medibleConSensores: Boolean = false,
+    /** true si admite verificación visual con la cámara (RFN-27). */
+    val admiteVerificacionPorCamara: Boolean = false,
+) {
+    /** Total de repeticiones de todas las series. */
+    val repeticionesTotales: Int get() = series * repeticiones
+}

@@ -36,6 +36,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.terapid.physiogestion.plataforma.Entorno
+import com.terapid.physiogestion.plataforma.Plataforma
 import com.terapid.physiogestion.viewmodel.LoginViewModel
 import com.terapid.physiogestion.vista.componentes.TarjetaPhysio
 import com.terapid.physiogestion.vista.tema.ColoresPhysio
@@ -131,6 +133,16 @@ fun LoginPantalla(viewModel: LoginViewModel) {
                     Text(
                         if (estado.editandoServidor) "Listo" else "Servidor: ${estado.urlServidor} · Cambiar",
                         style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+
+                // Dato de las variables de entorno: solo aparece fuera de producción.
+                if (Entorno.registroActivo) {
+                    Text(
+                        "${Entorno.actual} · ${Plataforma.nombre} · v${Plataforma.versionApp}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                     )
                 }

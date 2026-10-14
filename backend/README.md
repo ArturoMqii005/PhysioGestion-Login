@@ -11,9 +11,9 @@ Proyecto creado con el asistente oficial de Ktor ([start.ktor.io](https://start.
 |---|---|---|
 | Content Negotiation + kotlinx.serialization | `plugins/Serialization.kt` | Convierte JSON ↔ objetos `@Serializable` |
 | Authentication (Bearer) | `plugins/Seguridad.kt` | Protege las rutas con el token del login y revisa el rol |
-| Status Pages | `plugins/StatusPages.kt` | Respuestas de error en JSON (400, 403, 404, 500) |
+| Status Pages | `plugins/StatusPages.kt` | Respuestas de error en JSON (400, 403, 404, 409, 422, 500) |
 | Call Logging | `plugins/Monitoreo.kt` | Muestra en consola cada petición y su resultado |
-| CORS | `plugins/Http.kt` | Permite una futura versión web |
+| CORS | `plugins/Http.kt` | Permite una futura versión web (GET, POST, PUT, PATCH, DELETE) |
 
 ## Estructura
 
@@ -27,15 +27,15 @@ backend/
     │   ├── main.kt             Arranca el motor Netty (generado por el asistente)
     │   ├── Application.kt      module(): crea los objetos e instala los plugins
     │   ├── plugins/            Configuración de cada plugin de Ktor
-    │   ├── modelos/            DTOs @Serializable: Usuario, Rol, LoginSolicitud, LoginRespuesta, Cita, Rutina
+    │   ├── modelos/            DTOs @Serializable: Usuario, Rol, Cita, Rutina, SesionTerapia, ResultadoEjercicio…
     │   ├── datos/              AlmacenJson: lee los archivos JSON de resources/datos
-    │   ├── servicios/          AutenticacionServicio: valida credenciales y maneja tokens
-    │   └── rutas/              Endpoints agrupados por recurso
+    │   ├── servicios/          AutenticacionServicio (credenciales y tokens) y SesionesServicio (sesiones y semáforo)
+    │   └── rutas/              Endpoints agrupados por recurso (SesionRutas.kt: los cinco métodos HTTP)
     ├── main/resources/
-    │   ├── application.yaml    Puerto 8080 y módulo principal
+    │   ├── application.yaml    Puerto (variable de entorno PORT, 8080 por defecto) y módulo principal
     │   ├── logback.xml         Formato del registro en consola
-    │   └── datos/              usuarios.json (credenciales), citas.json, rutinas.json
-    └── test/kotlin/ServerTest.kt   Pruebas de la API con testApplication
+    │   └── datos/              usuarios.json (credenciales), citas.json, rutinas.json, sesiones.json
+    └── test/kotlin/            ServerTest.kt (login y roles) y SesionesTest.kt (métodos HTTP)
 ```
 
 ## Endpoints
@@ -47,7 +47,19 @@ backend/
 | POST | `/api/v1/auth/logout` | Con token | 204 |
 | GET | `/api/v1/usuarios` | ADMINISTRADOR | Lista de usuarios sin contraseña |
 | GET | `/api/v1/citas` | ADMINISTRADOR, RECEPCIONISTA, FISIOTERAPEUTA | Agenda del día. El fisioterapeuta solo recibe las suyas |
-| GET | `/api/v1/pacientes/{id}/rutina` | PACIENTE (solo la suya), FISIOTERAPEUTA | Rutina vigente |
+| GET | `/api/v1/pacientes/{id}/rutina` | PACIENTE (solo la suya), FISIOTERAPEUTA | Rutina vigente (con ángulo objetivo y si se mide con sensores) |
+| GET | `/api/v1/sesiones?idPaciente=&pagina=&tamano=` | PACIENTE (las suyas), FISIOTERAPEUTA (sus pacientes) | Historial paginado; total en `X-Total-Count` |
+| GET | `/api/v1/sesiones/{id}` | PACIENTE, FISIOTERAPEUTA | Una sesión |
+| POST | `/api/v1/sesiones` | PACIENTE | **201 Created** + `Location`. Con `Idempotency-Key` repetida responde 200 y no duplica. Misma hora de inicio: **409** |
+| PUT | `/api/v1/sesiones/{id}` | PACIENTE (solo las suyas) | Reemplaza dolor, dificultad y observación |
+| PATCH | `/api/v1/sesiones/{id}` | PACIENTE (solo las suyas) | Cambia solo los campos enviados |
+| DELETE | `/api/v1/sesiones/{id}` | PACIENTE (solo las suyas) | **204 No Content**; la segunda vez, 404 |
+| POST | `/api/v1/resultados-ejercicio` | PACIENTE | Resumen medido con sensores → 201 |
+| GET | `/api/v1/resultados-ejercicio` | PACIENTE, FISIOTERAPEUTA | Resultados de sensores |
+
+Errores de validación (dolor fuera de 0 a 10, ejercicio que no está en la rutina) responden **422** con un mensaje claro.
+Cada sesión trae su **semáforo**: ROJO si el dolor después alcanza el umbral de la rutina, AMARILLO si el cumplimiento es menor a 60 %, VERDE en otro caso.
+En esta etapa las sesiones viven en memoria (se recargan de `sesiones.json` al reiniciar), igual que los tokens.
 
 Ejemplo de login:
 
@@ -61,4 +73,5 @@ Content-Type: application/json
 ## Ejecutar
 
 - `gradlew.bat run`: inicia el servidor en http://localhost:8080
-- `gradlew.bat test`: ejecuta las pruebas
+- Otro puerto (variable de entorno): `set PORT=8090` y luego `gradlew.bat run`
+- `gradlew.bat test`: ejecuta las 15 pruebas

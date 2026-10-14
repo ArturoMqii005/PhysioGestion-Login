@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -19,6 +20,19 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
 
+// ---- VARIABLES DE ENTORNO ----
+// Lo que cambia en cada computadora (la IP del backend para un celular físico)
+// se lee de local.properties, que NO se sube a GitHub. Si no existe la clave,
+// también se acepta como variable de entorno del sistema. Si no hay ninguna,
+// queda vacía y la app usa http://10.0.2.2:8080 (el emulador).
+val propiedadesLocales = Properties().apply {
+    val archivo = rootProject.file("local.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+
+fun variable(clave: String): String =
+    propiedadesLocales.getProperty(clave) ?: providers.environmentVariable(clave).orNull ?: ""
+
 android {
     namespace = "com.terapid.physiogestion"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -27,8 +41,11 @@ android {
         applicationId = "com.terapid.physiogestion"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
+
+        // Llegan al código como BuildConfig.SERVIDOR_URL (nunca escritas en un .kt).
+        buildConfigField("String", "SERVIDOR_URL", "\"${variable("SERVIDOR_URL")}\"")
     }
     packaging {
         resources {
@@ -50,5 +67,6 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true // genera la clase BuildConfig
     }
 }

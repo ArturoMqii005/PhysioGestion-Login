@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,15 +31,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.terapid.physiogestion.getPlatform
 import com.terapid.physiogestion.modelo.OrigenDatos
 import com.terapid.physiogestion.modelo.Usuario
+import com.terapid.physiogestion.plataforma.Entorno
+import com.terapid.physiogestion.plataforma.Plataforma
 import com.terapid.physiogestion.plataforma.formatearFechaHora
+import com.terapid.physiogestion.viewmodel.EstadoEnvio
 import com.terapid.physiogestion.viewmodel.RutinaUiState
 import com.terapid.physiogestion.viewmodel.RutinaViewModel
-import com.terapid.physiogestion.vista.componentes.EncabezadoRol
+import com.terapid.physiogestion.vista.componentes.DetalleTecnico
+import com.terapid.physiogestion.vista.componentes.EncabezadoSecundario
 import com.terapid.physiogestion.vista.componentes.Etiqueta
-import com.terapid.physiogestion.vista.componentes.FilaHistorial
 import com.terapid.physiogestion.vista.componentes.SelectorDificultad
 import com.terapid.physiogestion.vista.componentes.SelectorDolor
 import com.terapid.physiogestion.vista.componentes.TarjetaEjercicio
@@ -57,14 +58,16 @@ import com.terapid.physiogestion.vista.tema.ColoresPhysio
 fun RutinaPantalla(
     usuario: Usuario,
     viewModel: RutinaViewModel,
-    alCerrarSesion: () -> Unit,
+    alRegresar: () -> Unit,
+    alMedirEjercicio: (Int) -> Unit,
+    alVerHistorial: () -> Unit,
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         when {
             estado.cargando && estado.rutina == null -> PantallaCargando()
-            estado.rutina == null -> PantallaError(estado.mensajeError, viewModel::cargarRutina, alCerrarSesion)
-            else -> ContenidoRutina(usuario, estado, viewModel, alCerrarSesion)
+            estado.rutina == null -> PantallaError(estado.mensajeError, viewModel::cargarRutina, alRegresar)
+            else -> ContenidoRutina(usuario, estado, viewModel, alRegresar, alMedirEjercicio, alVerHistorial)
         }
     }
 }
@@ -82,7 +85,7 @@ private fun PantallaCargando() {
 }
 
 @Composable
-private fun PantallaError(mensaje: String?, alReintentar: () -> Unit, alCerrarSesion: () -> Unit) {
+private fun PantallaError(mensaje: String?, alReintentar: () -> Unit, alRegresar: () -> Unit) {
     Column(
         Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
         verticalArrangement = Arrangement.Center,
@@ -96,8 +99,8 @@ private fun PantallaError(mensaje: String?, alReintentar: () -> Unit, alCerrarSe
             textAlign = TextAlign.Center,
         )
         Button(onClick = alReintentar, modifier = Modifier.heightIn(min = 48.dp)) { Text("Reintentar") }
-        OutlinedButton(onClick = alCerrarSesion, modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp)) {
-            Text("Cerrar sesión")
+        OutlinedButton(onClick = alRegresar, modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp)) {
+            Text("Regresar")
         }
     }
 }
@@ -107,7 +110,9 @@ private fun ContenidoRutina(
     usuario: Usuario,
     estado: RutinaUiState,
     viewModel: RutinaViewModel,
-    alCerrarSesion: () -> Unit,
+    alRegresar: () -> Unit,
+    alMedirEjercicio: (Int) -> Unit,
+    alVerHistorial: () -> Unit,
 ) {
     val rutina = estado.rutina ?: return
     LazyColumn(
@@ -115,15 +120,19 @@ private fun ContenidoRutina(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { EncabezadoRol("Mi rutina de hoy", usuario, alCerrarSesion) }
+        item { EncabezadoSecundario("Mi rutina de hoy", alRegresar, subtitulo = usuario.nombre) }
         item { DatosRutina(estado) }
 
         item {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    "Ejercicios de hoy · ${estado.completados.size} de ${estado.totalEjercicios}",
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Ejercicios de hoy · ${estado.completados.size} de ${estado.totalEjercicios}",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text("Racha: ${estado.racha} d · ${estado.puntosTotales} pts", color = ColoresPhysio.Turquesa)
+                }
                 LinearProgressIndicator(
                     progress = { estado.avance },
                     modifier = Modifier.fillMaxWidth().height(8.dp),
@@ -139,6 +148,8 @@ private fun ContenidoRutina(
                 ejercicio = ejercicio,
                 realizado = ejercicio.id in estado.completados,
                 alCambiar = { viewModel.alternarEjercicio(ejercicio.id) },
+                medicion = estado.mediciones[ejercicio.id],
+                alMedir = { alMedirEjercicio(ejercicio.id) },
             )
         }
 
@@ -178,34 +189,31 @@ private fun ContenidoRutina(
         }
 
         estado.resultado?.let { resultado ->
-            item { TarjetaResultado(resultado, viewModel::cerrarResultado) }
+            item {
+                val enviada = when (estado.envio) {
+                    EstadoEnvio.ENVIADA -> true
+                    EstadoEnvio.PENDIENTE -> false
+                    else -> null
+                }
+                TarjetaResultado(resultado, enviada, viewModel::cerrarResultado)
+            }
         }
 
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Mis sesiones", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                Text("${estado.puntosTotales} pts acumulados", color = ColoresPhysio.Turquesa)
+            OutlinedButton(onClick = alVerHistorial, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text("Ver mi historial de sesiones")
             }
         }
-        if (estado.historial.isEmpty()) {
-            item {
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(top = 8.dp)) {
+                DetalleTecnico(estado.detalleTecnico)
                 Text(
-                    "Aún no registras sesiones. Cuando guardes la primera aparecerá aquí.",
+                    "PhysioGestion v${Plataforma.versionApp} · ${Plataforma.nombre}",
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
-        } else {
-            items(estado.historial, key = { it.id }) { FilaHistorial(it) }
-        }
-
-        item {
-            Text(
-                "PhysioGestion · ${getPlatform().name}",
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -234,6 +242,12 @@ private fun DatosRutina(estado: RutinaUiState) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (estado.copiaVencida) {
+                Etiqueta(
+                    "Esta copia tiene más de ${Entorno.VIGENCIA_RUTINA_DIAS} días: conéctate para actualizarla",
+                    ColoresPhysio.Alerta,
+                )
+            }
         }
     }
 }

@@ -15,7 +15,10 @@
         "series": 3,
         "repeticiones": 10,
         "descansoSegundos": 45,
-        "zonaCorporal": "Rodilla"
+        "zonaCorporal": "Rodilla",
+        "anguloObjetivo": 90,
+        "medibleConSensores": true,
+        "admiteVerificacionPorCamara": true
       },
       {
         "id": 2,
@@ -24,7 +27,10 @@
         "series": 3,
         "repeticiones": 12,
         "descansoSegundos": 30,
-        "zonaCorporal": "Cadera"
+        "zonaCorporal": "Cadera",
+        "anguloObjetivo": 35,
+        "medibleConSensores": true,
+        "admiteVerificacionPorCamara": true
       },
       {
         "id": 3,
@@ -33,7 +39,9 @@
         "series": 3,
         "repeticiones": 15,
         "descansoSegundos": 30,
-        "zonaCorporal": "Tobillo"
+        "zonaCorporal": "Tobillo",
+        "anguloObjetivo": 20,
+        "medibleConSensores": true
       },
       {
         "id": 4,

@@ -6,6 +6,21 @@
     <!-- Android 17+: conectarse a la red local (10.0.2.2 del emulador o la IP de la computadora) -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
+    <!-- HABILITACIÓN DE SENSORES -->
+    <!-- Verificación visual del ejercicio (RFN-27) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Contador de pasos; desde Android 10 se pide por ser dato de salud (RFN-39) -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+    <!-- El acelerómetro y el giroscopio no piden permiso, pero se declaran como
+         características de hardware. required="false" permite instalar la app en
+         equipos que no los tengan: el código revisa si existen y, si no, ofrece
+         contar las repeticiones a mano. -->
+    <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

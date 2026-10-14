@@ -19,4 +19,11 @@ class RutasTest {
         val rutas = Rol.entries.map(::rutaInicialPara)
         assertEquals(rutas.size, rutas.toSet().size)
     }
+
+    @Test
+    fun lasRutasConArgumentoLlevanSuDato() {
+        assertEquals(RutaEjercicio(3), RutaEjercicio(3))
+        assertEquals(7, RutaDetalleSesion(7).idSesion)
+        kotlin.test.assertNotEquals(RutaEjercicio(3), RutaEjercicio(4))
+    }
 }

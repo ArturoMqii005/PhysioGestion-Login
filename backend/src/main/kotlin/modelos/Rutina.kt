@@ -12,6 +12,12 @@ data class Ejercicio(
     val repeticiones: Int,
     val descansoSegundos: Int,
     val zonaCorporal: String,
+    /** Ángulo que el fisioterapeuta espera en cada repetición; null si no aplica. */
+    val anguloObjetivo: Int? = null,
+    /** true si el ejercicio se puede medir con el acelerómetro y el giroscopio (RFN-26). */
+    val medibleConSensores: Boolean = false,
+    /** true si el ejercicio admite verificación visual con la cámara (RFN-27). */
+    val admiteVerificacionPorCamara: Boolean = false,
 )
 
 /** Rutina vigente de un paciente (resources/datos/rutinas.json). */

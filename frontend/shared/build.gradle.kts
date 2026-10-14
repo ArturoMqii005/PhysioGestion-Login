@@ -9,6 +9,11 @@ plugins {
 }
 
 kotlin {
+    compilerOptions {
+        // Clases expect/actual (AlmacenPreferencias, SensorMovimiento, GestorPermisos...).
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -71,6 +76,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.contentNegotiation)
+            implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinxJson)
             implementation(libs.navigation.compose)
             implementation(libs.androidx.sqlite)

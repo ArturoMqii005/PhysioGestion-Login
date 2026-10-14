@@ -14,4 +14,6 @@ data class EvaluacionSesion(
     val cumplimiento: Int,
     val puntos: Int,
     val alerta: AlertaDolor?,
+    /** Semáforo de evolución (RFN-47), el mismo criterio que usa el servidor. */
+    val semaforo: Semaforo = Semaforo.VERDE,
 )

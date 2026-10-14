@@ -2,6 +2,7 @@ package com.terapid.physiogestion.datos
 
 import com.terapid.physiogestion.modelos.Cita
 import com.terapid.physiogestion.modelos.Rutina
+import com.terapid.physiogestion.modelos.SesionTerapia
 import com.terapid.physiogestion.modelos.UsuarioRegistrado
 import kotlinx.serialization.json.Json
 
@@ -15,6 +16,7 @@ class AlmacenJson(private val json: Json) {
     val usuarios: List<UsuarioRegistrado> = leer("usuarios.json")
     val citas: List<Cita> = leer("citas.json")
     val rutinas: List<Rutina> = leer("rutinas.json")
+    val sesiones: List<SesionTerapia> = leer("sesiones.json")
 
     /** Lee un archivo de resources/datos y lo deserializa a una lista del tipo indicado. */
     private inline fun <reified T> leer(archivo: String): List<T> {

@@ -2,6 +2,7 @@ package com.terapid.physiogestion.servicio
 
 import com.terapid.physiogestion.modelo.AlertaDolor
 import com.terapid.physiogestion.modelo.EvaluacionSesion
+import com.terapid.physiogestion.modelo.Semaforo
 
 /** Catálogo de puntos (RFN-41). Se deja configurable, como pide el requisito. */
 data class ReglasPuntos(
@@ -72,14 +73,51 @@ class SeguimientoServicio(private val reglas: ReglasPuntos = ReglasPuntos()) {
         }
         val alerta = evaluarDolor(dolorDespues, umbral, dolorAntes)
             ?: evaluarDolor(dolorAntes, umbral, dolorSesionAnterior)
+        val cumplimiento = calcularCumplimiento(realizados, asignados)
         return EvaluacionSesion(
-            cumplimiento = calcularCumplimiento(realizados, asignados),
+            cumplimiento = cumplimiento,
             puntos = calcularPuntos(realizados, asignados, puntosPreviosDelDia),
             alerta = alerta,
+            semaforo = semaforo(cumplimiento, dolorDespues, umbral),
         )
     }
 
+    /**
+     * Semáforo de evolución que ve el fisioterapeuta (RFN-47). El dolor alto
+     * manda sobre el cumplimiento: aunque haya hecho todo, si le dolió mucho es ROJO.
+     */
+    fun semaforo(cumplimiento: Int, dolorDespues: Int, umbralDolor: Int): Semaforo = when {
+        dolorDespues >= umbralDolor -> Semaforo.ROJO
+        cumplimiento < UMBRAL_CUMPLIMIENTO_BAJO -> Semaforo.AMARILLO
+        else -> Semaforo.VERDE
+    }
+
+    /**
+     * Racha de días seguidos con al menos una sesión. Si ya hubo sesión hoy no
+     * cambia; si la última fue ayer suma uno; si pasó más tiempo vuelve a 1.
+     */
+    fun calcularRacha(rachaActual: Int, ultimoDiaActivo: String?, hoy: String, ayer: String): Int = when (ultimoDiaActivo) {
+        hoy -> rachaActual.coerceAtLeast(1)
+        ayer -> rachaActual + 1
+        else -> 1
+    }
+
+    /**
+     * Pasos de hoy a partir del contador de Android, que acumula desde que se
+     * encendió el teléfono. [base] es la lectura guardada al empezar el día;
+     * si la lectura es menor, el teléfono se reinició y se cuenta desde cero.
+     * Devuelve los pasos y la base que hay que guardar.
+     */
+    fun pasosDelDia(lectura: Long, base: Long?): Pair<Long, Long> = when {
+        base == null -> 0L to lectura
+        lectura < base -> lectura to 0L
+        else -> (lectura - base) to base
+    }
+
     companion object {
+        /** Debajo de este cumplimiento el semáforo se pone en amarillo. */
+        const val UMBRAL_CUMPLIMIENTO_BAJO = 60
+
         const val RECOMENDACION =
             "Te recomendamos suspender los ejercicios por hoy y comunicarte con la clínica."
     }

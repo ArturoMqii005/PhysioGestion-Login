@@ -3,6 +3,7 @@ package com.terapid.physiogestion.datos
 import com.terapid.physiogestion.datos.remoto.ClinicaApi
 import com.terapid.physiogestion.datos.remoto.SesionVencida
 import com.terapid.physiogestion.modelo.Cita
+import com.terapid.physiogestion.modelo.SesionTerapia
 import com.terapid.physiogestion.modelo.Usuario
 
 /** Datos del personal de la clínica (usuarios y agenda) usando el token de la sesión. */
@@ -14,12 +15,15 @@ class ClinicaRepositorio(
 
     suspend fun citas(): List<Cita> = conSesion { api.citas(it) }
 
+    /** Seguimiento remoto: sesiones que los pacientes del fisioterapeuta registraron en casa. */
+    suspend fun sesionesDeMisPacientes(): List<SesionTerapia> = conSesion { api.sesionesDeMisPacientes(it) }
+
     /** Si el servidor dice que el token ya no vale, cierra la sesión (la app vuelve al login). */
     private suspend fun <T> conSesion(llamada: suspend (String) -> T): T =
         try {
             llamada(gestor.token())
         } catch (e: SesionVencida) {
-            gestor.cerrar()
+            gestor.cerrar(e.message)
             throw e
         }
 }

@@ -2,11 +2,17 @@ package com.terapid.physiogestion.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.terapid.physiogestion.datos.PreferenciasRepositorio
 import com.terapid.physiogestion.datos.RutinaRepositorio
+import com.terapid.physiogestion.datos.SensorRepositorio
+import com.terapid.physiogestion.datos.SesionesRepositorio
 import com.terapid.physiogestion.datos.SinRutinaDisponible
 import com.terapid.physiogestion.datos.remoto.ErrorApi
 import com.terapid.physiogestion.modelo.Dificultad
+import com.terapid.physiogestion.modelo.EjercicioRealizado
+import com.terapid.physiogestion.modelo.OrigenDatos
 import com.terapid.physiogestion.modelo.RegistroSesion
+import com.terapid.physiogestion.plataforma.Entorno
 import com.terapid.physiogestion.plataforma.ahoraEnMilisegundos
 import com.terapid.physiogestion.plataforma.claveDelDia
 import com.terapid.physiogestion.servicio.SeguimientoServicio
@@ -18,14 +24,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * VIEW MODEL: recibe las acciones de la vista, usa el servicio y el
- * repositorio, y publica el resultado en [estado] para que la vista lo pinte.
+ * VIEW MODEL: recibe las acciones de la vista, usa el servicio y los
+ * repositorios, y publica el resultado en [estado] para que la vista lo pinte.
  * No conoce ninguna pantalla ni ningún botón.
+ *
+ * Lo comparte la pantalla de medición con sensores: al terminar un ejercicio
+ * medido, avisa con [medicionRegistrada] y aquí se marca como realizado.
  */
 class RutinaViewModel(
     private val repositorio: RutinaRepositorio,
     private val servicio: SeguimientoServicio,
     private val pacienteId: Int,
+    private val sesiones: SesionesRepositorio? = null,
+    private val sensores: SensorRepositorio? = null,
+    private val preferencias: PreferenciasRepositorio? = null,
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow(RutinaUiState())
@@ -36,7 +48,7 @@ class RutinaViewModel(
 
     init {
         cargarRutina()
-        actualizarHistorial()
+        actualizarResumen()
     }
 
     fun cargarRutina() {
@@ -44,12 +56,15 @@ class RutinaViewModel(
         viewModelScope.launch {
             try {
                 val datos = repositorio.obtenerRutina(pacienteId)
+                val dias = (ahoraEnMilisegundos() - datos.actualizadaEn) / UN_DIA_MS
                 _estado.update {
                     it.copy(
                         cargando = false,
                         rutina = datos.rutina,
                         origen = datos.origen,
                         actualizadaEn = datos.actualizadaEn,
+                        copiaVencida = datos.origen == OrigenDatos.ALMACENAMIENTO_LOCAL &&
+                            dias >= Entorno.VIGENCIA_RUTINA_DIAS,
                     )
                 }
             } catch (e: CancellationException) {
@@ -73,8 +88,20 @@ class RutinaViewModel(
         if (inicioSesion == null) inicioSesion = ahoraEnMilisegundos()
         _estado.update {
             val nuevos = if (idEjercicio in it.completados) it.completados - idEjercicio else it.completados + idEjercicio
-            it.copy(completados = nuevos, aviso = null, resultado = null)
+            it.copy(completados = nuevos, aviso = null, resultado = null, envio = null)
         }
+    }
+
+    /**
+     * La pantalla de sensores terminó de medir un ejercicio. Si se completó,
+     * queda marcado como realizado; en cualquier caso se actualizan las mediciones.
+     */
+    fun medicionRegistrada(idEjercicio: Int, completado: Boolean) {
+        if (inicioSesion == null) inicioSesion = ahoraEnMilisegundos()
+        if (completado) {
+            _estado.update { it.copy(completados = it.completados + idEjercicio, resultado = null, envio = null) }
+        }
+        actualizarMediciones()
     }
 
     fun cambiarDolorAntes(nivel: Int) {
@@ -89,10 +116,11 @@ class RutinaViewModel(
 
     fun cambiarObservacion(texto: String) = _estado.update { it.copy(observacion = texto.take(280)) }
 
-    fun cerrarResultado() = _estado.update { it.copy(resultado = null) }
+    fun cerrarResultado() = _estado.update { it.copy(resultado = null, envio = null) }
 
     /**
-     * Guarda la sesión. Si ya se está guardando, ignora el toque (evita
+     * Guarda la sesión: primero en el teléfono y después la envía al servidor
+     * (POST /sesiones). Si ya se está guardando, ignora el toque (evita
      * registros dobles por doble pulsación, RFX-18).
      */
     fun guardarSesion() {
@@ -126,6 +154,15 @@ class RutinaViewModel(
                     dolorSesionAnterior = repositorio.ultimoDolorRegistrado(),
                     puntosPreviosDelDia = repositorio.puntosDelDia(dia),
                 )
+                // Detalle por ejercicio: lo medido con sensores va como verificado.
+                val detalle = rutina.ejercicios.filter { it.id in actual.completados }.map { e ->
+                    val medido = actual.mediciones[e.id]
+                    if (medido != null) {
+                        EjercicioRealizado(e.id, medido.repeticiones, medido.anguloMaximo, verificado = true)
+                    } else {
+                        EjercicioRealizado(e.id, e.repeticionesTotales)
+                    }
+                }
                 repositorio.registrarSesion(
                     RegistroSesion(
                         rutinaId = rutina.id,
@@ -141,21 +178,26 @@ class RutinaViewModel(
                         observacion = actual.observacion.trim(),
                         puntos = evaluacion.puntos,
                         alertaDolor = evaluacion.alerta != null,
+                        detalle = detalle,
                     )
                 )
                 inicioSesion = null
+                val racha = preferencias?.registrarDiaActivo(pacienteId)
                 _estado.update {
                     it.copy(
                         guardando = false,
                         resultado = evaluacion,
+                        envio = EstadoEnvio.ENVIANDO,
                         completados = emptySet(),
                         dolorAntes = null,
                         dolorDespues = null,
                         dificultad = null,
                         observacion = "",
+                        racha = racha ?: it.racha,
                     )
                 }
-                actualizarHistorial()
+                actualizarResumen()
+                enviarAlServidor()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -166,17 +208,60 @@ class RutinaViewModel(
         }
     }
 
-    private fun actualizarHistorial() {
+    /** Vacía la cola de envío: la sesión recién guardada y cualquiera que se haya quedado sin enviar. */
+    private suspend fun enviarAlServidor() {
+        val repo = sesiones
+        if (repo == null) {
+            _estado.update { it.copy(envio = EstadoEnvio.PENDIENTE) }
+            return
+        }
+        try {
+            val envio = repo.enviarPendientes()
+            sensores?.enviarPendientes()
+            if (envio.error == null && envio.pendientes == 0) preferencias?.registrarSincronizacion()
+            _estado.update {
+                it.copy(
+                    envio = if (envio.pendientes == 0) EstadoEnvio.ENVIADA else EstadoEnvio.PENDIENTE,
+                    detalleTecnico = envio.detalle ?: it.detalleTecnico,
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Sesión vencida u otro problema: la sesión ya quedó guardada en el teléfono.
+            _estado.update { it.copy(envio = EstadoEnvio.PENDIENTE) }
+        }
+    }
+
+    private fun actualizarResumen() {
         viewModelScope.launch {
             try {
-                val sesiones = repositorio.historial()
                 val puntos = repositorio.puntosTotales()
-                _estado.update { it.copy(historial = sesiones, puntosTotales = puntos) }
+                val racha = preferencias?.racha(pacienteId) ?: 0
+                _estado.update { it.copy(puntosTotales = puntos, racha = racha) }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // El historial es informativo; si falla, la pantalla sigue funcionando.
+                // El resumen es informativo; si falla, la pantalla sigue funcionando.
             }
         }
+        actualizarMediciones()
+    }
+
+    private fun actualizarMediciones() {
+        val repo = sensores ?: return
+        viewModelScope.launch {
+            try {
+                val mediciones = repo.medicionesDeHoy()
+                _estado.update { it.copy(mediciones = mediciones) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private companion object {
+        const val UN_DIA_MS = 24L * 60 * 60 * 1000
     }
 }

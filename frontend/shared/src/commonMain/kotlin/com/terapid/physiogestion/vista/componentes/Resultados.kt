@@ -20,7 +20,7 @@ import com.terapid.physiogestion.vista.tema.ColoresPhysio
 
 /** Resultado de guardar la sesión; si hay alerta de dolor, se muestra primero (RFX-09). */
 @Composable
-fun TarjetaResultado(resultado: EvaluacionSesion, alCerrar: () -> Unit) {
+fun TarjetaResultado(resultado: EvaluacionSesion, enviada: Boolean?, alCerrar: () -> Unit) {
     val alerta = resultado.alerta
     TarjetaPhysio(
         fondo = if (alerta != null) ColoresPhysio.FondoAlerta else MaterialTheme.colorScheme.surface,
@@ -37,8 +37,13 @@ fun TarjetaResultado(resultado: EvaluacionSesion, alCerrar: () -> Unit) {
             "Cumplimiento: ${resultado.cumplimiento} % · Puntos ganados: ${resultado.puntos}",
             style = MaterialTheme.typography.bodyMedium,
         )
+        Etiqueta("Semáforo: ${resultado.semaforo.etiqueta}", resultado.semaforo.color)
         Text(
-            "Tu sesión quedó guardada en el teléfono y se enviará a tu fisioterapeuta cuando haya conexión.",
+            when (enviada) {
+                true -> "Tu sesión ya llegó a tu fisioterapeuta."
+                false -> "Tu sesión quedó guardada en el teléfono y se enviará a tu fisioterapeuta cuando haya conexión."
+                null -> "Enviando tu sesión…"
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

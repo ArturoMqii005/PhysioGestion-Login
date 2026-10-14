@@ -3,6 +3,7 @@ package com.terapid.physiogestion.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.terapid.physiogestion.datos.AutenticacionRepositorio
+import com.terapid.physiogestion.datos.PreferenciasRepositorio
 import com.terapid.physiogestion.datos.remoto.ConfiguracionApi
 import com.terapid.physiogestion.datos.remoto.ErrorApi
 import kotlinx.coroutines.CancellationException
@@ -28,9 +29,13 @@ data class LoginUiState(
  * sesión y muestra el error si algo falla. No navega: cuando la sesión se
  * abre, la navegación principal la detecta y enruta según el rol.
  */
-class LoginViewModel(private val autenticacion: AutenticacionRepositorio) : ViewModel() {
+class LoginViewModel(
+    private val autenticacion: AutenticacionRepositorio,
+    private val preferencias: PreferenciasRepositorio? = null,
+) : ViewModel() {
 
-    private val _estado = MutableStateFlow(LoginUiState())
+    // Si la app regresó aquí porque el servidor cerró la sesión, se explica el motivo.
+    private val _estado = MutableStateFlow(LoginUiState(error = autenticacion.tomarAvisoDeCierre()))
     val estado: StateFlow<LoginUiState> = _estado.asStateFlow()
 
     fun cambiarUsuario(texto: String) = _estado.update { it.copy(usuario = texto.take(40), error = null) }
@@ -55,6 +60,8 @@ class LoginViewModel(private val autenticacion: AutenticacionRepositorio) : View
         viewModelScope.launch {
             try {
                 autenticacion.iniciarSesion(actual.usuario, actual.contrasena)
+                // Se recuerda el servidor con el que sí se pudo entrar (PREFERENCIAS).
+                preferencias?.guardarUrlServidor(ConfiguracionApi.urlServidor)
                 _estado.update { it.copy(cargando = false, contrasena = "") }
             } catch (e: CancellationException) {
                 throw e

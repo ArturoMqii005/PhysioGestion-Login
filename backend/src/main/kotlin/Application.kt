@@ -8,6 +8,7 @@ import com.terapid.physiogestion.plugins.configureSerialization
 import com.terapid.physiogestion.plugins.configureStatusPages
 import com.terapid.physiogestion.rutas.configureRouting
 import com.terapid.physiogestion.servicios.AutenticacionServicio
+import com.terapid.physiogestion.servicios.SesionesServicio
 import io.ktor.server.application.Application
 import kotlinx.serialization.json.Json
 
@@ -22,11 +23,12 @@ fun Application.module() {
     }
     val almacen = AlmacenJson(json)
     val autenticacion = AutenticacionServicio(almacen.usuarios)
+    val sesiones = SesionesServicio(almacen.rutinas, almacen.sesiones)
 
     configureMonitoreo()
     configureHttp()
     configureSerialization(json)
     configureStatusPages()
     configureSeguridad(autenticacion)
-    configureRouting(almacen, autenticacion)
+    configureRouting(almacen, autenticacion, sesiones)
 }
