@@ -1,0 +1,7 @@
+# Lo que NO se manda a Docker: se genera al compilar dentro de la imagen.
+build/
+.gradle/
+.kotlin/
+.idea/
+*.iml
+local.properties

@@ -19,3 +19,5 @@ sdk.dir=D\:\\Android\\Sdk
 # SERVIDOR_URL=http://localhost:8080
 #  - Celular en la misma red Wi-Fi (IP de tu computadora, comando ipconfig):
 # SERVIDOR_URL=http://192.168.1.70:8080
+#  - Backend publicado en Railway (funciona con cualquier red):
+# SERVIDOR_URL=https://tu-servicio.up.railway.app

@@ -19,6 +19,8 @@ Proyecto creado con el asistente oficial de Ktor ([start.ktor.io](https://start.
 
 ```
 backend/
+├── Dockerfile                  Imagen para Railway: compila el fat jar y lo ejecuta con Java 21
+├── .dockerignore               Carpetas que no se mandan a Docker (build, .gradle…)
 ├── build.gradle.kts            Dependencias (catálogo de versiones de Ktor)
 ├── settings.gradle.kts
 ├── gradle/libs.versions.toml   Versiones de Kotlin y Logback
@@ -75,3 +77,24 @@ Content-Type: application/json
 - `gradlew.bat run`: inicia el servidor en http://localhost:8080
 - Otro puerto (variable de entorno): `set PORT=8090` y luego `gradlew.bat run`
 - `gradlew.bat test`: ejecuta las 15 pruebas
+
+## Despliegue en Railway
+
+El `Dockerfile` de esta carpeta hace todo en los servidores de Railway:
+
+1. **Etapa de compilación** (`eclipse-temurin:21-jdk`): `./gradlew buildFatJar` genera `build/libs/backend-all.jar`,
+   un solo archivo con el servidor y todas sus librerías.
+2. **Etapa de ejecución** (`eclipse-temurin:21-jre`): copia ese jar y lo arranca con `java -jar`.
+
+Railway asigna el puerto en la variable de entorno `PORT`; `application.yaml` la lee (`"$PORT:8080"`), así que no hay que
+cambiar código entre la computadora y la nube.
+
+En Railway: **New Project → Deploy from GitHub repo → PhysioGestion-Login**, y en el servicio
+**Settings → Root Directory = `/backend`**. Después, **Settings → Networking → Generate Domain** da la dirección pública
+(`https://…up.railway.app`), que se escribe en el login de la app con «Servidor · Cambiar».
+
+Notas:
+- Si Railway dice que no encuentra el Dockerfile, agregar en **Variables** `RAILWAY_DOCKERFILE_PATH=Dockerfile`.
+- Los datos y los tokens viven en memoria: cada nuevo despliegue o reinicio vuelve a cargar los JSON y pide iniciar sesión otra vez.
+- El contenedor usa unos 90 MB de memoria; el `-XX:MaxRAMPercentage=75` del Dockerfile lo mantiene dentro del límite del plan.
+

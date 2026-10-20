@@ -9,7 +9,7 @@ El proyecto está dividido en dos partes que se ejecutan por separado y se comun
 
 |Parte|Carpeta|Tecnología|Qué hace|
 |-|-|-|-|
-|**Backend**|[`backend/`](backend)|Ktor Server 3.6 (generado con el asistente start.ktor.io), Netty|API REST local en el puerto 8080. Valida las credenciales del archivo JSON y entrega los datos de cada rol|
+|**Backend**|[`backend/`](backend)|Ktor Server 3.6 (generado con el asistente start.ktor.io), Netty, Docker|API REST en el puerto 8080 (o el de `PORT`), local o desplegada en Railway. Valida las credenciales del archivo JSON y entrega los datos de cada rol|
 |**Frontend**|[`frontend/`](frontend)|Kotlin Multiplatform + Compose Multiplatform, Ktor Client|App para Android (Android Studio), escritorio e iOS. Login, navegación por rol, sensores, almacenamiento local y los cinco métodos HTTP|
 
 ## Arquitectura local
@@ -101,6 +101,10 @@ gradlew.bat run        (Windows)
 
 Cuando aparezca `Responding at http://0.0.0.0:8080`, abrir http://localhost:8080 en el navegador. Debe mostrar
 «PhysioGestion API v1 en funcionamiento».
+
+**1b. Backend en la nube (Railway).** El backend también está preparado para Railway con `backend/Dockerfile`
+(ver «Despliegue en Railway» en `backend/README.md`). Con la dirección pública (`https://…up.railway.app`) la app funciona
+en cualquier celular con Internet, sin `adb reverse` ni misma red Wi‑Fi: se escribe en «Servidor · Cambiar» del login.
 
 **2. Frontend.** Abrir la carpeta `frontend` en Android Studio, elegir **androidApp** y un emulador, y presionar Run.
 
