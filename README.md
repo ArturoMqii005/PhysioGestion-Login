@@ -117,7 +117,7 @@ en cualquier celular con Internet, sin `adb reverse` ni misma red Wi‑Fi: se es
 **3. Pruebas**
 
 * `backend`: `gradlew.bat test`. Son 16 pruebas: login, token, permisos por rol, chequeo de salud y los cinco métodos HTTP.
-* `frontend`: `gradlew.bat :shared:jvmTest`. Son 54 pruebas: login, navegación, rutina, métodos HTTP, almacenamiento, migración de la base de datos, filtro y análisis de movimiento.
+* `frontend`: `gradlew.bat :shared:jvmTest`. Son 56 pruebas: login, navegación, rutina, métodos HTTP, almacenamiento, migración de la base de datos, filtro y análisis de movimiento, y la dirección del servidor por ambiente.
 
 ## Repositorio
 

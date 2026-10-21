@@ -107,6 +107,7 @@ El contador de pasos (`SensorPasos`) aparece en el inicio del paciente; en Andro
 ## Variables de entorno
 
 - `plataforma/Entorno.kt`: ambiente (DESARROLLO / PRUEBAS / PRODUCCIÓN), servidor, tiempos de espera y si se registran las peticiones.
+  Pruebas y producción apuntan al backend de Railway (`https://physiogestion-login-production.up.railway.app`).
 - `plataforma/Plataforma.kt` (expect): depuración, nombre del sistema y versión de la app.
 - `local.properties` (no se sube): `SERVIDOR_URL=http://localhost:8080` para un celular con `adb reverse`, o la IP de la computadora.
   Gradle lo entrega como `BuildConfig.SERVIDOR_URL`. Ver `local.properties.ejemplo`.
@@ -127,4 +128,4 @@ El contador de pasos (`SensorPasos`) aparece en el inicio del paciente; en Andro
 1. Encender el backend (ver `../backend/README.md`).
 2. En Android Studio elegir **androidApp**, elegir un emulador y presionar Run.
 3. Escritorio: `gradlew.bat :desktopApp:run`.
-4. Pruebas: `gradlew.bat :shared:jvmTest` (54 pruebas).
+4. Pruebas: `gradlew.bat :shared:jvmTest` (56 pruebas).

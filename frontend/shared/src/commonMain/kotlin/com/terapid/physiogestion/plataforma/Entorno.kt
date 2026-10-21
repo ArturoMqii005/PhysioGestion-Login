@@ -29,14 +29,23 @@ object Entorno {
      * Dirección del backend según el ambiente. En desarrollo cada plataforma
      * aporta la suya (10.0.2.2 en el emulador de Android, localhost en
      * escritorio e iOS, o la de local.properties si se configuró).
-     * Las de pruebas y producción se definirán al desplegar en Oracle Cloud.
+     * Pruebas y producción usan el backend desplegado en Railway.
      */
     val urlServidor: String
-        get() = when (actual) {
-            TipoEntorno.DESARROLLO -> urlServidorPorDefecto()
-            TipoEntorno.PRUEBAS -> "https://pruebas.physiogestion.mx"
-            TipoEntorno.PRODUCCION -> "https://api.physiogestion.mx"
-        }
+        get() = urlServidorPara(actual)
+
+    /** Backend desplegado en Railway (HTTPS, dominio público del servicio). */
+    const val URL_SERVIDOR_NUBE = "https://physiogestion-login-production.up.railway.app"
+
+    /**
+     * Dirección del backend para un ambiente. Antes del despliegue, pruebas y
+     * producción apuntaban a dominios que no existían (api.physiogestion.mx):
+     * una compilación de release no habría podido iniciar sesión.
+     */
+    fun urlServidorPara(tipo: TipoEntorno): String = when (tipo) {
+        TipoEntorno.DESARROLLO -> urlServidorPorDefecto()
+        TipoEntorno.PRUEBAS, TipoEntorno.PRODUCCION -> URL_SERVIDOR_NUBE
+    }
 
     /** Tiempo máximo para conectar. En desarrollo es corto para detectar rápido un backend apagado. */
     val tiempoConexionMs: Long
