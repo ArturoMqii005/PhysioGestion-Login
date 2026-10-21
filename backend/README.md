@@ -29,15 +29,15 @@ backend/
     │   ├── main.kt             Arranca el motor Netty (generado por el asistente)
     │   ├── Application.kt      module(): crea los objetos e instala los plugins
     │   ├── plugins/            Configuración de cada plugin de Ktor
-    │   ├── modelos/            DTOs @Serializable: Usuario, Rol, Cita, Rutina, SesionTerapia, ResultadoEjercicio…
+    │   ├── modelos/            DTOs @Serializable: Usuario, Rol, Cita, Rutina, SesionTerapia, ResultadoEjercicio, EstadoServidor…
     │   ├── datos/              AlmacenJson: lee los archivos JSON de resources/datos
     │   ├── servicios/          AutenticacionServicio (credenciales y tokens) y SesionesServicio (sesiones y semáforo)
-    │   └── rutas/              Endpoints agrupados por recurso (SesionRutas.kt: los cinco métodos HTTP)
+    │   └── rutas/              Endpoints agrupados por recurso (SesionRutas.kt: los cinco métodos HTTP; SaludRutas.kt: chequeo de salud)
     ├── main/resources/
     │   ├── application.yaml    Puerto (variable de entorno PORT, 8080 por defecto) y módulo principal
     │   ├── logback.xml         Formato del registro en consola
     │   └── datos/              usuarios.json (credenciales), citas.json, rutinas.json, sesiones.json
-    └── test/kotlin/            ServerTest.kt (login y roles) y SesionesTest.kt (métodos HTTP)
+    └── test/kotlin/            ServerTest.kt (login, roles y salud) y SesionesTest.kt (métodos HTTP)
 ```
 
 ## Endpoints
@@ -45,6 +45,7 @@ backend/
 | Método | Ruta | Acceso | Respuesta |
 |---|---|---|---|
 | GET | `/` | Público | Texto de estado |
+| GET | `/api/v1/salud` | Público | `EstadoServidor`: estado, versión, entorno, región, commit desplegado y segundos encendido |
 | POST | `/api/v1/auth/login` | Público | `LoginRespuesta` (token + usuario con rol) o 401 |
 | POST | `/api/v1/auth/logout` | Con token | 204 |
 | GET | `/api/v1/usuarios` | ADMINISTRADOR | Lista de usuarios sin contraseña |
@@ -76,7 +77,7 @@ Content-Type: application/json
 
 - `gradlew.bat run`: inicia el servidor en http://localhost:8080
 - Otro puerto (variable de entorno): `set PORT=8090` y luego `gradlew.bat run`
-- `gradlew.bat test`: ejecuta las 15 pruebas
+- `gradlew.bat test`: ejecuta las 16 pruebas
 
 ## Despliegue en Railway
 
@@ -89,6 +90,12 @@ El `Dockerfile` de esta carpeta hace todo en los servidores de Railway:
 Railway asigna el puerto en la variable de entorno `PORT`; `application.yaml` la lee (`"$PORT:8080"`), así que no hay que
 cambiar código entre la computadora y la nube.
 
+**Dirección pública:** https://physiogestion-login-production.up.railway.app
+(chequeo de salud: https://physiogestion-login-production.up.railway.app/api/v1/salud).
+
+Cada `git push` a `main` (por SSH, `git@github.com:ArturoMqii005/PhysioGestion-Login.git`) dispara un nuevo despliegue.
+`/api/v1/salud` muestra el commit que quedó corriendo, así se comprueba que el servidor tiene la última versión.
+
 En Railway: **New Project → Deploy from GitHub repo → PhysioGestion-Login**, y en el servicio
 **Settings → Root Directory = `/backend`**. Después, **Settings → Networking → Generate Domain** da la dirección pública
 (`https://…up.railway.app`), que se escribe en el login de la app con «Servidor · Cambiar».
@@ -96,5 +103,6 @@ En Railway: **New Project → Deploy from GitHub repo → PhysioGestion-Login**,
 Notas:
 - Si Railway dice que no encuentra el Dockerfile, agregar en **Variables** `RAILWAY_DOCKERFILE_PATH=Dockerfile`.
 - Los datos y los tokens viven en memoria: cada nuevo despliegue o reinicio vuelve a cargar los JSON y pide iniciar sesión otra vez.
+- Revisión desde la terminal con la CLI de Railway: `railway logs` (registros) y `railway ssh` (consola dentro del contenedor).
 - El contenedor usa unos 90 MB de memoria; el `-XX:MaxRAMPercentage=75` del Dockerfile lo mantiene dentro del límite del plan.
 

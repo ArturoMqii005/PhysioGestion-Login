@@ -15,6 +15,7 @@ import io.ktor.server.routing.routing
  * Mapa de la API. Todas las rutas llevan la versión (/api/v1) para que la
  * app instalada siga funcionando cuando cambie la API (RI-02).
  *
+ *  GET  /api/v1/salud                      público (estado, versión y commit desplegado)
  *  POST /api/v1/auth/login                 público
  *  POST /api/v1/auth/logout                con token
  *  GET  /api/v1/usuarios                   ADMINISTRADOR
@@ -40,6 +41,7 @@ fun Application.configureRouting(
             call.respondText("PhysioGestion API v1 en funcionamiento")
         }
         route("/api/v1") {
+            rutasSalud()
             rutasAutenticacion(autenticacion)
             authenticate(AUTH_SESION) {
                 rutasUsuarios(almacen)

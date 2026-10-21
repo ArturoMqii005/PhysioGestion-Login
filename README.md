@@ -102,8 +102,9 @@ gradlew.bat run        (Windows)
 Cuando aparezca `Responding at http://0.0.0.0:8080`, abrir http://localhost:8080 en el navegador. Debe mostrar
 «PhysioGestion API v1 en funcionamiento».
 
-**1b. Backend en la nube (Railway).** El backend también está preparado para Railway con `backend/Dockerfile`
-(ver «Despliegue en Railway» en `backend/README.md`). Con la dirección pública (`https://…up.railway.app`) la app funciona
+**1b. Backend en la nube (Railway).** El backend está desplegado en Railway con `backend/Dockerfile`
+(ver «Despliegue en Railway» en `backend/README.md`) en **https://physiogestion-login-production.up.railway.app**.
+Con esa dirección la app funciona
 en cualquier celular con Internet, sin `adb reverse` ni misma red Wi‑Fi: se escribe en «Servidor · Cambiar» del login.
 
 **2. Frontend.** Abrir la carpeta `frontend` en Android Studio, elegir **androidApp** y un emulador, y presionar Run.
@@ -115,7 +116,7 @@ en cualquier celular con Internet, sin `adb reverse` ni misma red Wi‑Fi: se es
 
 **3. Pruebas**
 
-* `backend`: `gradlew.bat test`. Son 15 pruebas: login, token, permisos por rol y los cinco métodos HTTP.
+* `backend`: `gradlew.bat test`. Son 16 pruebas: login, token, permisos por rol, chequeo de salud y los cinco métodos HTTP.
 * `frontend`: `gradlew.bat :shared:jvmTest`. Son 54 pruebas: login, navegación, rutina, métodos HTTP, almacenamiento, migración de la base de datos, filtro y análisis de movimiento.
 
 ## Repositorio

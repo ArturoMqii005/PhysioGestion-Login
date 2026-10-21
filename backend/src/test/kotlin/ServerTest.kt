@@ -1,6 +1,8 @@
 package com.terapid.physiogestion
 
 import com.terapid.physiogestion.modelos.Cita
+import com.terapid.physiogestion.modelos.EstadoServidor
+import com.terapid.physiogestion.modelos.VERSION_API
 import com.terapid.physiogestion.modelos.LoginRespuesta
 import com.terapid.physiogestion.modelos.LoginSolicitud
 import com.terapid.physiogestion.modelos.Rol
@@ -101,5 +103,16 @@ class ServerTest {
         val rutina = cliente.get("/api/v1/pacientes/$id/rutina") { bearerAuth(sesion.token) }.body<Rutina>()
         assertEquals(id, rutina.pacienteId)
         assertEquals(4, rutina.ejercicios.size)
+    }
+
+    @Test
+    fun `el chequeo de salud responde sin token`() = testApplication {
+        configure()
+        val respuesta = clienteJson().get("/api/v1/salud")
+        assertEquals(HttpStatusCode.OK, respuesta.status)
+        val estado = respuesta.body<EstadoServidor>()
+        assertEquals("OK", estado.estado)
+        assertEquals(VERSION_API, estado.version)
+        assertEquals("local", estado.entorno)
     }
 }
