@@ -28,7 +28,7 @@ import io.ktor.server.routing.routing
  *  PUT    /api/v1/sesiones/{id}            PACIENTE (reemplaza los datos editables)
  *  PATCH  /api/v1/sesiones/{id}            PACIENTE (modifica solo lo que se manda)
  *  DELETE /api/v1/sesiones/{id}            PACIENTE -> 204 No Content
- *  POST   /api/v1/resultados-ejercicio     PACIENTE (resumen medido con sensores)
+ *  POST   /api/v1/resultados-ejercicio     PACIENTE (resumen medido con sensores o con cámara)
  *  GET    /api/v1/resultados-ejercicio     PACIENTE, FISIOTERAPEUTA
  */
 fun Application.configureRouting(

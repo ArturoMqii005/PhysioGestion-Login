@@ -9,8 +9,17 @@ import com.terapid.physiogestion.datos.sensores.FiltroSenal
 import com.terapid.physiogestion.datos.sensores.LecturaEje
 import com.terapid.physiogestion.datos.sensores.PeriodosMuestreo
 import com.terapid.physiogestion.datos.sensores.SensorMovimiento
+import com.terapid.physiogestion.modelo.MetodoMedicion
+import com.terapid.physiogestion.plataforma.camara.camaraPosturaDisponible
+import com.terapid.physiogestion.plataforma.permisos.GestorPermisos
+import com.terapid.physiogestion.plataforma.permisos.Permiso
 import com.terapid.physiogestion.servicio.movimiento.AnalizadorMovimiento
 import com.terapid.physiogestion.servicio.movimiento.RangoArticular
+import com.terapid.physiogestion.servicio.postura.AnalizadorPostura
+import com.terapid.physiogestion.servicio.postura.ArticulacionMedida
+import com.terapid.physiogestion.servicio.postura.AvisoCamara
+import com.terapid.physiogestion.servicio.postura.Postura
+import com.terapid.physiogestion.servicio.postura.VigilanteQuietud
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -33,6 +42,11 @@ import kotlin.time.TimeSource
  *  3. OBTENCIÓN: recoge los dos flujos de lecturas a 50 Hz.
  *  4. PROCESAMIENTO: filtra cada lectura y se la entrega al analizador.
  *
+ * Con la VERIFICACIÓN CON CÁMARA (ejercicios que la admiten) el teléfono se
+ * apoya frente al paciente: la vista entrega cada cuadro a [procesarPostura],
+ * el AnalizadorPostura cuenta las repeticiones a partir del esqueleto y el
+ * acelerómetro vigila que nadie mueva el teléfono (VigilanteQuietud).
+ *
  * Su responsabilidad más importante es que el sensor se apague siempre, tanto
  * si el paciente toca «Terminar» como si sale de la pantalla (onCleared).
  */
@@ -42,6 +56,8 @@ class EjercicioViewModel(
     private val rutinas: RutinaRepositorio,
     private val repositorio: SensorRepositorio,
     private val sensor: SensorMovimiento,
+    private val permisos: GestorPermisos? = null,
+    private val camaraEnDispositivo: Boolean = camaraPosturaDisponible,
 ) : ViewModel() {
 
     private val filtro = FiltroSenal()
@@ -55,6 +71,11 @@ class EjercicioViewModel(
     private var trabajoAcelerometro: Job? = null
     private var trabajoGiroscopio: Job? = null
     private var trabajoReloj: Job? = null
+    private var trabajoEsperaCamara: Job? = null
+
+    // ---- Verificación con cámara ----
+    private var analizadorPostura: AnalizadorPostura? = null
+    private val vigilante = VigilanteQuietud()
 
     /** Marcador monotónico: no cambia aunque el usuario ajuste la hora del teléfono. */
     private var inicioMedicion: TimeMark? = null
@@ -73,7 +94,17 @@ class EjercicioViewModel(
                     _estado.update { it.copy(mensajeError = "No se encontró el ejercicio en tu rutina.") }
                 } else {
                     analizador = AnalizadorMovimiento(anguloObjetivo = ejercicio.anguloObjetivo)
-                    _estado.update { it.copy(ejercicio = ejercicio, mensajeError = null) }
+                    val conCamara = camaraEnDispositivo && ejercicio.admiteVerificacionPorCamara &&
+                        ArticulacionMedida.deZona(ejercicio.zonaCorporal) != null
+                    // Si ya dio permiso de cámara, la verificación es la opción propuesta.
+                    val metodo = if (conCamara && permisos?.estaConcedido(Permiso.CAMARA) == true) {
+                        MetodoMedicion.CAMARA
+                    } else {
+                        MetodoMedicion.SENSORES
+                    }
+                    _estado.update {
+                        it.copy(ejercicio = ejercicio, mensajeError = null, camaraDisponible = conCamara, metodo = metodo)
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -83,10 +114,40 @@ class EjercicioViewModel(
         }
     }
 
+    /** Elige cómo medir. La cámara pide permiso la primera vez. */
+    fun elegirMetodo(metodo: MetodoMedicion) {
+        val actual = _estado.value
+        if (actual.fase != FaseMedicion.PREPARADO || metodo == actual.metodo) return
+        if (metodo == MetodoMedicion.SENSORES || !actual.camaraDisponible) {
+            _estado.update { it.copy(metodo = MetodoMedicion.SENSORES, mensajeError = null) }
+            return
+        }
+        viewModelScope.launch {
+            val concedido = permisos?.solicitar(Permiso.CAMARA) ?: false
+            _estado.update {
+                if (concedido) {
+                    it.copy(metodo = MetodoMedicion.CAMARA, mensajeError = null)
+                } else {
+                    it.copy(mensajeError = "Sin permiso de cámara no se puede verificar el ejercicio. Puedes activarlo en Perfil.")
+                }
+            }
+        }
+    }
+
+    /** Cambia entre la cámara frontal y la trasera (antes de empezar). */
+    fun alternarCamara() {
+        if (_estado.value.fase == FaseMedicion.PREPARADO) _estado.update { it.copy(usarFrontal = !it.usarFrontal) }
+    }
+
     /** Botón «Comenzar». Con sensores pasa a calibrar; sin sensores empieza el conteo manual. */
     fun comenzar() {
-        if (_estado.value.ejercicio == null) return
-        if (sensor.hayAcelerometro) calibrar() else comenzarManual()
+        val actual = _estado.value
+        if (actual.ejercicio == null) return
+        when {
+            actual.usaCamara -> comenzarCamara()
+            sensor.hayAcelerometro -> calibrar()
+            else -> comenzarManual()
+        }
     }
 
     /** FASE 2: el paciente mantiene el teléfono quieto y se mide la postura inicial y el sesgo del giroscopio. */
@@ -166,6 +227,107 @@ class EjercicioViewModel(
         }
     }
 
+    // ---- Verificación con cámara ----
+
+    /**
+     * Prepara la verificación: la vista ya muestra la cámara y empieza a
+     * mandar cuadros. Mientras tanto el acelerómetro vigila que el teléfono
+     * esté apoyado. Si en [ESPERA_MAXIMA_CAMARA_MS] no se logra ver a la
+     * persona completa y quieta, se regresa a las instrucciones.
+     */
+    private fun comenzarCamara() {
+        val ejercicio = _estado.value.ejercicio ?: return
+        val articulacion = ArticulacionMedida.deZona(ejercicio.zonaCorporal) ?: return
+        val nuevo = AnalizadorPostura(articulacion, ejercicio.anguloObjetivo)
+        analizadorPostura = nuevo
+        vigilante.reiniciar()
+        _estado.update {
+            it.copy(
+                fase = FaseMedicion.CALIBRANDO,
+                mensajeError = null,
+                avisoCamara = AvisoCamara.NO_TE_VEO,
+                telefonoQuieto = true,
+                puntosResaltados = articulacion.puntos,
+                repeticiones = 0,
+                anguloActual = 0f,
+                anguloMaximo = 0f,
+                verificacion = null,
+            )
+        }
+        if (sensor.hayAcelerometro) {
+            trabajoAcelerometro = viewModelScope.launch {
+                sensor.acelerometro(PeriodosMuestreo.EJERCICIO_MS).collect { lectura ->
+                    val quieto = vigilante.procesar(lectura)
+                    if (quieto != _estado.value.telefonoQuieto) _estado.update { it.copy(telefonoQuieto = quieto) }
+                }
+            }
+        }
+        trabajoEsperaCamara = viewModelScope.launch {
+            delay(ESPERA_MAXIMA_CAMARA_MS)
+            if (_estado.value.fase == FaseMedicion.CALIBRANDO) {
+                detenerSensores()
+                _estado.update {
+                    it.copy(
+                        fase = FaseMedicion.PREPARADO,
+                        mensajeError = "No logramos verte completo y quieto. Revisa que la cámara vea tu ${articulacion.nombre} " +
+                            "y vuelve a intentarlo.",
+                    )
+                }
+            }
+        }
+    }
+
+    /** Cada cuadro analizado por la cámara (lo llama la vista, en el hilo principal). */
+    fun procesarPostura(postura: Postura) {
+        val analizadorCamara = analizadorPostura ?: return
+        val actual = _estado.value
+        if (!actual.usaCamara) return
+        val quieto = !sensor.hayAcelerometro || vigilante.quieto
+        when (actual.fase) {
+            FaseMedicion.CALIBRANDO -> {
+                if (analizadorCamara.calibrar(postura, quieto)) {
+                    trabajoEsperaCamara?.cancel()
+                    iniciarReloj()
+                    _estado.update {
+                        it.copy(
+                            fase = FaseMedicion.MIDIENDO,
+                            avisoCamara = AvisoCamara.NINGUNO,
+                            puntosResaltados = analizadorCamara.articulacion.puntosDe(analizadorCamara.lado),
+                        )
+                    }
+                } else if (analizadorCamara.aviso != actual.avisoCamara) {
+                    _estado.update { it.copy(avisoCamara = analizadorCamara.aviso) }
+                }
+            }
+            FaseMedicion.MIDIENDO -> {
+                analizadorCamara.procesar(postura, quieto)
+                publicarCamara(analizadorCamara)
+            }
+            else -> Unit
+        }
+    }
+
+    /** Igual que [publicar]: solo actualiza la pantalla cuando algo cambió de verdad. */
+    private fun publicarCamara(a: AnalizadorPostura) {
+        val actual = _estado.value
+        val puntos = a.articulacion.puntosDe(a.lado)
+        if (a.totalRepeticiones == actual.repeticiones && abs(a.anguloActual - actual.anguloActual) < 1f &&
+            a.aviso == actual.avisoCamara && puntos == actual.puntosResaltados
+        ) {
+            return
+        }
+        _estado.update {
+            it.copy(
+                repeticiones = a.totalRepeticiones,
+                anguloActual = a.anguloActual,
+                anguloMaximo = a.anguloMaximo,
+                rango = RangoArticular.clasificar(a.anguloActual, it.ejercicio?.anguloObjetivo),
+                avisoCamara = a.aviso,
+                puntosResaltados = puntos,
+            )
+        }
+    }
+
     // ---- Modo manual (sin acelerómetro) ----
 
     private fun comenzarManual() {
@@ -181,7 +343,8 @@ class EjercicioViewModel(
 
     /**
      * Detiene los sensores y guarda ÚNICAMENTE el resumen. Si se midió con
-     * sensores, también se envía al servidor (POST /resultados-ejercicio).
+     * sensores o con la cámara, también se envía al servidor
+     * (POST /resultados-ejercicio), con su método.
      */
     fun terminar() {
         detenerSensores()
@@ -195,10 +358,14 @@ class EjercicioViewModel(
             return
         }
 
-        _estado.update { it.copy(fase = FaseMedicion.TERMINADO, guardando = true, segundos = duracion) }
+        val camara = analizadorPostura.takeIf { actual.usaCamara }
+        _estado.update {
+            it.copy(fase = FaseMedicion.TERMINADO, guardando = true, segundos = duracion, verificacion = camara?.resultado())
+        }
         viewModelScope.launch {
             try {
-                val resultado = analizador.resultado(ejercicio.id, ejercicio.repeticionesTotales, duracion)
+                val resultado = camara?.resultadoEjercicio(ejercicio.id, ejercicio.repeticionesTotales, duracion)
+                    ?: analizador.resultado(ejercicio.id, ejercicio.repeticionesTotales, duracion)
                 val envio = repositorio.registrar(resultado)
                 _estado.update { it.copy(guardando = false, enviado = envio.enviada, detalleTecnico = envio.detalle) }
             } catch (e: CancellationException) {
@@ -224,6 +391,9 @@ class EjercicioViewModel(
                 enviado = null,
                 segundos = 0,
                 mensajeError = null,
+                avisoCamara = AvisoCamara.NINGUNO,
+                telefonoQuieto = true,
+                verificacion = null,
             )
         }
     }
@@ -243,9 +413,11 @@ class EjercicioViewModel(
         trabajoAcelerometro?.cancel()
         trabajoGiroscopio?.cancel()
         trabajoReloj?.cancel()
+        trabajoEsperaCamara?.cancel()
         trabajoAcelerometro = null
         trabajoGiroscopio = null
         trabajoReloj = null
+        trabajoEsperaCamara = null
         sensor.detener()
     }
 
@@ -257,5 +429,10 @@ class EjercicioViewModel(
     override fun onCleared() {
         detenerSensores()
         super.onCleared()
+    }
+
+    companion object {
+        /** Tiempo para apoyar el teléfono y colocarse frente a la cámara. */
+        const val ESPERA_MAXIMA_CAMARA_MS = 30_000L
     }
 }

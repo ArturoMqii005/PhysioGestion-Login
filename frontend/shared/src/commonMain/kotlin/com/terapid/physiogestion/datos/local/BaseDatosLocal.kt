@@ -11,7 +11,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** Versión del esquema. Se incrementa cada vez que cambia alguna tabla. */
-const val VERSION_ESQUEMA = 2
+const val VERSION_ESQUEMA = 3
 
 /**
  * ALMACENAMIENTO LOCAL · BASE DE DATOS SQLite dentro del teléfono (RI-06).
@@ -60,6 +60,15 @@ class BaseDatosLocal(
             if ("servidor_id" !in columnas) c.execSQL("ALTER TABLE sesion ADD COLUMN servidor_id INTEGER")
             if ("detalle_ejercicios" !in columnas) {
                 c.execSQL("ALTER TABLE sesion ADD COLUMN detalle_ejercicios TEXT NOT NULL DEFAULT '[]'")
+            }
+        }
+        if (version < 3) {
+            // Versión 3 (verificación con cámara): cada medición guarda cómo se midió.
+            val columnas = c.prepare("PRAGMA table_info(medicion_ejercicio)").use { st ->
+                buildList { while (st.step()) add(st.getText(1)) }
+            }
+            if ("metodo" !in columnas) {
+                c.execSQL("ALTER TABLE medicion_ejercicio ADD COLUMN metodo TEXT NOT NULL DEFAULT 'SENSORES'")
             }
         }
         c.execSQL("PRAGMA user_version = $VERSION_ESQUEMA")
@@ -117,7 +126,8 @@ class BaseDatosLocal(
                 angulo_maximo         INTEGER NOT NULL,
                 angulo_objetivo       INTEGER,
                 duracion_segundos     INTEGER NOT NULL,
-                enviado               INTEGER NOT NULL DEFAULT 0
+                enviado               INTEGER NOT NULL DEFAULT 0,
+                metodo                TEXT    NOT NULL DEFAULT 'SENSORES'
             )
             """.trimIndent()
         )

@@ -108,13 +108,18 @@ private fun DatosSesion(sesion: SesionTerapia, nombreEjercicio: (Int) -> String)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(nombreEjercicio(e.idEjercicio), modifier = Modifier.weight(1f))
                 Text(
-                    "${e.repeticionesRealizadas} reps" + (e.anguloMaximo?.let { " · $it°" } ?: ""),
-                    color = if (e.verificado) ColoresPhysio.AzulClaro else MaterialTheme.colorScheme.onSurfaceVariant,
+                    "${e.repeticionesRealizadas} reps" + (e.anguloMaximo?.let { " · $it°" } ?: "") +
+                        if (e.verificadoConCamara) " · cámara" else "",
+                    color = when {
+                        e.verificadoConCamara -> ColoresPhysio.Exito
+                        e.verificado -> ColoresPhysio.AzulClaro
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 )
             }
         }
         Text(
-            "En azul: medido con los sensores del teléfono.",
+            "En azul: medido con los sensores del teléfono. En verde: verificado con la cámara.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

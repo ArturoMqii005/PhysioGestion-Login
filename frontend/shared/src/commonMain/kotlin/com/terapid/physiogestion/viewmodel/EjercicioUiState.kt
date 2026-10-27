@@ -1,7 +1,11 @@
 package com.terapid.physiogestion.viewmodel
 
 import com.terapid.physiogestion.modelo.Ejercicio
+import com.terapid.physiogestion.modelo.MetodoMedicion
 import com.terapid.physiogestion.servicio.movimiento.RangoArticular
+import com.terapid.physiogestion.servicio.postura.AvisoCamara
+import com.terapid.physiogestion.servicio.postura.PuntoCuerpo
+import com.terapid.physiogestion.servicio.postura.ResultadoVerificacion
 
 /** Fase en la que está la medición (las cuatro fases de la gestión de sensores). */
 enum class FaseMedicion {
@@ -39,8 +43,28 @@ data class EjercicioUiState(
     val enviado: Boolean? = null,
     val segundos: Int = 0,
     val detalleTecnico: String? = null,
+    // ---- Verificación con cámara (RFN-27) ----
+    /** Cómo se va a medir: sensores (teléfono sujeto al cuerpo) o cámara (teléfono apoyado). */
+    val metodo: MetodoMedicion = MetodoMedicion.SENSORES,
+    /** true si el ejercicio admite cámara, el dispositivo la tiene y hay una articulación que medir. */
+    val camaraDisponible: Boolean = false,
+    val usarFrontal: Boolean = true,
+    val avisoCamara: AvisoCamara = AvisoCamara.NINGUNO,
+    /** Lo vigila el acelerómetro mientras mide la cámara. */
+    val telefonoQuieto: Boolean = true,
+    /** Puntos del cuerpo que se dibujan resaltados (los de la articulación que se mide). */
+    val puntosResaltados: Set<PuntoCuerpo> = emptySet(),
+    /** Resumen de la verificación con cámara, al terminar. */
+    val verificacion: ResultadoVerificacion? = null,
 ) {
-    val modoManual: Boolean get() = !hayAcelerometro
+    val usaCamara: Boolean get() = metodo == MetodoMedicion.CAMARA
+
+    /** Sin acelerómetro y sin cámara se cuenta a mano. */
+    val modoManual: Boolean get() = !hayAcelerometro && !usaCamara
+
+    /** La cámara se muestra mientras calibra y mientras mide (sin reiniciarse entre una fase y otra). */
+    val mostrarCamara: Boolean
+        get() = usaCamara && (fase == FaseMedicion.CALIBRANDO || fase == FaseMedicion.MIDIENDO)
 
     val objetivo: Int get() = ejercicio?.repeticionesTotales ?: 0
 

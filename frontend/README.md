@@ -8,6 +8,7 @@ Una sola base de código para Android, escritorio e iOS. La arquitectura es **MV
 - **Consumo de API** con Ktor Client y kotlinx.serialization, con los cinco métodos HTTP (GET, POST, PUT, PATCH, DELETE).
 - **Almacenamiento local** en cuatro formas: preferencias, base de datos SQLite, archivos y almacén cifrado.
 - **Sensores:** acelerómetro y giroscopio para contar repeticiones y medir el ángulo; contador de pasos.
+- **Verificación con cámara (Android):** CameraX + ML Kit detectan la postura para que una repetición solo cuente si de verdad se hizo.
 - **Variables de entorno:** ambiente, servidor y versión en un solo lugar (`Entorno`), y la IP del backend en `local.properties`.
 
 ## Estructura de carpetas
@@ -31,13 +32,14 @@ frontend/
     │       ├── viewmodel/            VIEW MODEL de cada pantalla
     │       ├── modelo/               MODELO: DTOs @Serializable (Usuario, Rol, Cita, Rutina, SesionTerapia…)
     │       ├── servicio/             Reglas de negocio: cumplimiento, dolor, puntos, semáforo, racha, pasos
-    │       │   └── movimiento/       PROCESAMIENTO de sensores: AnalizadorMovimiento, RangoArticular
+    │       │   ├── movimiento/       PROCESAMIENTO de sensores: AnalizadorMovimiento, RangoArticular
+    │       │   └── postura/          Verificación con cámara: Postura, AnalizadorPostura, VigilanteQuietud
     │       ├── datos/                Repositorios y GestorSesion
     │       │   ├── remoto/           Ktor Client: ClienteHttp, SesionApi (5 métodos), EjercicioApi, errores
     │       │   ├── local/            SQLite, preferencias, archivos, almacén cifrado, sesión guardada
     │       │   └── sensores/         SensorMovimiento, SensorPasos (expect), LecturaEje, FiltroSenal
     │       ├── dependencias/         Crea y conecta los objetos (inyección manual)
-    │       └── plataforma/           Entorno, Plataforma, permisos y las demás declaraciones expect
+    │       └── plataforma/           Entorno, Plataforma, permisos, cámara y las demás declaraciones expect
     ├── androidMain/            CÓDIGO ESPECÍFICO de Android (actual)
     ├── jvmMain/                CÓDIGO ESPECÍFICO de escritorio (actual)
     ├── iosMain/                CÓDIGO ESPECÍFICO de iOS (actual)
@@ -85,7 +87,7 @@ En el ambiente de desarrollo, cada pantalla muestra abajo el método, la ruta y 
 | Tipo | Para qué | Archivo común | Android | Escritorio | iOS |
 |---|---|---|---|---|---|
 | Preferencias | racha, servidor recordado, cámara, base del contador de pasos | `AlmacenPreferencias` + `ClavesAlmacen` | SharedPreferences | java.util.prefs | NSUserDefaults |
-| Base de datos | rutina sin conexión, sesiones, cola de envío, mediciones | `BaseDatosLocal` (versión 2, con migración) | SQLite | SQLite | SQLite |
+| Base de datos | rutina sin conexión, sesiones, cola de envío, mediciones | `BaseDatosLocal` (versión 3, con migración) | SQLite | SQLite | SQLite |
 | Archivos | caché de videos de los ejercicios (límite 200 MB) | `AlmacenArchivos` | cacheDir | `~/.physiogestion/cache` | Caches |
 | Cifrado | token de la sesión | `AlmacenSeguro` + `PersistenciaSesion` | Android Keystore (AES-GCM) | preferencias | NSUserDefaults (Llavero pendiente) |
 
@@ -103,6 +105,24 @@ Solo viaja al servidor el resumen (6 campos) con `POST /resultados-ejercicio`. E
 **⋯ Extended controls → Virtual sensors**, girando el dispositivo y regresándolo.
 
 El contador de pasos (`SensorPasos`) aparece en el inicio del paciente; en Android pide `ACTIVITY_RECOGNITION`.
+
+### Verificación con cámara (anti-trampa)
+
+Con el acelerómetro, mover el teléfono con la mano cuenta como repetición. En los ejercicios marcados
+`admiteVerificacionPorCamara` (sentadilla y puente de glúteo) el paciente puede elegir **Cámara**: el teléfono se
+apoya de lado a unos 2 m y ML Kit detecta el esqueleto en cada cuadro, dentro del teléfono (no se graba ni se envía video).
+
+| Regla | Dónde |
+|---|---|
+| Se mide la articulación del ejercicio con tres puntos (cadera-rodilla-tobillo, hombro-cadera-rodilla o rodilla-tobillo-pie) y el lado que mejor se ve | `servicio/postura/Postura.kt` |
+| Calibración: la persona debe verse completa y quieta 1.5 s (en sentadilla, de pie) | `AnalizadorPostura.calibrar` |
+| Solo cuenta si se ve a la persona; perderla más de 1 s a mitad de la repetición la descarta | `AnalizadorPostura.procesar` |
+| El acelerómetro vigila que el teléfono esté apoyado; si se mueve, la repetición se descarta | `VigilanteQuietud` |
+| Repeticiones de menos de 0.7 s y saltos imposibles del detector no cuentan | `AnalizadorPostura` |
+| El resumen viaja con `metodo = CAMARA` y el fisioterapeuta lo ve como «verificado con cámara» | `MetodoMedicion`, `SensorRepositorio` |
+
+La vista de la cámara (`VistaCamaraPostura`) es `expect/actual`: en Android usa CameraX + ML Kit Pose Detection;
+en escritorio e iOS muestra que no está disponible.
 
 ## Variables de entorno
 
@@ -128,4 +148,4 @@ El contador de pasos (`SensorPasos`) aparece en el inicio del paciente; en Andro
 1. Encender el backend (ver `../backend/README.md`).
 2. En Android Studio elegir **androidApp**, elegir un emulador y presionar Run.
 3. Escritorio: `gradlew.bat :desktopApp:run`.
-4. Pruebas: `gradlew.bat :shared:jvmTest` (56 pruebas).
+4. Pruebas: `gradlew.bat :shared:jvmTest` (75 pruebas).

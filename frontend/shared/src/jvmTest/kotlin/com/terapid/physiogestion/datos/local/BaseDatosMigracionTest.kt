@@ -4,6 +4,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import com.terapid.physiogestion.modelo.Dificultad
 import com.terapid.physiogestion.modelo.MedicionEjercicio
+import com.terapid.physiogestion.modelo.MetodoMedicion
 import com.terapid.physiogestion.modelo.RegistroSesion
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -69,6 +70,41 @@ class BaseDatosMigracionTest {
         assertEquals(1, almacen.medicionesDelDia("2026-10-14").size)
         val version = bd.usar { c -> c.prepare("PRAGMA user_version").use { it.step(); it.getLong(0).toInt() } }
         assertEquals(VERSION_ESQUEMA, version)
+        bd.cerrar()
+    }
+
+    @Test
+    fun migraLaVersionDosAgregandoElMetodoDeMedicion() = runBlocking {
+        // Base de la versión 1.1 (esquema 2): medicion_ejercicio sin la columna metodo.
+        BundledSQLiteDriver().open(archivo.absolutePath).use { c ->
+            c.execSQL(
+                """
+                CREATE TABLE medicion_ejercicio (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, ejercicio_id INTEGER NOT NULL, clave_dia TEXT NOT NULL,
+                    medido_en INTEGER NOT NULL, repeticiones INTEGER NOT NULL, repeticiones_objetivo INTEGER NOT NULL,
+                    angulo_maximo INTEGER NOT NULL, angulo_objetivo INTEGER, duracion_segundos INTEGER NOT NULL,
+                    enviado INTEGER NOT NULL DEFAULT 0
+                )
+                """.trimIndent()
+            )
+            c.execSQL(
+                "INSERT INTO medicion_ejercicio (ejercicio_id, clave_dia, medido_en, repeticiones, repeticiones_objetivo, " +
+                    "angulo_maximo, angulo_objetivo, duracion_segundos) VALUES (1, '2026-10-26', 1, 28, 30, 88, 90, 130)"
+            )
+            c.execSQL("PRAGMA user_version = 2")
+        }
+
+        val bd = BaseDatosLocal(archivo.absolutePath)
+        val almacen = AlmacenamientoLocal(bd)
+        assertEquals(MetodoMedicion.SENSORES, almacen.medicionesDelDia("2026-10-26").single().metodo)
+
+        almacen.insertarMedicion(
+            MedicionEjercicio(idEjercicio = 1, claveDia = "2026-10-27", medidoEn = 2, repeticiones = 30, repeticionesObjetivo = 30,
+                anguloMaximo = 93, anguloObjetivo = 90, duracionSegundos = 150, metodo = MetodoMedicion.CAMARA)
+        )
+        assertEquals(MetodoMedicion.CAMARA, almacen.medicionesDelDia("2026-10-27").single().metodo)
+        val version = bd.usar { c -> c.prepare("PRAGMA user_version").use { it.step(); it.getLong(0).toInt() } }
+        assertEquals(3, version)
         bd.cerrar()
     }
 }

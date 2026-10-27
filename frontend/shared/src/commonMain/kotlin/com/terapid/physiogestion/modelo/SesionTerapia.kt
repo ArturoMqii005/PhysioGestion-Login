@@ -12,14 +12,20 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class Semaforo { VERDE, AMARILLO, ROJO }
 
-/** Detalle de un ejercicio dentro de la sesión. [verificado] = lo midieron los sensores. */
+/**
+ * Detalle de un ejercicio dentro de la sesión. [verificado] = lo midió el
+ * teléfono; [metodo] dice si fue con sensores o verificado con la cámara.
+ */
 @Serializable
 data class EjercicioRealizado(
     val idEjercicio: Int,
     val repeticionesRealizadas: Int,
     val anguloMaximo: Int? = null,
     val verificado: Boolean = false,
-)
+    val metodo: MetodoMedicion? = null,
+) {
+    val verificadoConCamara: Boolean get() = metodo == MetodoMedicion.CAMARA
+}
 
 /** Cuerpo de POST /sesiones. No lleva id: lo asigna el servidor. */
 @Serializable
@@ -81,6 +87,7 @@ data class ResultadoEjercicioSolicitud(
     val anguloMaximo: Int,
     val anguloObjetivo: Int? = null,
     val duracionSegundos: Int,
+    val metodo: MetodoMedicion = MetodoMedicion.SENSORES,
 )
 
 /** Página del historial: las sesiones y el total que informa el encabezado X-Total-Count. */

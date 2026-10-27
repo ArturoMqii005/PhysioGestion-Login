@@ -148,8 +148,10 @@ private fun FilaSesion(sesion: SesionTerapia, alTocar: () -> Unit) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Etiqueta(sesion.semaforo.etiqueta, sesion.semaforo.color)
-            val medidos = sesion.ejercicios.count { it.verificado }
-            if (medidos > 0) Etiqueta("$medidos con sensores", ColoresPhysio.AzulClaro)
+            val conCamara = sesion.ejercicios.count { it.verificadoConCamara }
+            val conSensores = sesion.ejercicios.count { it.verificado } - conCamara
+            if (conCamara > 0) Etiqueta("$conCamara con cámara", ColoresPhysio.Exito)
+            if (conSensores > 0) Etiqueta("$conSensores con sensores", ColoresPhysio.AzulClaro)
         }
         sesion.observacion?.let {
             Text("“$it”", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

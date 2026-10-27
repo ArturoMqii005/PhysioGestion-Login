@@ -19,7 +19,8 @@ data class EnvioMedicion(
 )
 
 /**
- * Decide qué se hace con el resultado de un ejercicio medido con sensores.
+ * Decide qué se hace con el resultado de un ejercicio medido con sensores o
+ * verificado con la cámara (el método viaja con el resumen).
  *
  * NO TODOS LOS DATOS SE ENVÍAN: de miles de lecturas queda un resumen de
  * seis campos. Primero se guarda en el teléfono y después se intenta enviar;
@@ -42,6 +43,7 @@ class SensorRepositorio(
             anguloMaximo = resultado.anguloMaximo.roundToInt(),
             anguloObjetivo = resultado.anguloObjetivo,
             duracionSegundos = resultado.duracionSegundos,
+            metodo = resultado.metodo,
         )
         val guardada = medicion.copy(id = almacenamiento.insertarMedicion(medicion))
         return try {
@@ -91,4 +93,5 @@ private fun MedicionEjercicio.aSolicitud() = ResultadoEjercicioSolicitud(
     anguloMaximo = anguloMaximo,
     anguloObjetivo = anguloObjetivo,
     duracionSegundos = duracionSegundos,
+    metodo = metodo,
 )

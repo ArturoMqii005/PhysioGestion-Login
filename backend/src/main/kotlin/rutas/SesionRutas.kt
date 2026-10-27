@@ -91,7 +91,7 @@ fun Route.rutasSesiones(servicio: SesionesServicio) {
         }
     }
 
-    // Resultados medidos con el acelerómetro y el giroscopio (RFN-26).
+    // Resultados medidos con el acelerómetro y el giroscopio (RFN-26) o verificados con la cámara (RFN-27).
     route("/resultados-ejercicio") {
         post {
             val usuario = call.exigirRol(Rol.PACIENTE)

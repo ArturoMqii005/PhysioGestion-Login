@@ -1,6 +1,7 @@
 package com.terapid.physiogestion.servicios
 
 import com.terapid.physiogestion.modelos.CrearSesionSolicitud
+import com.terapid.physiogestion.modelos.MetodoMedicion
 import com.terapid.physiogestion.modelos.ModificarSesionSolicitud
 import com.terapid.physiogestion.modelos.ReemplazarSesionSolicitud
 import com.terapid.physiogestion.modelos.ResultadoEjercicio
@@ -152,12 +153,14 @@ class SesionesServicio(
 
     // ---------------------------------------------------------------- Sensores
 
-    /** Guarda el resumen de un ejercicio medido con sensores (RFN-26). */
+    /** Guarda el resumen de un ejercicio medido con sensores (RFN-26) o verificado con cámara (RFN-27). */
     fun registrarResultado(pacienteId: Int, s: ResultadoEjercicioSolicitud): ResultadoEjercicio {
         val rutina = rutinaDelPaciente(pacienteId)
             ?: throw DatosNoProcesables("Este paciente aún no tiene una rutina asignada.")
-        if (rutina.ejercicios.none { it.id == s.idEjercicio }) {
-            throw DatosNoProcesables("El ejercicio ${s.idEjercicio} no está en tu rutina.")
+        val ejercicio = rutina.ejercicios.firstOrNull { it.id == s.idEjercicio }
+            ?: throw DatosNoProcesables("El ejercicio ${s.idEjercicio} no está en tu rutina.")
+        if (s.metodo == MetodoMedicion.CAMARA && !ejercicio.admiteVerificacionPorCamara) {
+            throw DatosNoProcesables("El ejercicio ${s.idEjercicio} no admite verificación con cámara.")
         }
         if (s.repeticiones < 0 || s.repeticionesObjetivo <= 0 || s.anguloMaximo !in 0..360 || s.duracionSegundos < 0) {
             throw DatosNoProcesables("Los valores medidos están fuera de rango.")
@@ -174,6 +177,7 @@ class SesionesServicio(
             anguloObjetivo = s.anguloObjetivo,
             duracionSegundos = s.duracionSegundos,
             cumpleObjetivo = cumple,
+            metodo = s.metodo,
         )
         resultados[resultado.id] = resultado
         return resultado

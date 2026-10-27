@@ -143,6 +143,7 @@ fun NavegacionPrincipal() {
                         rutinas = Dependencias.rutinas,
                         repositorio = Dependencias.sensores,
                         sensor = Dependencias.nuevoSensorMovimiento(),
+                        permisos = Dependencias.permisos,
                     )
                 },
                 alRegresar = { navegador.popBackStack() },

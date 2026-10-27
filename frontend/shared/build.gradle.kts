@@ -53,6 +53,12 @@ kotlin {
             implementation(libs.compose.uiTooling)
             // Motor HTTP especifico de Android
             implementation(libs.ktor.client.okhttp)
+            // Verificacion con camara: CameraX (imagen) + ML Kit (deteccion de postura en el telefono)
+            implementation(libs.camerax.core)
+            implementation(libs.camerax.camera2)
+            implementation(libs.camerax.lifecycle)
+            implementation(libs.camerax.view)
+            implementation(libs.mlkit.pose)
         }
         jvmMain.dependencies {
             // Motor HTTP especifico de escritorio (JVM)

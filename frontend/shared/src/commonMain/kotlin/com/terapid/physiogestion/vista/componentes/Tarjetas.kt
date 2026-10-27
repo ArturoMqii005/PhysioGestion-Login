@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.terapid.physiogestion.modelo.Ejercicio
 import com.terapid.physiogestion.modelo.MedicionEjercicio
+import com.terapid.physiogestion.modelo.MetodoMedicion
 import com.terapid.physiogestion.vista.tema.ColoresPhysio
 
 /** Tarjeta base con el estilo de la app. */
@@ -126,8 +127,10 @@ fun TarjetaEjercicio(
             if (ejercicio.admiteVerificacionPorCamara) Etiqueta("Verificable con cámara", ColoresPhysio.AzulClaro)
         }
         if (medicion != null) {
+            val conCamara = medicion.metodo == MetodoMedicion.CAMARA
             Etiqueta(
-                "Medido hoy: ${medicion.repeticiones} reps · ${medicion.anguloMaximo}°" +
+                (if (conCamara) "Verificado con cámara: " else "Medido hoy: ") +
+                    "${medicion.repeticiones} reps · ${medicion.anguloMaximo}°" +
                     if (medicion.cumpleObjetivo) " · objetivo cumplido" else "",
                 if (medicion.cumpleObjetivo) ColoresPhysio.Exito else ColoresPhysio.Pendiente,
             )
@@ -135,7 +138,8 @@ fun TarjetaEjercicio(
         if (alMedir != null && ejercicio.medibleConSensores) {
             OutlinedButton(onClick = alMedir, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 val angulo = ejercicio.anguloObjetivo?.let { " · objetivo $it°" } ?: ""
-                Text("Medir con sensores$angulo", color = ColoresPhysio.Turquesa)
+                val como = if (ejercicio.admiteVerificacionPorCamara) "Medir o verificar" else "Medir con sensores"
+                Text("$como$angulo", color = ColoresPhysio.Turquesa)
             }
         }
     }

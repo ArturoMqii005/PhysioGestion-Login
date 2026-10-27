@@ -5,6 +5,7 @@ import com.terapid.physiogestion.modelos.Dificultad
 import com.terapid.physiogestion.modelos.EjercicioRealizado
 import com.terapid.physiogestion.modelos.LoginRespuesta
 import com.terapid.physiogestion.modelos.LoginSolicitud
+import com.terapid.physiogestion.modelos.MetodoMedicion
 import com.terapid.physiogestion.modelos.ModificarSesionSolicitud
 import com.terapid.physiogestion.modelos.ReemplazarSesionSolicitud
 import com.terapid.physiogestion.modelos.ResultadoEjercicio
@@ -209,5 +210,41 @@ class SesionesTest {
             setBody(ResultadoEjercicioSolicitud(99, 5, 10, 40, null, 20))
         }
         assertEquals(HttpStatusCode.UnprocessableEntity, fuera.status) // el ejercicio 99 no está en su rutina
+    }
+
+    @Test
+    fun `el resultado verificado con camara conserva su metodo y solo se acepta donde aplica`() = testApplication {
+        configure()
+        val cliente = clienteJson()
+        val token = cliente.token("paciente", "Paciente2026")
+        // Ejercicio 1 (sentadilla): admite verificación con cámara.
+        val respuesta = cliente.post("/api/v1/resultados-ejercicio") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(ResultadoEjercicioSolicitud(1, 10, 30, 93, 90, 60, metodo = MetodoMedicion.CAMARA))
+        }
+        assertEquals(HttpStatusCode.Created, respuesta.status)
+        assertEquals(MetodoMedicion.CAMARA, respuesta.body<ResultadoEjercicio>().metodo)
+
+        // Ejercicio 3 (elevación de talones): no admite cámara.
+        val sinCamara = cliente.post("/api/v1/resultados-ejercicio") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(ResultadoEjercicioSolicitud(3, 15, 45, 22, 20, 60, metodo = MetodoMedicion.CAMARA))
+        }
+        assertEquals(HttpStatusCode.UnprocessableEntity, sinCamara.status)
+
+        // Una app anterior que no manda el método registra SENSORES.
+        val anterior = cliente.post("/api/v1/resultados-ejercicio") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody("""{"idEjercicio":2,"repeticiones":12,"repeticionesObjetivo":36,"anguloMaximo":30,"duracionSegundos":50}""")
+        }
+        assertEquals(HttpStatusCode.Created, anterior.status)
+        assertEquals(MetodoMedicion.SENSORES, anterior.body<ResultadoEjercicio>().metodo)
+
+        val fisio = cliente.token("fisio", "Fisio2026")
+        val lista = cliente.get("/api/v1/resultados-ejercicio") { bearerAuth(fisio) }.body<List<ResultadoEjercicio>>()
+        assertTrue(lista.any { it.idEjercicio == 1 && it.metodo == MetodoMedicion.CAMARA })
     }
 }

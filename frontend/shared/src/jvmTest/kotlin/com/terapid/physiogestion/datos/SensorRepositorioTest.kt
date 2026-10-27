@@ -3,6 +3,7 @@ package com.terapid.physiogestion.datos
 import com.terapid.physiogestion.datos.local.AlmacenamientoLocal
 import com.terapid.physiogestion.datos.local.BaseDatosLocal
 import com.terapid.physiogestion.datos.remoto.EjercicioApi
+import com.terapid.physiogestion.modelo.MetodoMedicion
 import com.terapid.physiogestion.modelo.Rol
 import com.terapid.physiogestion.modelo.Sesion
 import com.terapid.physiogestion.modelo.Usuario
@@ -76,5 +77,17 @@ class SensorRepositorioTest {
         hayConexion = true
         assertEquals(1, repositorio.enviarPendientes())
         assertTrue(almacenamiento.medicionesPendientes().isEmpty())
+    }
+
+    @Test
+    fun loVerificadoConCamaraConservaSuMetodoAunqueSeEnvieDespues() = runBlocking {
+        hayConexion = false
+        repositorio.registrar(resultado.copy(metodo = MetodoMedicion.CAMARA))
+        assertEquals(MetodoMedicion.CAMARA, repositorio.medicionesDeHoy()[1]?.metodo) // así se guardó en SQLite
+
+        hayConexion = true
+        assertEquals(1, repositorio.enviarPendientes())
+        val cuerpo = jsonPrueba.parseToJsonElement(cuerpos.single()).jsonObject
+        assertEquals("\"CAMARA\"", cuerpo["metodo"].toString())
     }
 }

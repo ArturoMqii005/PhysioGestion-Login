@@ -1,5 +1,7 @@
 package com.terapid.physiogestion.servicio.movimiento
 
+import com.terapid.physiogestion.modelo.MetodoMedicion
+
 /**
  * Una repetición detectada. Es el resultado de interpretar la señal, no la
  * señal misma: de cientos de lecturas quedan tres números.
@@ -19,6 +21,7 @@ data class ResultadoEjercicio(
     val anguloMaximo: Float,
     val anguloObjetivo: Int?,
     val duracionSegundos: Int,
+    val metodo: MetodoMedicion = MetodoMedicion.SENSORES,
 ) {
     /** Porcentaje de repeticiones completadas, sin pasar de 100. */
     val porcentajeRepeticiones: Int

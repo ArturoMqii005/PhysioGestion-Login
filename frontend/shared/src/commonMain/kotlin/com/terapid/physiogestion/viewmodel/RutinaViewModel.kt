@@ -154,11 +154,11 @@ class RutinaViewModel(
                     dolorSesionAnterior = repositorio.ultimoDolorRegistrado(),
                     puntosPreviosDelDia = repositorio.puntosDelDia(dia),
                 )
-                // Detalle por ejercicio: lo medido con sensores va como verificado.
+                // Detalle por ejercicio: lo medido va como verificado, con su método (sensores o cámara).
                 val detalle = rutina.ejercicios.filter { it.id in actual.completados }.map { e ->
                     val medido = actual.mediciones[e.id]
                     if (medido != null) {
-                        EjercicioRealizado(e.id, medido.repeticiones, medido.anguloMaximo, verificado = true)
+                        EjercicioRealizado(e.id, medido.repeticiones, medido.anguloMaximo, verificado = true, metodo = medido.metodo)
                     } else {
                         EjercicioRealizado(e.id, e.repeticionesTotales)
                     }

@@ -11,6 +11,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class Dificultad { BAJA, MEDIA, ALTA }
 
+/**
+ * Cómo se midió un ejercicio (mismos nombres que en la app). CAMARA indica
+ * que además lo verificó la cámara con detección de postura (RFN-27).
+ */
+@Serializable
+enum class MetodoMedicion { SENSORES, CAMARA }
+
 /** Semáforo de evolución (RFN-47): VERDE cumple, AMARILLO cumplimiento bajo, ROJO dolor alto. */
 @Serializable
 enum class Semaforo { VERDE, AMARILLO, ROJO }
@@ -25,6 +32,8 @@ data class EjercicioRealizado(
     val repeticionesRealizadas: Int,
     val anguloMaximo: Int? = null,
     val verificado: Boolean = false,
+    /** null si el paciente solo lo marcó como hecho. */
+    val metodo: MetodoMedicion? = null,
 )
 
 /** Cuerpo de POST /api/v1/sesiones. No lleva id: el servidor lo asigna. */
@@ -88,9 +97,11 @@ data class ResultadoEjercicioSolicitud(
     val anguloMaximo: Int,
     val anguloObjetivo: Int? = null,
     val duracionSegundos: Int,
+    /** Las versiones anteriores de la app no lo mandan: se asume SENSORES. */
+    val metodo: MetodoMedicion = MetodoMedicion.SENSORES,
 )
 
-/** Resultado de sensores ya registrado en el servidor. */
+/** Resultado de sensores o de cámara ya registrado en el servidor. */
 @Serializable
 data class ResultadoEjercicio(
     val id: Int,
@@ -102,4 +113,5 @@ data class ResultadoEjercicio(
     val anguloObjetivo: Int? = null,
     val duracionSegundos: Int,
     val cumpleObjetivo: Boolean,
+    val metodo: MetodoMedicion = MetodoMedicion.SENSORES,
 )

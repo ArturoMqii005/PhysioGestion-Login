@@ -4,6 +4,7 @@ import androidx.sqlite.SQLiteStatement
 import com.terapid.physiogestion.modelo.Dificultad
 import com.terapid.physiogestion.modelo.EjercicioRealizado
 import com.terapid.physiogestion.modelo.MedicionEjercicio
+import com.terapid.physiogestion.modelo.MetodoMedicion
 import com.terapid.physiogestion.modelo.RegistroSesion
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -140,8 +141,8 @@ class AlmacenamientoLocal(
         c.prepare(
             """
             INSERT INTO medicion_ejercicio (ejercicio_id, clave_dia, medido_en, repeticiones, repeticiones_objetivo,
-                angulo_maximo, angulo_objetivo, duracion_segundos, enviado)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                angulo_maximo, angulo_objetivo, duracion_segundos, enviado, metodo)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent()
         ).use { st ->
             st.bindLong(1, m.idEjercicio.toLong())
@@ -153,6 +154,7 @@ class AlmacenamientoLocal(
             if (m.anguloObjetivo != null) st.bindLong(7, m.anguloObjetivo.toLong()) else st.bindNull(7)
             st.bindLong(8, m.duracionSegundos.toLong())
             st.bindLong(9, if (m.enviado) 1L else 0L)
+            st.bindText(10, m.metodo.name)
             st.step()
         }
         c.prepare("SELECT last_insert_rowid()").use { st ->
@@ -239,6 +241,9 @@ class AlmacenamientoLocal(
             anguloObjetivo = if (isNull(indiceObjetivo)) null else getLong(indiceObjetivo).toInt(),
             duracionSegundos = entero("duracion_segundos").toInt(),
             enviado = entero("enviado") == 1L,
+            metodo = columnas.indexOf("metodo").takeIf { it >= 0 && !isNull(it) }
+                ?.let { indice -> MetodoMedicion.entries.firstOrNull { it.name == getText(indice) } }
+                ?: MetodoMedicion.SENSORES,
         )
     }
 }
