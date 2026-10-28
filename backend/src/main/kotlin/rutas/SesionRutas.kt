@@ -2,6 +2,7 @@ package com.terapid.physiogestion.rutas
 
 import com.terapid.physiogestion.modelos.CrearSesionSolicitud
 import com.terapid.physiogestion.modelos.ModificarSesionSolicitud
+import com.terapid.physiogestion.modelos.PruebaEscalerasSolicitud
 import com.terapid.physiogestion.modelos.ReemplazarSesionSolicitud
 import com.terapid.physiogestion.modelos.ResultadoEjercicioSolicitud
 import com.terapid.physiogestion.modelos.Rol
@@ -102,6 +103,20 @@ fun Route.rutasSesiones(servicio: SesionesServicio) {
         get {
             val usuario = call.exigirRol(Rol.PACIENTE, Rol.FISIOTERAPEUTA)
             call.respond(servicio.resultadosDe(call.pacientesVisibles(usuario, servicio)))
+        }
+    }
+
+    // Prueba de escaleras medida con el barómetro y el contador de pasos.
+    route("/pruebas-escaleras") {
+        post {
+            val usuario = call.exigirRol(Rol.PACIENTE)
+            val pacienteId = usuario.pacienteId ?: throw AccesoDenegado("Tu cuenta no está ligada a un paciente.")
+            val prueba = servicio.registrarPruebaEscaleras(pacienteId, call.receive<PruebaEscalerasSolicitud>())
+            call.respond(HttpStatusCode.Created, prueba)
+        }
+        get {
+            val usuario = call.exigirRol(Rol.PACIENTE, Rol.FISIOTERAPEUTA)
+            call.respond(servicio.pruebasEscalerasDe(call.pacientesVisibles(usuario, servicio)))
         }
     }
 }

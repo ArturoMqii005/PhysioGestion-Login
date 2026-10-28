@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.terapid.physiogestion.modelo.EstadoCita
+import com.terapid.physiogestion.modelo.PruebaEscalerasRegistrada
 import com.terapid.physiogestion.modelo.SesionTerapia
 import com.terapid.physiogestion.modelo.fechaIsoLegible
 import com.terapid.physiogestion.modelo.Usuario
@@ -92,9 +93,37 @@ fun FisioterapeutaPantalla(
                         }
                         else -> items(estado.seguimiento, key = { "sesion-${it.id}" }) { TarjetaSeguimiento(it) }
                     }
+
+                    // Prueba de escaleras (barómetro): avance hacia la meta funcional.
+                    if (estado.escaleras.isNotEmpty()) {
+                        item {
+                            Text(
+                                "Pruebas de escaleras",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(top = 8.dp),
+                            )
+                        }
+                        items(estado.escaleras.take(6), key = { "escaleras-${it.id}" }) { TarjetaEscaleras(it) }
+                    }
                 }
             }
         }
+    }
+}
+
+/** Una prueba de escaleras: cuánto subió el paciente y a qué ritmo. */
+@Composable
+private fun TarjetaEscaleras(prueba: PruebaEscalerasRegistrada) {
+    TarjetaPhysio(borde = ColoresPhysio.AzulClaro) {
+        Text(prueba.paciente.ifBlank { "Paciente ${prueba.pacienteId}" }, style = MaterialTheme.typography.titleSmall)
+        val decimas = (prueba.metrosPorMinuto * 10).toInt()
+        Text(
+            "${fechaIsoLegible(prueba.fecha)} · ${prueba.pisos} ${if (prueba.pisos == 1) "piso" else "pisos"} " +
+                "(${prueba.alturaSubidaCm / 100}.${(prueba.alturaSubidaCm % 100) / 10} m) en ${prueba.duracionSegundos} s",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Etiqueta("Ritmo: ${decimas / 10}.${decimas % 10} m/min", ColoresPhysio.AzulClaro)
     }
 }
 

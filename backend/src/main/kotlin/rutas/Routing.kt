@@ -30,6 +30,8 @@ import io.ktor.server.routing.routing
  *  DELETE /api/v1/sesiones/{id}            PACIENTE -> 204 No Content
  *  POST   /api/v1/resultados-ejercicio     PACIENTE (resumen medido con sensores o con cámara)
  *  GET    /api/v1/resultados-ejercicio     PACIENTE, FISIOTERAPEUTA
+ *  POST   /api/v1/pruebas-escaleras        PACIENTE (barómetro + contador de pasos)
+ *  GET    /api/v1/pruebas-escaleras        PACIENTE (las suyas), FISIOTERAPEUTA (sus pacientes)
  */
 fun Application.configureRouting(
     almacen: AlmacenJson,

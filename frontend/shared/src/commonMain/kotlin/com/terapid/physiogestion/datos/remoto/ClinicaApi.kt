@@ -1,6 +1,7 @@
 package com.terapid.physiogestion.datos.remoto
 
 import com.terapid.physiogestion.modelo.Cita
+import com.terapid.physiogestion.modelo.PruebaEscalerasRegistrada
 import com.terapid.physiogestion.modelo.SesionTerapia
 import com.terapid.physiogestion.modelo.Usuario
 import io.ktor.client.HttpClient
@@ -28,4 +29,8 @@ class ClinicaApi(private val cliente: HttpClient) {
                 parameter("tamano", tamano)
             }.body()
         }
+
+    /** GET /api/v1/pruebas-escaleras (FISIOTERAPEUTA): pruebas de escaleras de sus pacientes. */
+    suspend fun pruebasEscaleras(token: String): List<PruebaEscalerasRegistrada> =
+        llamarApi { cliente.get(ConfiguracionApi.api("pruebas-escaleras")) { bearerAuth(token) }.body() }
 }

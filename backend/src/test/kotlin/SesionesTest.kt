@@ -7,6 +7,8 @@ import com.terapid.physiogestion.modelos.LoginRespuesta
 import com.terapid.physiogestion.modelos.LoginSolicitud
 import com.terapid.physiogestion.modelos.MetodoMedicion
 import com.terapid.physiogestion.modelos.ModificarSesionSolicitud
+import com.terapid.physiogestion.modelos.PruebaEscalerasRegistrada
+import com.terapid.physiogestion.modelos.PruebaEscalerasSolicitud
 import com.terapid.physiogestion.modelos.ReemplazarSesionSolicitud
 import com.terapid.physiogestion.modelos.ResultadoEjercicio
 import com.terapid.physiogestion.modelos.ResultadoEjercicioSolicitud
@@ -246,5 +248,33 @@ class SesionesTest {
         val fisio = cliente.token("fisio", "Fisio2026")
         val lista = cliente.get("/api/v1/resultados-ejercicio") { bearerAuth(fisio) }.body<List<ResultadoEjercicio>>()
         assertTrue(lista.any { it.idEjercicio == 1 && it.metodo == MetodoMedicion.CAMARA })
+    }
+
+    @Test
+    fun `la prueba de escaleras se registra y la ve el fisioterapeuta de ese paciente`() = testApplication {
+        configure()
+        val cliente = clienteJson()
+        val token = cliente.token("paciente", "Paciente2026")
+        val creada = cliente.post("/api/v1/pruebas-escaleras") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(PruebaEscalerasSolicitud("2026-10-28T17:30:00", alturaSubidaCm = 602, pisos = 2, escalonesEstimados = 35, pasos = 38, duracionSegundos = 45))
+        }
+        assertEquals(HttpStatusCode.Created, creada.status)
+        assertEquals("Jorge Ramírez Cruz", creada.body<PruebaEscalerasRegistrada>().paciente)
+
+        val imposible = cliente.post("/api/v1/pruebas-escaleras") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(PruebaEscalerasSolicitud("2026-10-28T17:31:00", alturaSubidaCm = -50, pisos = 0, escalonesEstimados = 0, duracionSegundos = 10))
+        }
+        assertEquals(HttpStatusCode.UnprocessableEntity, imposible.status)
+
+        val fisio = cliente.token("fisio", "Fisio2026")
+        val lista = cliente.get("/api/v1/pruebas-escaleras") { bearerAuth(fisio) }.body<List<PruebaEscalerasRegistrada>>()
+        assertEquals(listOf(602), lista.map { it.alturaSubidaCm })
+
+        val recepcion = cliente.token("recepcion", "Recepcion2026")
+        assertEquals(HttpStatusCode.Forbidden, cliente.get("/api/v1/pruebas-escaleras") { bearerAuth(recepcion) }.status)
     }
 }

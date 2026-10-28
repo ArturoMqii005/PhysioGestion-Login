@@ -3,6 +3,8 @@ package com.terapid.physiogestion.servicios
 import com.terapid.physiogestion.modelos.CrearSesionSolicitud
 import com.terapid.physiogestion.modelos.MetodoMedicion
 import com.terapid.physiogestion.modelos.ModificarSesionSolicitud
+import com.terapid.physiogestion.modelos.PruebaEscalerasRegistrada
+import com.terapid.physiogestion.modelos.PruebaEscalerasSolicitud
 import com.terapid.physiogestion.modelos.ReemplazarSesionSolicitud
 import com.terapid.physiogestion.modelos.ResultadoEjercicio
 import com.terapid.physiogestion.modelos.ResultadoEjercicioSolicitud
@@ -38,6 +40,9 @@ class SesionesServicio(
 
     private val resultados = ConcurrentHashMap<Int, ResultadoEjercicio>()
     private val siguienteResultado = AtomicInteger(1)
+
+    private val pruebasEscaleras = ConcurrentHashMap<Int, PruebaEscalerasRegistrada>()
+    private val siguientePrueba = AtomicInteger(1)
 
     fun rutinaDelPaciente(pacienteId: Int): Rutina? = rutinas.firstOrNull { it.pacienteId == pacienteId }
 
@@ -186,6 +191,35 @@ class SesionesServicio(
     fun resultadosDe(pacientes: Set<Int>): List<ResultadoEjercicio> =
         resultados.values.filter { it.pacienteId in pacientes }.sortedByDescending { it.id }
 
+    // ---------------------------------------------------------------- Prueba de escaleras (barómetro)
+
+    /** Guarda una prueba de escaleras. Rechaza (422) valores que ningún barómetro de una casa puede dar. */
+    fun registrarPruebaEscaleras(pacienteId: Int, s: PruebaEscalerasSolicitud): PruebaEscalerasRegistrada {
+        val rutina = rutinaDelPaciente(pacienteId)
+        if (s.fecha.isBlank()) throw DatosNoProcesables("Falta la fecha de la prueba.")
+        if (s.alturaSubidaCm !in 0..ALTURA_MAXIMA_CM || s.pisos !in 0..MAXIMO_PISOS || s.escalonesEstimados < 0 ||
+            (s.pasos != null && s.pasos < 0) || s.duracionSegundos !in 1..DURACION_MAXIMA_S
+        ) {
+            throw DatosNoProcesables("Los valores de la prueba de escaleras están fuera de rango.")
+        }
+        val prueba = PruebaEscalerasRegistrada(
+            id = siguientePrueba.getAndIncrement(),
+            pacienteId = pacienteId,
+            paciente = rutina?.paciente ?: "",
+            fecha = s.fecha,
+            alturaSubidaCm = s.alturaSubidaCm,
+            pisos = s.pisos,
+            escalonesEstimados = s.escalonesEstimados,
+            pasos = s.pasos,
+            duracionSegundos = s.duracionSegundos,
+        )
+        pruebasEscaleras[prueba.id] = prueba
+        return prueba
+    }
+
+    fun pruebasEscalerasDe(pacientes: Set<Int>): List<PruebaEscalerasRegistrada> =
+        pruebasEscaleras.values.filter { it.pacienteId in pacientes }.sortedByDescending { it.id }
+
     // ---------------------------------------------------------------- Reglas
 
     private fun guardar(sesion: SesionTerapia): SesionTerapia {
@@ -203,6 +237,11 @@ class SesionesServicio(
         /** Debajo de este porcentaje de cumplimiento el semáforo se pone en amarillo. */
         const val UMBRAL_CUMPLIMIENTO_BAJO = 60
         const val UMBRAL_DOLOR_PREDETERMINADO = 7
+
+        /** Límites de la prueba de escaleras: 200 m de subida, 60 pisos y una hora. */
+        const val ALTURA_MAXIMA_CM = 20_000
+        const val MAXIMO_PISOS = 60
+        const val DURACION_MAXIMA_S = 3_600
 
         /** Semáforo de evolución (RFN-47). El dolor alto manda sobre el cumplimiento. */
         fun semaforo(porcentaje: Int, dolorDespues: Int, umbralDolor: Int): Semaforo = when {

@@ -46,6 +46,7 @@ fun InicioPacientePantalla(
     usuario: Usuario,
     viewModel: InicioPacienteViewModel,
     alAbrirRutina: () -> Unit,
+    alAbrirEscaleras: () -> Unit,
     alAbrirHistorial: () -> Unit,
     alAbrirPerfil: () -> Unit,
     alCerrarSesion: () -> Unit,
@@ -86,6 +87,20 @@ fun InicioPacientePantalla(
             }
 
             item { TarjetaPasos(estado.pasos, viewModel) }
+
+            item {
+                TarjetaPhysio {
+                    Text("Prueba de escaleras", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Mide con el barómetro cuánto subes y a qué ritmo, para ver tu avance cada semana.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(onClick = alAbrirEscaleras, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                        Text("Hacer la prueba de escaleras")
+                    }
+                }
+            }
 
             if (estado.pendientesEnvio > 0) {
                 item {

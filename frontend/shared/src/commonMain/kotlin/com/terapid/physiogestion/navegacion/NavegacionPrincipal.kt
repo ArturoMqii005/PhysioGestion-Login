@@ -18,6 +18,7 @@ import com.terapid.physiogestion.viewmodel.AdministradorViewModel
 import com.terapid.physiogestion.viewmodel.AgendaViewModel
 import com.terapid.physiogestion.viewmodel.DetalleSesionViewModel
 import com.terapid.physiogestion.viewmodel.EjercicioViewModel
+import com.terapid.physiogestion.viewmodel.EscalerasViewModel
 import com.terapid.physiogestion.viewmodel.HistorialViewModel
 import com.terapid.physiogestion.viewmodel.InicioPacienteViewModel
 import com.terapid.physiogestion.viewmodel.LoginViewModel
@@ -27,6 +28,7 @@ import com.terapid.physiogestion.viewmodel.SesionViewModel
 import com.terapid.physiogestion.vista.AdministradorPantalla
 import com.terapid.physiogestion.vista.DetalleSesionPantalla
 import com.terapid.physiogestion.vista.EjercicioPantalla
+import com.terapid.physiogestion.vista.EscalerasPantalla
 import com.terapid.physiogestion.vista.FisioterapeutaPantalla
 import com.terapid.physiogestion.vista.HistorialPantalla
 import com.terapid.physiogestion.vista.InicioPacientePantalla
@@ -109,9 +111,11 @@ fun NavegacionPrincipal() {
                         preferencias = Dependencias.preferencias,
                         sensorPasos = Dependencias.sensorPasos,
                         permisos = Dependencias.permisos,
+                        escaleras = Dependencias.escaleras,
                     )
                 },
                 alAbrirRutina = { navegador.navigate(RutaRutina) },
+                alAbrirEscaleras = { navegador.navigate(RutaEscaleras) },
                 alAbrirHistorial = { navegador.navigate(RutaHistorial) },
                 alAbrirPerfil = { navegador.navigate(RutaPerfil) },
                 alCerrarSesion = sesionVm::cerrarSesion,
@@ -151,6 +155,23 @@ fun NavegacionPrincipal() {
                     rutinaVm?.medicionRegistrada(ruta.idEjercicio, completado)
                     navegador.popBackStack()
                 },
+            )
+        }
+
+        composable<RutaEscaleras> {
+            val usuario = sesion?.usuario ?: return@composable
+            EscalerasPantalla(
+                viewModel = viewModel {
+                    EscalerasViewModel(
+                        pacienteId = usuario.pacienteId ?: 0,
+                        rutinas = Dependencias.rutinas,
+                        repositorio = Dependencias.escaleras,
+                        barometro = Dependencias.nuevoSensorPresion(),
+                        sensorPasos = Dependencias.sensorPasos,
+                        permisos = Dependencias.permisos,
+                    )
+                },
+                alRegresar = { navegador.popBackStack() },
             )
         }
 

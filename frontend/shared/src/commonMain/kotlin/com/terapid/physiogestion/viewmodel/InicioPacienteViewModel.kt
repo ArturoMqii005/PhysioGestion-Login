@@ -2,6 +2,7 @@ package com.terapid.physiogestion.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.terapid.physiogestion.datos.EscalerasRepositorio
 import com.terapid.physiogestion.datos.PreferenciasRepositorio
 import com.terapid.physiogestion.datos.RutinaRepositorio
 import com.terapid.physiogestion.datos.SensorRepositorio
@@ -62,6 +63,8 @@ class InicioPacienteViewModel(
     private val preferencias: PreferenciasRepositorio,
     private val sensorPasos: SensorPasos,
     private val permisos: GestorPermisos,
+    /** Pruebas de escaleras guardadas sin conexión (se reenvían al sincronizar). */
+    private val escaleras: EscalerasRepositorio? = null,
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow(InicioPacienteUiState())
@@ -94,8 +97,9 @@ class InicioPacienteViewModel(
             try {
                 val envio = sesiones.enviarPendientes()
                 val mediciones = sensores.enviarPendientes()
+                val pruebas = escaleras?.enviarPendientes() ?: 0
                 if (envio.error == null && envio.pendientes == 0) preferencias.registrarSincronizacion()
-                if (envio.enviadas > 0 || mediciones > 0) {
+                if (envio.enviadas > 0 || mediciones > 0 || pruebas > 0) {
                     _estado.update { it.copy(aviso = "Se enviaron a tu fisioterapeuta los registros guardados sin conexión.") }
                 }
             } catch (e: CancellationException) {

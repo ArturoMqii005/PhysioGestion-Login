@@ -104,7 +104,7 @@ class BaseDatosMigracionTest {
         )
         assertEquals(MetodoMedicion.CAMARA, almacen.medicionesDelDia("2026-10-27").single().metodo)
         val version = bd.usar { c -> c.prepare("PRAGMA user_version").use { it.step(); it.getLong(0).toInt() } }
-        assertEquals(3, version)
+        assertEquals(VERSION_ESQUEMA, version) // y cualquier versión posterior
         bd.cerrar()
     }
 }

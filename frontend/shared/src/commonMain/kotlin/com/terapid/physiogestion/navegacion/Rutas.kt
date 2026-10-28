@@ -34,6 +34,10 @@ data object RutaRutina
 @Serializable
 data class RutaEjercicio(val idEjercicio: Int)
 
+/** Prueba de escaleras con el barómetro: avance hacia la meta funcional. */
+@Serializable
+data object RutaEscaleras
+
 /** Historial de sesiones (RFN-31). */
 @Serializable
 data object RutaHistorial

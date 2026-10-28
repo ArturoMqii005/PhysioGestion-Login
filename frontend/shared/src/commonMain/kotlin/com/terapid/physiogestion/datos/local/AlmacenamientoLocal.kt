@@ -5,6 +5,7 @@ import com.terapid.physiogestion.modelo.Dificultad
 import com.terapid.physiogestion.modelo.EjercicioRealizado
 import com.terapid.physiogestion.modelo.MedicionEjercicio
 import com.terapid.physiogestion.modelo.MetodoMedicion
+import com.terapid.physiogestion.modelo.PruebaEscaleras
 import com.terapid.physiogestion.modelo.RegistroSesion
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -187,6 +188,53 @@ class AlmacenamientoLocal(
 
     suspend fun contarMediciones(): Int = contar("SELECT COUNT(*) FROM medicion_ejercicio")
 
+    // ------------------------------------------------------------ Pruebas de escaleras (barómetro)
+
+    suspend fun insertarPruebaEscaleras(p: PruebaEscaleras): Long = bd.usar { c ->
+        c.prepare(
+            """
+            INSERT INTO prueba_escaleras (clave_dia, medido_en, altura_subida_cm, pisos, escalones, pasos, duracion_segundos, enviado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent()
+        ).use { st ->
+            st.bindText(1, p.claveDia)
+            st.bindLong(2, p.medidoEn)
+            st.bindLong(3, p.alturaSubidaCm.toLong())
+            st.bindLong(4, p.pisos.toLong())
+            st.bindLong(5, p.escalones.toLong())
+            if (p.pasos != null) st.bindLong(6, p.pasos.toLong()) else st.bindNull(6)
+            st.bindLong(7, p.duracionSegundos.toLong())
+            st.bindLong(8, if (p.enviado) 1L else 0L)
+            st.step()
+        }
+        c.prepare("SELECT last_insert_rowid()").use { st ->
+            st.step()
+            st.getLong(0)
+        }
+    }
+
+    /** Las pruebas más recientes primero. */
+    suspend fun pruebasEscaleras(limite: Int = 10): List<PruebaEscaleras> = bd.usar { c ->
+        c.prepare("SELECT * FROM prueba_escaleras ORDER BY medido_en DESC, id DESC LIMIT ?").use { st ->
+            st.bindLong(1, limite.toLong())
+            buildList { while (st.step()) add(st.aPruebaEscaleras()) }
+        }
+    }
+
+    suspend fun pruebasEscalerasPendientes(): List<PruebaEscaleras> = bd.usar { c ->
+        c.prepare("SELECT * FROM prueba_escaleras WHERE enviado = 0 ORDER BY id").use { st ->
+            buildList { while (st.step()) add(st.aPruebaEscaleras()) }
+        }
+    }
+
+    suspend fun marcarPruebaEscalerasEnviada(id: Long) = bd.usar { c ->
+        c.prepare("UPDATE prueba_escaleras SET enviado = 1 WHERE id = ?").use { st ->
+            st.bindLong(1, id)
+            st.step()
+        }
+        Unit
+    }
+
     // ------------------------------------------------------------ Conversión de filas
 
     private suspend fun contar(sql: String): Int = bd.usar { c ->
@@ -223,6 +271,23 @@ class AlmacenamientoLocal(
             } catch (_: Exception) {
                 emptyList()
             },
+        )
+    }
+
+    private fun SQLiteStatement.aPruebaEscaleras(): PruebaEscaleras {
+        val columnas = getColumnNames()
+        fun entero(nombre: String) = getLong(columnas.indexOf(nombre))
+        val indicePasos = columnas.indexOf("pasos")
+        return PruebaEscaleras(
+            id = entero("id"),
+            claveDia = getText(columnas.indexOf("clave_dia")),
+            medidoEn = entero("medido_en"),
+            alturaSubidaCm = entero("altura_subida_cm").toInt(),
+            pisos = entero("pisos").toInt(),
+            escalones = entero("escalones").toInt(),
+            pasos = if (isNull(indicePasos)) null else getLong(indicePasos).toInt(),
+            duracionSegundos = entero("duracion_segundos").toInt(),
+            enviado = entero("enviado") == 1L,
         )
     }
 

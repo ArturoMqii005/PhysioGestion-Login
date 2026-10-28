@@ -6,6 +6,7 @@ import com.terapid.physiogestion.datos.ClinicaRepositorio
 import com.terapid.physiogestion.datos.remoto.ErrorApi
 import com.terapid.physiogestion.modelo.Cita
 import com.terapid.physiogestion.modelo.EstadoCita
+import com.terapid.physiogestion.modelo.PruebaEscalerasRegistrada
 import com.terapid.physiogestion.modelo.SesionTerapia
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,8 @@ data class AgendaUiState(
     /** Solo para el fisioterapeuta: sesiones que sus pacientes enviaron desde casa. */
     val seguimiento: List<SesionTerapia> = emptyList(),
     val errorSeguimiento: String? = null,
+    /** Solo para el fisioterapeuta: pruebas de escaleras de sus pacientes. */
+    val escaleras: List<PruebaEscalerasRegistrada> = emptyList(),
 ) {
     fun cuantas(estado: EstadoCita): Int = citas.count { it.estado == estado }
 
@@ -72,6 +75,14 @@ class AgendaViewModel(
             throw e
         } catch (e: Exception) {
             _estado.update { it.copy(errorSeguimiento = (e as? ErrorApi)?.message ?: "No se pudo cargar el seguimiento.") }
+        }
+        try {
+            val pruebas = clinica.pruebasEscalerasDeMisPacientes()
+            _estado.update { it.copy(escaleras = pruebas) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Un servidor sin este recurso (versión anterior) no debe romper la agenda.
         }
     }
 }

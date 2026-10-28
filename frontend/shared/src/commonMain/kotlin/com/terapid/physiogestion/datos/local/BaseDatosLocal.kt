@@ -11,7 +11,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** Versión del esquema. Se incrementa cada vez que cambia alguna tabla. */
-const val VERSION_ESQUEMA = 3
+const val VERSION_ESQUEMA = 4
 
 /**
  * ALMACENAMIENTO LOCAL · BASE DE DATOS SQLite dentro del teléfono (RI-06).
@@ -71,11 +71,13 @@ class BaseDatosLocal(
                 c.execSQL("ALTER TABLE medicion_ejercicio ADD COLUMN metodo TEXT NOT NULL DEFAULT 'SENSORES'")
             }
         }
+        // Versión 4 (prueba de escaleras): solo agrega la tabla prueba_escaleras, que crearTablas ya creó.
         c.execSQL("PRAGMA user_version = $VERSION_ESQUEMA")
         // Índices: el historial se ordena por fecha y la cola de envío se busca por pendiente_envio.
         c.execSQL("CREATE INDEX IF NOT EXISTS idx_sesion_fin ON sesion (fin DESC)")
         c.execSQL("CREATE INDEX IF NOT EXISTS idx_sesion_pendientes ON sesion (pendiente_envio)")
         c.execSQL("CREATE INDEX IF NOT EXISTS idx_medicion_dia ON medicion_ejercicio (clave_dia, ejercicio_id)")
+        c.execSQL("CREATE INDEX IF NOT EXISTS idx_escaleras_fecha ON prueba_escaleras (medido_en DESC)")
     }
 
     private fun crearTablas(c: SQLiteConnection) {
@@ -128,6 +130,22 @@ class BaseDatosLocal(
                 duracion_segundos     INTEGER NOT NULL,
                 enviado               INTEGER NOT NULL DEFAULT 0,
                 metodo                TEXT    NOT NULL DEFAULT 'SENSORES'
+            )
+            """.trimIndent()
+        )
+        // Pruebas de escaleras medidas con el barómetro (resumen, nunca las lecturas).
+        c.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS prueba_escaleras (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                clave_dia         TEXT    NOT NULL,
+                medido_en         INTEGER NOT NULL,
+                altura_subida_cm  INTEGER NOT NULL CHECK (altura_subida_cm >= 0),
+                pisos             INTEGER NOT NULL,
+                escalones         INTEGER NOT NULL,
+                pasos             INTEGER,
+                duracion_segundos INTEGER NOT NULL,
+                enviado           INTEGER NOT NULL DEFAULT 0
             )
             """.trimIndent()
         )

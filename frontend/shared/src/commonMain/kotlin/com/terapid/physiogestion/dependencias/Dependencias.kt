@@ -2,6 +2,7 @@ package com.terapid.physiogestion.dependencias
 
 import com.terapid.physiogestion.datos.AutenticacionRepositorio
 import com.terapid.physiogestion.datos.ClinicaRepositorio
+import com.terapid.physiogestion.datos.EscalerasRepositorio
 import com.terapid.physiogestion.datos.GestorSesion
 import com.terapid.physiogestion.datos.PreferenciasRepositorio
 import com.terapid.physiogestion.datos.RutinaRepositorio
@@ -17,11 +18,13 @@ import com.terapid.physiogestion.datos.remoto.AutenticacionApi
 import com.terapid.physiogestion.datos.remoto.ClinicaApi
 import com.terapid.physiogestion.datos.remoto.ConfiguracionApi
 import com.terapid.physiogestion.datos.remoto.EjercicioApi
+import com.terapid.physiogestion.datos.remoto.EscalerasApi
 import com.terapid.physiogestion.datos.remoto.RutinaApi
 import com.terapid.physiogestion.datos.remoto.SesionApi
 import com.terapid.physiogestion.datos.remoto.crearClienteHttp
 import com.terapid.physiogestion.datos.sensores.SensorMovimiento
 import com.terapid.physiogestion.datos.sensores.SensorPasos
+import com.terapid.physiogestion.datos.sensores.SensorPresion
 import com.terapid.physiogestion.plataforma.permisos.GestorPermisos
 import com.terapid.physiogestion.plataforma.rutaBaseDatos
 import com.terapid.physiogestion.servicio.SeguimientoServicio
@@ -68,6 +71,8 @@ object Dependencias {
 
     val sensores: SensorRepositorio by lazy { SensorRepositorio(EjercicioApi(clienteHttp), almacenamiento, gestorSesion) }
 
+    val escaleras: EscalerasRepositorio by lazy { EscalerasRepositorio(EscalerasApi(clienteHttp), almacenamiento, gestorSesion) }
+
     // ---- Plataforma: permisos y sensores ----
     val permisos: GestorPermisos by lazy { GestorPermisos() }
 
@@ -75,4 +80,7 @@ object Dependencias {
 
     /** Un sensor por pantalla de medición: se apaga cuando esa pantalla se cierra. */
     fun nuevoSensorMovimiento(): SensorMovimiento = SensorMovimiento()
+
+    /** Barómetro para la prueba de escaleras (uno por pantalla, igual que el de movimiento). */
+    fun nuevoSensorPresion(): SensorPresion = SensorPresion()
 }

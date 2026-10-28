@@ -9,6 +9,7 @@ Una sola base de código para Android, escritorio e iOS. La arquitectura es **MV
 - **Almacenamiento local** en cuatro formas: preferencias, base de datos SQLite, archivos y almacén cifrado.
 - **Sensores:** acelerómetro y giroscopio para contar repeticiones y medir el ángulo; contador de pasos.
 - **Verificación con cámara (Android):** CameraX + ML Kit detectan la postura para que una repetición solo cuente si de verdad se hizo.
+- **Prueba de escaleras:** el barómetro mide cuánto sube el paciente y a qué ritmo (meta funcional: subir las escaleras de su casa).
 - **Variables de entorno:** ambiente, servidor y versión en un solo lugar (`Entorno`), y la IP del backend en `local.properties`.
 
 ## Estructura de carpetas
@@ -33,11 +34,12 @@ frontend/
     │       ├── modelo/               MODELO: DTOs @Serializable (Usuario, Rol, Cita, Rutina, SesionTerapia…)
     │       ├── servicio/             Reglas de negocio: cumplimiento, dolor, puntos, semáforo, racha, pasos
     │       │   ├── movimiento/       PROCESAMIENTO de sensores: AnalizadorMovimiento, RangoArticular
-    │       │   └── postura/          Verificación con cámara: Postura, AnalizadorPostura, VigilanteQuietud
+    │       │   ├── postura/          Verificación con cámara: Postura, AnalizadorPostura, VigilanteQuietud
+    │       │   └── escaleras/        Prueba de escaleras: AnalizadorEscaleras (barómetro)
     │       ├── datos/                Repositorios y GestorSesion
     │       │   ├── remoto/           Ktor Client: ClienteHttp, SesionApi (5 métodos), EjercicioApi, errores
     │       │   ├── local/            SQLite, preferencias, archivos, almacén cifrado, sesión guardada
-    │       │   └── sensores/         SensorMovimiento, SensorPasos (expect), LecturaEje, FiltroSenal
+    │       │   └── sensores/         SensorMovimiento, SensorPasos, SensorPresion (expect), LecturaEje, FiltroSenal
     │       ├── dependencias/         Crea y conecta los objetos (inyección manual)
     │       └── plataforma/           Entorno, Plataforma, permisos, cámara y las demás declaraciones expect
     ├── androidMain/            CÓDIGO ESPECÍFICO de Android (actual)
@@ -87,7 +89,7 @@ En el ambiente de desarrollo, cada pantalla muestra abajo el método, la ruta y 
 | Tipo | Para qué | Archivo común | Android | Escritorio | iOS |
 |---|---|---|---|---|---|
 | Preferencias | racha, servidor recordado, cámara, base del contador de pasos | `AlmacenPreferencias` + `ClavesAlmacen` | SharedPreferences | java.util.prefs | NSUserDefaults |
-| Base de datos | rutina sin conexión, sesiones, cola de envío, mediciones | `BaseDatosLocal` (versión 3, con migración) | SQLite | SQLite | SQLite |
+| Base de datos | rutina sin conexión, sesiones, cola de envío, mediciones, pruebas de escaleras | `BaseDatosLocal` (versión 4, con migración) | SQLite | SQLite | SQLite |
 | Archivos | caché de videos de los ejercicios (límite 200 MB) | `AlmacenArchivos` | cacheDir | `~/.physiogestion/cache` | Caches |
 | Cifrado | token de la sesión | `AlmacenSeguro` + `PersistenciaSesion` | Android Keystore (AES-GCM) | preferencias | NSUserDefaults (Llavero pendiente) |
 
@@ -124,6 +126,22 @@ apoya de lado a unos 2 m y ML Kit detecta el esqueleto en cada cuadro, dentro de
 La vista de la cámara (`VistaCamaraPostura`) es `expect/actual`: en Android usa CameraX + ML Kit Pose Detection;
 en escritorio e iOS muestra que no está disponible.
 
+### Prueba de escaleras (barómetro)
+
+Desde el inicio del paciente: **Hacer la prueba de escaleras**. El barómetro (`SensorPresion`, `Sensor.TYPE_PRESSURE`)
+mide la presión del aire, que baja unos 0.12 hPa por metro.
+
+| Paso | Qué se hace | Dónde |
+|---|---|---|
+| Calibración | 3 s quieto al pie de la escalera: la presión promedio es la altura cero | `AnalizadorEscaleras.calibrar` |
+| Altura | fórmula barométrica h = 44330 · (1 − (p/p₀)^(1/5.255)), sirve al nivel del mar y a 2200 m | `AnalizadorEscaleras.alturaRelativa` |
+| Subida | promedio exponencial contra el ruido; solo suma lo que sube (histéresis de 25 cm), bajar no resta | `AnalizadorEscaleras.procesar` |
+| Resumen | metros, pisos (≈ 3 m), escalones (≈ 17 cm), pasos del contador y ritmo en m/min | `ResultadoEscaleras` |
+| Guardado | SQLite (`prueba_escaleras`) y `POST /pruebas-escaleras`; sin red queda pendiente | `EscalerasRepositorio` |
+
+El fisioterapeuta ve las pruebas de sus pacientes en su agenda. En el emulador se prueba en
+**⋯ Extended controls → Virtual sensors → Additional sensors → Pressure**: bajar la presión 0.36 hPa equivale a subir 3 m.
+
 ## Variables de entorno
 
 - `plataforma/Entorno.kt`: ambiente (DESARROLLO / PRUEBAS / PRODUCCIÓN), servidor, tiempos de espera y si se registran las peticiones.
@@ -148,4 +166,4 @@ en escritorio e iOS muestra que no está disponible.
 1. Encender el backend (ver `../backend/README.md`).
 2. En Android Studio elegir **androidApp**, elegir un emulador y presionar Run.
 3. Escritorio: `gradlew.bat :desktopApp:run`.
-4. Pruebas: `gradlew.bat :shared:jvmTest` (75 pruebas).
+4. Pruebas: `gradlew.bat :shared:jvmTest` (84 pruebas).
