@@ -1,6 +1,7 @@
 package com.terapid.physiogestion.datos
 
 import com.terapid.physiogestion.datos.local.AlmacenamientoLocal
+import com.terapid.physiogestion.datos.remoto.DatosInvalidos
 import com.terapid.physiogestion.datos.remoto.EjercicioApi
 import com.terapid.physiogestion.datos.remoto.ErrorApi
 import com.terapid.physiogestion.datos.remoto.SesionVencida
@@ -53,6 +54,11 @@ class SensorRepositorio(
         } catch (e: SesionVencida) {
             gestor.cerrar(e.message)
             EnvioMedicion(guardada, enviada = false, detalle = null)
+        } catch (e: DatosInvalidos) {
+            // El servidor la rechaza (422, p. ej. cámara en un ejercicio que no la admite):
+            // queda en el teléfono pero sale de la cola, porque reintentarla nunca funcionaría.
+            almacenamiento.marcarMedicionEnviada(guardada.id)
+            EnvioMedicion(guardada, enviada = false, detalle = e.message)
         } catch (e: ErrorApi) {
             // Sin conexión: queda guardada y se reenvía después con enviarPendientes().
             EnvioMedicion(guardada, enviada = false, detalle = e.message)
@@ -76,6 +82,8 @@ class SensorRepositorio(
             } catch (e: SesionVencida) {
                 gestor.cerrar(e.message)
                 break
+            } catch (_: DatosInvalidos) {
+                almacenamiento.marcarMedicionEnviada(m.id) // rechazada para siempre: no bloquea a las demás
             } catch (_: ErrorApi) {
                 break
             }

@@ -100,11 +100,13 @@ enum class ArticulacionMedida(
     }
 
     /**
-     * Ángulo de la articulación con el lado que mejor se ve. Devuelve null si
-     * ninguno de los dos lados tiene sus tres puntos con confianza suficiente:
-     * en ese cuadro no se puede afirmar nada.
+     * Ángulo de la articulación con el lado que mejor se ve. Si se indica
+     * [preferido] y ese lado se ve, se usa ese: así la medición no salta de
+     * una pierna a la otra entre cuadros. Devuelve null si ninguno de los dos
+     * lados tiene sus tres puntos con confianza suficiente: en ese cuadro no
+     * se puede afirmar nada.
      */
-    fun medir(postura: Postura, confianzaMinima: Float = CONFIANZA_MINIMA): MedidaArticular? {
+    fun medir(postura: Postura, confianzaMinima: Float = CONFIANZA_MINIMA, preferido: Lado? = null): MedidaArticular? {
         val opciones = listOf(Lado.IZQUIERDO to izquierda, Lado.DERECHO to derecha).mapNotNull { (lado, trio) ->
             val a = postura.puntos[trio.first] ?: return@mapNotNull null
             val b = postura.puntos[trio.second] ?: return@mapNotNull null
@@ -114,13 +116,33 @@ enum class ArticulacionMedida(
             val angulo = anguloEn(a, b, c) ?: return@mapNotNull null
             Triple(lado, angulo, confianza)
         }
-        val mejor = opciones.maxByOrNull { it.third } ?: return null
+        val mejor = opciones.firstOrNull { it.first == preferido } ?: opciones.maxByOrNull { it.third } ?: return null
         return MedidaArticular(mejor.second, mejor.first)
+    }
+
+    /**
+     * true si la persona está DE FRENTE a la cámara. De frente, las dos
+     * caderas se ven separadas (unos ¾ del largo del muslo); de lado quedan
+     * casi encimadas. De frente la rodilla se dobla hacia la cámara y el
+     * ángulo casi no cambia en la imagen, así que la medición sería falsa.
+     */
+    fun vistaDeFrente(postura: Postura, confianzaMinima: Float = CONFIANZA_MINIMA): Boolean {
+        val caderaIzq = postura.puntos[PuntoCuerpo.CADERA_IZQ] ?: return false
+        val caderaDer = postura.puntos[PuntoCuerpo.CADERA_DER] ?: return false
+        val rodillaIzq = postura.puntos[PuntoCuerpo.RODILLA_IZQ] ?: return false
+        val rodillaDer = postura.puntos[PuntoCuerpo.RODILLA_DER] ?: return false
+        if (listOf(caderaIzq, caderaDer, rodillaIzq, rodillaDer).any { it.confianza < confianzaMinima }) return false
+        val muslo = (distancia(caderaIzq, rodillaIzq) + distancia(caderaDer, rodillaDer)) / 2f
+        if (muslo < 1f) return false
+        return distancia(caderaIzq, caderaDer) > PROPORCION_CADERAS_DE_FRENTE * muslo
     }
 
     companion object {
         /** Por debajo de esta probabilidad, el punto se considera fuera del cuadro o tapado. */
         const val CONFIANZA_MINIMA = 0.5f
+
+        /** Separación de caderas (respecto del muslo) a partir de la cual la persona está de frente. */
+        const val PROPORCION_CADERAS_DE_FRENTE = 0.45f
 
         /** «Rodilla» -> RODILLA. Las zonas sin articulación medible («Muslo») devuelven null. */
         fun deZona(zonaCorporal: String): ArticulacionMedida? = when (zonaCorporal.trim().lowercase()) {
@@ -146,5 +168,11 @@ fun anguloEn(a: PuntoDetectado, b: PuntoDetectado, c: PuntoDetectado): Float? {
 }
 
 internal fun diferenciaAngular(a: Float, b: Float): Float = abs(a - b)
+
+private fun distancia(a: PuntoDetectado, b: PuntoDetectado): Float {
+    val dx = a.x - b.x
+    val dy = a.y - b.y
+    return sqrt(dx * dx + dy * dy)
+}
 
 private const val GRADOS_POR_RADIAN = 57.29578f

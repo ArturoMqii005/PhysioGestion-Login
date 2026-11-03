@@ -31,10 +31,18 @@ class SensorRepositorioTest {
     private var hayConexion = true
     private val cuerpos = mutableListOf<String>()
 
+    /** Ejercicios cuyas mediciones rechaza el servidor con 422. */
+    private val rechazados = mutableSetOf<Int>()
+
     private val cliente = clienteSimulado { peticion ->
         if (!hayConexion) throw IOException("Sin red")
         assertTrue(peticion.url.encodedPath.endsWith("/api/v1/resultados-ejercicio"))
-        cuerpos += peticion.body.toByteArray().decodeToString()
+        val texto = peticion.body.toByteArray().decodeToString()
+        val ejercicio = jsonPrueba.parseToJsonElement(texto).jsonObject["idEjercicio"].toString().toInt()
+        if (ejercicio in rechazados) {
+            return@clienteSimulado json("""{"mensaje":"El ejercicio no admite verificación con cámara."}""", HttpStatusCode.UnprocessableEntity)
+        }
+        cuerpos += texto
         json("""{"id":1,"pacienteId":1,"idEjercicio":1,"repeticiones":30,"repeticionesObjetivo":30,
                  "anguloMaximo":91,"anguloObjetivo":90,"duracionSegundos":140,"cumpleObjetivo":true}""", HttpStatusCode.Created)
     }
@@ -77,6 +85,18 @@ class SensorRepositorioTest {
         hayConexion = true
         assertEquals(1, repositorio.enviarPendientes())
         assertTrue(almacenamiento.medicionesPendientes().isEmpty())
+    }
+
+    @Test
+    fun unaMedicionRechazadaPorElServidorNoTapaLaCola() = runBlocking {
+        hayConexion = false
+        repositorio.registrar(resultado.copy(idEjercicio = 3, metodo = MetodoMedicion.CAMARA)) // 422 en el servidor
+        repositorio.registrar(resultado)
+        hayConexion = true
+        rechazados += 3
+        assertEquals(1, repositorio.enviarPendientes())
+        assertTrue(almacenamiento.medicionesPendientes().isEmpty())
+        assertEquals(2, almacenamiento.contarMediciones())
     }
 
     @Test

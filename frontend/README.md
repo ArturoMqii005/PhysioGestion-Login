@@ -117,7 +117,7 @@ apoya de lado a unos 2 m y ML Kit detecta el esqueleto en cada cuadro, dentro de
 | Regla | Dónde |
 |---|---|
 | Se mide la articulación del ejercicio con tres puntos (cadera-rodilla-tobillo, hombro-cadera-rodilla o rodilla-tobillo-pie) y el lado que mejor se ve | `servicio/postura/Postura.kt` |
-| Calibración: la persona debe verse completa y quieta 1.5 s (en sentadilla, de pie) | `AnalizadorPostura.calibrar` |
+| Calibración: la persona debe verse completa, de lado y quieta 1.5 s (en sentadilla, de pie); se sigue midiendo con la pierna con que calibró | `AnalizadorPostura.calibrar` |
 | Solo cuenta si se ve a la persona; perderla más de 1 s a mitad de la repetición la descarta | `AnalizadorPostura.procesar` |
 | El acelerómetro vigila que el teléfono esté apoyado; si se mueve, la repetición se descarta | `VigilanteQuietud` |
 | Repeticiones de menos de 0.7 s y saltos imposibles del detector no cuentan | `AnalizadorPostura` |
@@ -166,4 +166,4 @@ El fisioterapeuta ve las pruebas de sus pacientes en su agenda. En el emulador s
 1. Encender el backend (ver `../backend/README.md`).
 2. En Android Studio elegir **androidApp**, elegir un emulador y presionar Run.
 3. Escritorio: `gradlew.bat :desktopApp:run`.
-4. Pruebas: `gradlew.bat :shared:jvmTest` (84 pruebas).
+4. Pruebas: `gradlew.bat :shared:jvmTest` (89 pruebas).

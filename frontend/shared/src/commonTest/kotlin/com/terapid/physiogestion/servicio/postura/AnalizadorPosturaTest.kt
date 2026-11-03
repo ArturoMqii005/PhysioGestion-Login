@@ -42,6 +42,29 @@ private fun persona(flexion: Float, marca: Long, confianza: Float = 0.95f, ladoV
 
 private const val CUADRO_MS = 33L
 
+/**
+ * Persona con LOS DOS lados visibles. [separacionCaderas] en px: 0 es de lado
+ * (caderas encimadas); unos 150 px con muslos de 200 px es de frente.
+ */
+private fun personaDosLados(
+    flexion: Float,
+    marca: Long,
+    confIzq: Float = 0.95f,
+    confDer: Float = 0.95f,
+    separacionCaderas: Float = 0f,
+): Postura {
+    val base = persona(flexion, marca)
+    fun mover(p: PuntoDetectado, conf: Float) = p.copy(x = p.x + separacionCaderas, confianza = conf)
+    val izq = base.puntos.filterKeys { it.name.endsWith("IZQ") }
+    return base.copy(
+        puntos = izq.mapValues { it.value.copy(confianza = confIzq) } + mapOf(
+            PuntoCuerpo.CADERA_DER to mover(izq.getValue(PuntoCuerpo.CADERA_IZQ), confDer),
+            PuntoCuerpo.RODILLA_DER to mover(izq.getValue(PuntoCuerpo.RODILLA_IZQ), confDer),
+            PuntoCuerpo.TOBILLO_DER to mover(izq.getValue(PuntoCuerpo.TOBILLO_IZQ), confDer),
+        ),
+    )
+}
+
 /** Genera cuadros a 30 fps: [duracionMs] llevando la flexión de [desde] a [hasta]. */
 private fun tramo(desde: Float, hasta: Float, duracionMs: Long, inicio: Long, conf: Float = 0.95f): List<Postura> {
     val cuadros = (duracionMs / CUADRO_MS).toInt().coerceAtLeast(1)
@@ -234,6 +257,68 @@ class AnalizadorPosturaTest {
             assertFalse(analizador.calibrar(persona(4f, marca), telefonoQuieto = false))
         }
         assertEquals(AvisoCamara.TELEFONO_MOVIDO, analizador.aviso)
+    }
+
+    @Test
+    fun siDePieLaRodillaNoSeEstiraDelTodoLasSentadillasIgualCuentan() {
+        // De pie marca 25° de flexión (155° internos): con el umbral fijo de 18° nunca «regresaría».
+        val analizador = AnalizadorPostura(ArticulacionMedida.RODILLA, anguloObjetivo = 90)
+        var marca = 0L
+        var listo = false
+        repeat(70) {
+            marca += CUADRO_MS
+            if (!listo) listo = analizador.calibrar(persona(25f, marca))
+        }
+        assertTrue(listo)
+        assertEquals(33f, analizador.regreso, 0.6f) // 25° de pie + 8° de margen
+        repeat(3) {
+            val bajada = tramo(25f, 95f, 1_000, marca)
+            val subida = tramo(95f, 25f, 1_000, bajada.last().marcaTiempo)
+            (bajada + subida).forEach { analizador.procesar(it) }
+            marca = subida.last().marcaTiempo
+        }
+        assertEquals(3, analizador.totalRepeticiones)
+    }
+
+    @Test
+    fun deFrenteALaCamaraPidePonerseDeLado() {
+        val analizador = AnalizadorPostura(ArticulacionMedida.RODILLA, anguloObjetivo = 90)
+        var marca = 0L
+        repeat(70) {
+            marca += CUADRO_MS
+            assertFalse(analizador.calibrar(personaDosLados(4f, marca, separacionCaderas = 150f)))
+        }
+        assertEquals(AvisoCamara.PONTE_DE_LADO, analizador.aviso)
+        // De lado (caderas encimadas) sí calibra.
+        var listo = false
+        repeat(70) {
+            marca += CUADRO_MS
+            if (!listo) listo = analizador.calibrar(personaDosLados(4f, marca))
+        }
+        assertTrue(listo)
+    }
+
+    @Test
+    fun sigueMidiendoConElLadoDeLaCalibracion() {
+        val analizador = AnalizadorPostura(ArticulacionMedida.RODILLA, anguloObjetivo = 90)
+        var marca = 0L
+        var listo = false
+        repeat(70) {
+            marca += CUADRO_MS
+            if (!listo) listo = analizador.calibrar(personaDosLados(4f, marca, confIzq = 0.95f, confDer = 0.6f))
+        }
+        assertTrue(listo)
+        assertEquals(Lado.IZQUIERDO, analizador.lado)
+        // Ahora el lado derecho se ve «mejor», pero el izquierdo sigue visible: no se cambia de pierna.
+        repeat(10) {
+            marca += CUADRO_MS
+            analizador.procesar(personaDosLados(4f, marca, confIzq = 0.8f, confDer = 0.99f))
+        }
+        assertEquals(Lado.IZQUIERDO, analizador.lado)
+        // Si el izquierdo deja de verse, se usa el derecho.
+        marca += CUADRO_MS
+        analizador.procesar(personaDosLados(4f, marca, confIzq = 0.2f, confDer = 0.99f))
+        assertEquals(Lado.DERECHO, analizador.lado)
     }
 
     @Test

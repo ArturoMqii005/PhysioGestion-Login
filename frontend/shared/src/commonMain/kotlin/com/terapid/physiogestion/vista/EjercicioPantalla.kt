@@ -259,6 +259,7 @@ private fun textoAviso(aviso: AvisoCamara, fase: FaseMedicion, articulacion: Art
         AvisoCamara.TELEFONO_MOVIDO -> "El teléfono se movió: déjalo apoyado (esa repetición no cuenta)"
         AvisoCamara.QUEDATE_QUIETO -> "Quédate quieto en la posición inicial…"
         AvisoCamara.PONTE_DERECHO -> "Párate derecho para empezar"
+        AvisoCamara.PONTE_DE_LADO -> "Ponte de lado a la cámara: de frente no se puede medir el ángulo"
     }
 }
 

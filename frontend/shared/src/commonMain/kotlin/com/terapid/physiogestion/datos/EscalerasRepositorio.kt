@@ -1,6 +1,7 @@
 package com.terapid.physiogestion.datos
 
 import com.terapid.physiogestion.datos.local.AlmacenamientoLocal
+import com.terapid.physiogestion.datos.remoto.DatosInvalidos
 import com.terapid.physiogestion.datos.remoto.ErrorApi
 import com.terapid.physiogestion.datos.remoto.EscalerasApi
 import com.terapid.physiogestion.datos.remoto.SesionVencida
@@ -18,6 +19,10 @@ data class EnvioEscaleras(val prueba: PruebaEscaleras, val enviada: Boolean, val
  * Pruebas de escaleras: primero se guardan en el teléfono (tabla
  * prueba_escaleras) y después se envían; sin conexión quedan pendientes y se
  * reenvían con [enviarPendientes], igual que las mediciones de ejercicios.
+ *
+ * Si el servidor la rechaza por datos inválidos (422), reintentarla nunca
+ * funcionaría y además taparía la cola: se queda en el teléfono, pero sale
+ * de la cola de envío.
  */
 class EscalerasRepositorio(
     private val api: EscalerasApi,
@@ -44,6 +49,9 @@ class EscalerasRepositorio(
         } catch (e: SesionVencida) {
             gestor.cerrar(e.message)
             EnvioEscaleras(guardada, enviada = false, detalle = null)
+        } catch (e: DatosInvalidos) {
+            almacenamiento.marcarPruebaEscalerasEnviada(guardada.id)
+            EnvioEscaleras(guardada, enviada = false, detalle = e.message)
         } catch (e: ErrorApi) {
             EnvioEscaleras(guardada, enviada = false, detalle = e.message)
         }
@@ -63,6 +71,8 @@ class EscalerasRepositorio(
             } catch (e: SesionVencida) {
                 gestor.cerrar(e.message)
                 break
+            } catch (_: DatosInvalidos) {
+                almacenamiento.marcarPruebaEscalerasEnviada(p.id) // rechazada para siempre: no bloquea a las demás
             } catch (_: ErrorApi) {
                 break
             }

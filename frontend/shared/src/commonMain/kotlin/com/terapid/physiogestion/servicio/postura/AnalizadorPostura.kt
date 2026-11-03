@@ -21,6 +21,9 @@ enum class AvisoCamara {
 
     /** Calibración de sentadilla: la posición inicial es de pie, con la pierna estirada. */
     PONTE_DERECHO,
+
+    /** De frente a la cámara la articulación no se puede medir: hay que ponerse de lado. */
+    PONTE_DE_LADO,
 }
 
 /** Por qué no se contó una repetición (se informa al terminar). */
@@ -77,6 +80,19 @@ class AnalizadorPostura(
 
     /** Grados por debajo de los cuales la persona regresó a la postura inicial. */
     val umbralRegreso: Float = umbralSubida * 0.4f
+
+    /**
+     * Umbral de regreso que se usa de verdad. En la sentadilla se mide la
+     * flexión absoluta, y hay personas que de pie no estiran la rodilla del
+     * todo (o la cámara la ve un poco doblada): si de pie ya marca 25°, nunca
+     * bajaría de [umbralRegreso] y ninguna repetición terminaría. Por eso se
+     * ajusta a la flexión que tenía de pie al calibrar, más un margen.
+     */
+    var regreso: Float = umbralRegreso
+        private set
+
+    /** Lado del cuerpo con que se calibró: se sigue midiendo con ese mientras se vea. */
+    private var ladoCalibrado: Lado? = null
 
     // ---- Calibración ----
     private val ventanaCalibracion = ArrayDeque<Pair<Long, Float>>()
@@ -136,6 +152,11 @@ class AnalizadorPostura(
             return false
         }
         lado = medida.lado
+        if (articulacion.vistaDeFrente(postura)) {
+            ventanaCalibracion.clear()
+            aviso = AvisoCamara.PONTE_DE_LADO
+            return false
+        }
         if (articulacion == ArticulacionMedida.RODILLA && medida.angulo < ANGULO_MINIMO_DE_PIE) {
             // La sentadilla empieza de pie: con la rodilla doblada la referencia quedaría mal.
             ventanaCalibracion.clear()
@@ -157,6 +178,12 @@ class AnalizadorPostura(
             return false
         }
         anguloBase = promedio
+        ladoCalibrado = medida.lado
+        regreso = if (articulacion.mideFlexion) {
+            (180f - promedio + MARGEN_REGRESO).coerceIn(umbralRegreso, umbralSubida - MARGEN_REGRESO)
+        } else {
+            umbralRegreso
+        }
         aviso = AvisoCamara.NINGUNO
         reiniciarMedicion(postura.marcaTiempo)
         return true
@@ -180,7 +207,7 @@ class AnalizadorPostura(
             return repeticiones
         }
 
-        val medida = articulacion.medir(postura)
+        val medida = articulacion.medir(postura, preferido = ladoCalibrado)
         if (medida == null) {
             aviso = AvisoCamara.NO_TE_VEO
             val desde = sinCuerpoDesde ?: marca.also { sinCuerpoDesde = it }
@@ -231,7 +258,7 @@ class AnalizadorPostura(
     private fun actualizarConteo(marca: Long) {
         if (esperandoRegreso) {
             // Media repetición (por ejemplo, la persona reaparece ya agachada): no cuenta.
-            if (anguloActual <= umbralRegreso) esperandoRegreso = false
+            if (anguloActual <= regreso) esperandoRegreso = false
             return
         }
         if (!enRepeticion) {
@@ -243,7 +270,7 @@ class AnalizadorPostura(
             return
         }
         if (anguloActual > maximoRepeticion) maximoRepeticion = anguloActual
-        if (anguloActual <= umbralRegreso) {
+        if (anguloActual <= regreso) {
             enRepeticion = false
             if (marca - inicioRepeticion < duracionMinimaMs) {
                 sumarDescarte(MotivoDescarte.DEMASIADO_RAPIDA)
@@ -290,6 +317,9 @@ class AnalizadorPostura(
 
         /** Ángulo interno de la rodilla con la pierna prácticamente estirada (de pie). */
         const val ANGULO_MINIMO_DE_PIE = 150f
+
+        /** Grados sobre la flexión de pie para dar por terminada una repetición. */
+        const val MARGEN_REGRESO = 8f
 
         /** A mitad de repetición se tolera perder a la persona hasta un segundo. */
         const val TOLERANCIA_SIN_CUERPO_MS = 1_000L

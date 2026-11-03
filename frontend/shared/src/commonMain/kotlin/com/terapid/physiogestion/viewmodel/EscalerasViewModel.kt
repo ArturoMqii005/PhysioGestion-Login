@@ -176,7 +176,8 @@ class EscalerasViewModel(
 
     fun terminar() {
         if (_estado.value.fase != FaseEscaleras.MIDIENDO) return
-        val duracion = segundosTranscurridos()
+        // Al menos 1 s: una prueba de 0 s la rechazaría el servidor.
+        val duracion = segundosTranscurridos().coerceAtLeast(1)
         val pasos = pasosDurantePrueba()
         detenerSensores()
         val resultado = analizador.resultado(pasos, duracion)
