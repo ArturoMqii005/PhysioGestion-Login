@@ -5,8 +5,8 @@ import android.content.Context
 /**
  * Solo Android: guarda el Context de la aplicación (Android lo exige para
  * abrir la base de datos, las preferencias, los sensores y la caché) y los
- * datos que llegan de BuildConfig. MainActivity lo inicializa antes de
- * mostrar la interfaz.
+ * datos que llegan de BuildConfig. PhysioGestionApp lo inicializa al
+ * arrancar, antes de cualquier pantalla o trabajo en segundo plano.
  */
 object ContextoAndroid {
     lateinit var aplicacion: Context

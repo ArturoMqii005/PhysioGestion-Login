@@ -16,13 +16,18 @@ import androidx.compose.ui.unit.dp
 import com.terapid.physiogestion.modelo.Usuario
 import com.terapid.physiogestion.vista.tema.ColoresPhysio
 
-/** Encabezado común de las vistas de cada rol: título, usuario, rol y "Cerrar sesión". */
+/**
+ * Encabezado común de las vistas de cada rol: título, usuario, rol y "Cerrar sesión".
+ * Con [alAbrirAvisos] aparece el enlace a la bandeja con el número de avisos sin leer.
+ */
 @Composable
 fun EncabezadoRol(
     titulo: String,
     usuario: Usuario,
     alCerrarSesion: () -> Unit,
     alCambiarContrasena: (() -> Unit)? = null,
+    avisosSinLeer: Int = 0,
+    alAbrirAvisos: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -42,6 +47,11 @@ fun EncabezadoRol(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (alCambiarContrasena != null) BotonEnlace("Cambiar contraseña", alCambiarContrasena)
+        if (alCambiarContrasena != null || alAbrirAvisos != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (alAbrirAvisos != null) BotonEnlace(if (avisosSinLeer > 0) "Avisos ($avisosSinLeer)" else "Avisos", alAbrirAvisos)
+                if (alCambiarContrasena != null) BotonEnlace("Cambiar contraseña", alCambiarContrasena)
+            }
+        }
     }
 }

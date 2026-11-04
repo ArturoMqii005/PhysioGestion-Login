@@ -1,6 +1,8 @@
 package com.terapid.physiogestion.dependencias
 
 import com.terapid.physiogestion.datos.AutenticacionRepositorio
+import com.terapid.physiogestion.datos.AvisosRepositorio
+import com.terapid.physiogestion.datos.RevisorSegundoPlano
 import com.terapid.physiogestion.datos.ClinicaRepositorio
 import com.terapid.physiogestion.datos.CuentaRepositorio
 import com.terapid.physiogestion.datos.EscalerasRepositorio
@@ -16,6 +18,7 @@ import com.terapid.physiogestion.datos.local.AlmacenamientoLocal
 import com.terapid.physiogestion.datos.local.BaseDatosLocal
 import com.terapid.physiogestion.datos.local.PersistenciaSesion
 import com.terapid.physiogestion.datos.remoto.AutenticacionApi
+import com.terapid.physiogestion.datos.remoto.AvisosApi
 import com.terapid.physiogestion.datos.remoto.ClinicaApi
 import com.terapid.physiogestion.datos.remoto.ConfiguracionApi
 import com.terapid.physiogestion.datos.remoto.CuentaApi
@@ -28,6 +31,10 @@ import com.terapid.physiogestion.datos.sensores.SensorMovimiento
 import com.terapid.physiogestion.datos.sensores.SensorPasos
 import com.terapid.physiogestion.datos.sensores.SensorPresion
 import com.terapid.physiogestion.plataforma.permisos.GestorPermisos
+import com.terapid.physiogestion.plataforma.Notificador
+import com.terapid.physiogestion.plataforma.SinNotificaciones
+import com.terapid.physiogestion.plataforma.ahoraEnMilisegundos
+import com.terapid.physiogestion.plataforma.claveDelDia
 import com.terapid.physiogestion.plataforma.rutaBaseDatos
 import com.terapid.physiogestion.servicio.SeguimientoServicio
 import kotlinx.serialization.json.Json
@@ -76,6 +83,21 @@ object Dependencias {
     val sensores: SensorRepositorio by lazy { SensorRepositorio(EjercicioApi(clienteHttp), almacenamiento, gestorSesion) }
 
     val escaleras: EscalerasRepositorio by lazy { EscalerasRepositorio(EscalerasApi(clienteHttp), almacenamiento, gestorSesion) }
+
+    val avisos: AvisosRepositorio by lazy { AvisosRepositorio(AvisosApi(clienteHttp), gestorSesion, preferencias) }
+
+    // ---- Notificaciones (NOT-01..04) ----
+
+    /**
+     * Lo reemplaza la plataforma al arrancar (en Android, PhysioGestionApp con
+     * NotificadorAndroid). Mientras tanto, y en escritorio e iOS, no hace nada.
+     */
+    var notificador: Notificador = SinNotificaciones
+
+    /** Lo que corre en segundo plano: avisos nuevos, sesiones sin enviar y recordatorios de cita. */
+    val revisor: RevisorSegundoPlano by lazy {
+        RevisorSegundoPlano(avisos, clinica, sesiones, gestorSesion, preferencias, { notificador }, { claveDelDia(ahoraEnMilisegundos()) })
+    }
 
     // ---- Plataforma: permisos y sensores ----
     val permisos: GestorPermisos by lazy { GestorPermisos() }

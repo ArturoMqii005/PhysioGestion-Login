@@ -121,6 +121,10 @@ data object RutaPacientes
 @Serializable
 data class RutaFichaPaciente(val pacienteId: Int)
 
+/** Bandeja de avisos de cualquier rol (NOT-01..04). */
+@Serializable
+data object RutaAvisos
+
 /** El fisioterapeuta arma o modifica la rutina (RUT-08). */
 @Serializable
 data class RutaEditarRutina(val pacienteId: Int)

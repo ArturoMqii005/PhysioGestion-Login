@@ -8,6 +8,9 @@ import com.terapid.physiogestion.datos.local.AlmacenamientoLocal
 import com.terapid.physiogestion.datos.local.VERSION_ESQUEMA
 import com.terapid.physiogestion.datos.remoto.ConfiguracionApi
 import com.terapid.physiogestion.plataforma.Entorno
+import com.terapid.physiogestion.plataforma.Notificador
+import com.terapid.physiogestion.plataforma.SinNotificaciones
+import com.terapid.physiogestion.servicio.ReglasAvisos
 import com.terapid.physiogestion.plataforma.Plataforma
 import com.terapid.physiogestion.plataforma.permisos.GestorPermisos
 import com.terapid.physiogestion.plataforma.permisos.Permiso
@@ -41,6 +44,11 @@ data class PerfilUiState(
     // Permisos
     val camaraActiva: Boolean = false,
     val aviso: String? = null,
+    // Recordatorios (NOT-01, NOT-02)
+    val notificacionesDisponibles: Boolean = false,
+    val notificacionesPermitidas: Boolean = false,
+    val recordatorioActivo: Boolean = false,
+    val horaRecordatorio: Int = ReglasAvisos.HORA_SUGERIDA,
 )
 
 /**
@@ -54,6 +62,7 @@ class PerfilViewModel(
     private val almacenamiento: AlmacenamientoLocal,
     private val archivos: AlmacenArchivos,
     private val permisos: GestorPermisos,
+    private val notificador: () -> Notificador = { SinNotificaciones },
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow(PerfilUiState())
@@ -88,6 +97,10 @@ class PerfilViewModel(
                         ultimaSincronizacion = preferencias.ultimaSincronizacion(),
                         racha = preferencias.racha(pacienteId),
                         camaraActiva = preferencias.verificacionCamaraActiva && permisos.estaConcedido(Permiso.CAMARA),
+                        notificacionesDisponibles = notificador().disponible,
+                        notificacionesPermitidas = notificador().permitidas(),
+                        recordatorioActivo = preferencias.recordatorioRutina(pacienteId) != null,
+                        horaRecordatorio = preferencias.recordatorioRutina(pacienteId) ?: it.horaRecordatorio,
                     )
                 }
             } catch (e: CancellationException) {
@@ -105,6 +118,39 @@ class PerfilViewModel(
             _estado.update { it.copy(aviso = "Se vació la caché de videos.") }
             cargar()
         }
+    }
+
+    /** NOT-01: enciende o apaga el recordatorio diario de la rutina (al encenderlo pide el permiso de notificaciones). */
+    fun cambiarRecordatorio(activar: Boolean) {
+        viewModelScope.launch {
+            if (activar) permisos.solicitar(Permiso.NOTIFICACIONES)
+            val hora = _estado.value.horaRecordatorio
+            guardarRecordatorio(if (activar) hora else null)
+            val permitidas = notificador().permitidas()
+            _estado.update {
+                it.copy(
+                    recordatorioActivo = activar,
+                    notificacionesPermitidas = permitidas,
+                    aviso = when {
+                        !activar -> "Recordatorio de la rutina apagado."
+                        permitidas -> "Te recordaremos tu rutina todos los días a las ${ReglasAvisos.horaLegible(hora)}."
+                        else -> "Guardado, pero las notificaciones están apagadas: actívalas en Ajustes > Apps > PhysioGestion."
+                    },
+                )
+            }
+        }
+    }
+
+    /** Mueve la hora del recordatorio media hora antes (−1) o después (+1). */
+    fun moverHora(pasos: Int) {
+        val nueva = ReglasAvisos.ajustarHora(_estado.value.horaRecordatorio, pasos)
+        _estado.update { it.copy(horaRecordatorio = nueva, aviso = null) }
+        if (_estado.value.recordatorioActivo) guardarRecordatorio(nueva)
+    }
+
+    private fun guardarRecordatorio(minutos: Int?) {
+        preferencias.guardarRecordatorioRutina(pacienteId, minutos)
+        notificador().programarRecordatorioRutina(minutos)
     }
 
     /** HABILITACIÓN: al activarla se pide el permiso de cámara; la preferencia se guarda en el teléfono. */

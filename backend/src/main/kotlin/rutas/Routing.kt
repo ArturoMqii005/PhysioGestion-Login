@@ -3,6 +3,7 @@ package com.terapid.physiogestion.rutas
 import com.terapid.physiogestion.datos.AlmacenJson
 import com.terapid.physiogestion.plugins.AUTH_SESION
 import com.terapid.physiogestion.servicios.AutenticacionServicio
+import com.terapid.physiogestion.servicios.AvisosServicio
 import com.terapid.physiogestion.servicios.ClinicaServicio
 import com.terapid.physiogestion.servicios.SesionesServicio
 import io.ktor.server.application.Application
@@ -28,6 +29,7 @@ import io.ktor.server.routing.routing
  *  GET  /api/v1/pacientes                  lista y ficha de pacientes, asignación de fisioterapeuta
  *  GET  /api/v1/pacientes/{id}/rutina      PACIENTE (solo la suya), FISIOTERAPEUTA (también PUT para modificarla)
  *  GET  /api/v1/ejercicios                 catálogo · GET /api/v1/fisioterapeutas
+ *  GET  /api/v1/avisos?desde=              con token: avisos del usuario (POST /avisos/leidos los marca)
  *
  *  GET    /api/v1/sesiones?idPaciente=     PACIENTE (las suyas), FISIOTERAPEUTA (sus pacientes)
  *  GET    /api/v1/sesiones/{id}            PACIENTE, FISIOTERAPEUTA
@@ -45,6 +47,7 @@ fun Application.configureRouting(
     autenticacion: AutenticacionServicio,
     sesiones: SesionesServicio,
     clinica: ClinicaServicio,
+    avisos: AvisosServicio,
     baseDatos: String = "memoria",
 ) {
     routing {
@@ -59,6 +62,7 @@ fun Application.configureRouting(
                 rutasCitas(clinica)
                 rutasRutinas(clinica, sesiones)
                 rutasSesiones(sesiones, clinica)
+                rutasAvisos(avisos)
             }
         }
     }

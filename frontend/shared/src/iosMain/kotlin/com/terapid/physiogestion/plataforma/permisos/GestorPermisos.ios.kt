@@ -21,6 +21,8 @@ actual class GestorPermisos actual constructor() {
     actual fun estaConcedido(permiso: Permiso): Boolean = when (permiso) {
         Permiso.CAMARA -> AVCaptureDevice.authorizationStatusForMediaType(AVMediaTypeVideo) == AVAuthorizationStatusAuthorized
         Permiso.ACTIVIDAD_FISICA -> CMMotionActivityManager.authorizationStatus() == CMAuthorizationStatusAuthorized
+        // En iOS la app todavía no muestra notificaciones del sistema (los avisos se ven dentro de la app).
+        Permiso.NOTIFICACIONES -> false
     }
 
     actual suspend fun solicitar(permiso: Permiso): Boolean = when (permiso) {
@@ -31,5 +33,6 @@ actual class GestorPermisos actual constructor() {
         }
         // CoreMotion pregunta al usuario cuando el podómetro empieza a contar.
         Permiso.ACTIVIDAD_FISICA -> true
+        Permiso.NOTIFICACIONES -> false
     }
 }

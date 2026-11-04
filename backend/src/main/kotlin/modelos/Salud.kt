@@ -3,7 +3,7 @@ package com.terapid.physiogestion.modelos
 import kotlinx.serialization.Serializable
 
 /** Versión de la API que se publica en GET /api/v1/salud. Se sube con cada despliegue. */
-const val VERSION_API = "1.3.0"
+const val VERSION_API = "1.4.0"
 
 /**
  * Respuesta de GET /api/v1/salud: confirma que el servidor está vivo y

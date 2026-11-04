@@ -9,13 +9,12 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import com.terapid.physiogestion.plataforma.ContextoAndroid
 import com.terapid.physiogestion.plataforma.permisos.SolicitanteDePermisos
 
 /**
- * Único archivo propio de la app Android: prepara la ventana, entrega al
- * código común lo que solo Android tiene (Context, BuildConfig y el
- * lanzador de permisos) y muestra la interfaz compartida App().
+ * Pantalla de la app Android: prepara la ventana, entrega al código común el
+ * lanzador de permisos y muestra la interfaz compartida App(). El Context y
+ * BuildConfig los entrega antes PhysioGestionApp.
  */
 class MainActivity : ComponentActivity() {
 
@@ -38,13 +37,6 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
-        // Context para la base de datos, las preferencias y los sensores; y las variables de BuildConfig.
-        ContextoAndroid.inicializar(
-            context = applicationContext,
-            esDepuracion = BuildConfig.DEBUG,
-            versionApp = BuildConfig.VERSION_NAME,
-            servidorConfigurado = BuildConfig.SERVIDOR_URL,
-        )
         // El código común no tiene Activity: aquí se le presta la forma de pedir permisos.
         SolicitanteDePermisos.lanzador = { permiso -> pedirPermiso.launch(permiso) }
         pedirPermisoRedLocal()

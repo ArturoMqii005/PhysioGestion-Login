@@ -1,5 +1,11 @@
 package com.terapid.physiogestion.vista
 
+import com.terapid.physiogestion.viewmodel.ResumenAvisosViewModel
+import com.terapid.physiogestion.vista.componentes.TarjetaActivarNotificaciones
+import com.terapid.physiogestion.vista.componentes.TarjetaAvisosSinLeer
+import com.terapid.physiogestion.vista.componentes.VigilarAvisos
+import com.terapid.physiogestion.vista.componentes.notificacionesOVacio
+import com.terapid.physiogestion.vista.componentes.resumenOVacio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -50,8 +56,13 @@ fun FisioterapeutaPantalla(
     alCerrarSesion: () -> Unit,
     alCambiarContrasena: (() -> Unit)? = null,
     alAbrirPacientes: () -> Unit = {},
+    avisos: ResumenAvisosViewModel? = null,
+    alAbrirAvisos: () -> Unit = {},
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
+    val resumenAvisos by avisos.resumenOVacio.collectAsStateWithLifecycle()
+    val notificaciones by avisos.notificacionesOVacio.collectAsStateWithLifecycle()
+    if (avisos != null) VigilarAvisos(avisos)
     val hoy = formatearFechaHora(ahoraEnMilisegundos()).substringBefore(" ")
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(
@@ -59,7 +70,11 @@ fun FisioterapeutaPantalla(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { EncabezadoRol("Mi agenda", usuario, alCerrarSesion, alCambiarContrasena) }
+            item { EncabezadoRol("Mi agenda", usuario, alCerrarSesion, alCambiarContrasena, resumenAvisos.sinLeer, alAbrirAvisos.takeIf { avisos != null }) }
+            if (avisos != null) {
+                item { TarjetaAvisosSinLeer(resumenAvisos, alAbrirAvisos) }
+                item { TarjetaActivarNotificaciones(notificaciones, "Te avisamos en cuanto un paciente termine su sesión con dolor alto, aunque tengas la app cerrada.", avisos::activarNotificaciones) }
+            }
             item {
                 OutlinedButton(onClick = alAbrirPacientes, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                     Text("Mis pacientes · fichas y rutinas")

@@ -50,6 +50,8 @@ class ClinicaServicio(
     private val reloj: Clock = Clock.systemUTC(),
     almacen: AlmacenDocumentos = AlmacenEnMemoria(),
     json: Json = Json { ignoreUnknownKeys = true },
+    /** Avisos para el paciente y el personal cuando cambia una cita, una rutina o una asignación. */
+    private val avisos: AvisosServicio? = null,
 ) {
     companion object {
         /** Zona de la clínica (Tulancingo): «hoy» y la hora actual se calculan aquí. */
@@ -124,12 +126,14 @@ class ClinicaServicio(
 
     /** Asigna (o cambia) el fisioterapeuta de un paciente; su rutina pasa a nombre del nuevo (PAC-04). */
     fun asignar(pacienteId: Int, fisioterapeutaId: Int): Asignacion {
-        paciente(pacienteId)
+        val p = paciente(pacienteId)
         val f = fisio(fisioterapeutaId)
+        val anterior = asignaciones[pacienteId]?.fisioterapeutaId
         val a = Asignacion(pacienteId, f.id)
         asignaciones[pacienteId] = a
         colAsignaciones.guardar(a)
         rutinas[pacienteId]?.let { guardarRutina(it.copy(fisioterapeuta = f.nombre)) }
+        if (anterior != f.id) avisar { pacienteAsignado(f.id, pacienteId, p.nombre) }
         return a
     }
 
@@ -177,6 +181,7 @@ class ClinicaServicio(
             asignaciones[pacienteId] = a
             colAsignaciones.guardar(a)
         }
+        avisar { rutinaActualizada(rutina) }
         return rutina
     }
 
@@ -226,7 +231,7 @@ class ClinicaServicio(
                 duracionMinutos = s.duracionMinutos,
             )
             guardarCita(nueva)
-        }
+        }.also { avisar { citaNueva(it) } }
     }
 
     /** Reprograma (CIT-06). Una cita terminada (atendida, cancelada o no asistió) ya no se mueve. */
@@ -239,7 +244,7 @@ class ClinicaServicio(
         verificarChoques(actual.id, f.id, actual.pacienteId, fecha, hora, duracion)
         val motivo = s.motivo?.trim()?.takeIf { it.length in 3..120 } ?: actual.motivo
         val cambio = fecha.toString() != actual.fecha || hora.format(FORMATO_HORA) != actual.hora
-        guardarCita(
+        val nueva = guardarCita(
             actual.copy(
                 fecha = fecha.toString(),
                 hora = hora.format(FORMATO_HORA),
@@ -252,6 +257,8 @@ class ClinicaServicio(
                 nota = if (cambio) "Reprogramada (antes ${fechaMx(actual.fecha)} ${actual.hora})" else actual.nota,
             )
         )
+        if (cambio || nueva.fisioterapeutaId != actual.fisioterapeutaId) avisar { citaReprogramada(actual, nueva) }
+        nueva
     }
 
     /**
@@ -287,7 +294,11 @@ class ClinicaServicio(
             notaLimpia != null -> notaLimpia
             else -> actual.nota
         }
-        guardarCita(actual.copy(estado = nuevo, nota = textoNota))
+        val nueva = guardarCita(actual.copy(estado = nuevo, nota = textoNota))
+        if (nuevo == EstadoCita.CANCELADA && dia >= hoy()) {
+            avisar { citaCancelada(nueva, porElPaciente = usuario.rol == Rol.PACIENTE, quienCancela = usuario.id) }
+        }
+        nueva
     }
 
     /** Horas de inicio libres de un fisioterapeuta en un día, cada 30 minutos. */
@@ -317,6 +328,11 @@ class ClinicaServicio(
     }
 
     // ======================================================================= AUXILIARES
+
+    /** Un aviso que no se pudo guardar no debe deshacer la operación que lo originó. */
+    private inline fun avisar(bloque: AvisosServicio.() -> Unit) {
+        avisos?.let { runCatching { it.bloque() } }
+    }
 
     private fun guardarCita(c: Cita): Cita {
         citas[c.id] = c

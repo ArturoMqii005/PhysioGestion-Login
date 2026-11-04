@@ -63,5 +63,8 @@ actual class GestorPermisos actual constructor() {
         // ACTIVITY_RECOGNITION existe desde Android 10 (API 29); antes no se pedía.
         Permiso.ACTIVIDAD_FISICA ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Manifest.permission.ACTIVITY_RECOGNITION else null
+        // POST_NOTIFICATIONS existe desde Android 13 (API 33); antes las notificaciones no pedían permiso.
+        Permiso.NOTIFICACIONES ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) Manifest.permission.POST_NOTIFICATIONS else null
     }
 }

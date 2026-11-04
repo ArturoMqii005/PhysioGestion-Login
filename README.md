@@ -77,6 +77,22 @@ Sobre el proyecto del login se integraron las prácticas de la estructura de la 
 con rutina de la Ft. Mariana Soto). Recepción genera códigos nuevos desde su pantalla. Sin proveedor de correo configurado,
 el código de 6 dígitos aparece en el registro del servidor (`railway logs`).
 
+## Lo que se agregó en la versión 1.4 (avisos y recordatorios, sin Firebase)
+
+|Función|Dónde|
+|-|-|
+|Aviso al fisioterapeuta cuando un paciente termina su sesión con dolor alto (también si corrige el dolor después)|`AvisosServicio` · `GET /avisos` · notificación urgente en Android|
+|Bandeja de avisos para cada rol, con contador en el encabezado; tocar un aviso lleva a la ficha, a la rutina o a las citas|`AvisosPantalla`, `TarjetaAvisosSinLeer`|
+|Avisos al paciente: cita nueva, reprogramada o cancelada y rutina modificada; al personal: cancelaciones del paciente y pacientes asignados|`AvisosServicio`|
+|Recordatorio de cita un día antes y una hora antes|`NotificadorAndroid` (WorkManager, en el teléfono)|
+|Recordatorio diario de la rutina a la hora que elija el paciente (no suena si ya entrenó ese día)|`PerfilPantalla` → Recordatorios|
+|Envío automático de las sesiones guardadas sin conexión y aviso si siguen pendientes|`RevisarAvisosTrabajo` → `RevisorSegundoPlano`|
+
+**Cómo llegan sin Firebase:** el teléfono pregunta al servidor. Con la app abierta revisa cada 30 s; cerrada,
+WorkManager revisa cada 15 min con internet (el mínimo de Android, que además puede retrasarlo para ahorrar batería).
+Los recordatorios de cita y de rutina se programan en el propio teléfono y no necesitan internet.
+En escritorio los avisos se ven en la bandeja, sin notificación del sistema.
+
 ## Lo que se agregó en la versión 1.3 (operación clínica)
 
 |Función|Dónde|

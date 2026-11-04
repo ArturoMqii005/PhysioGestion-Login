@@ -1,5 +1,11 @@
 package com.terapid.physiogestion.vista
 
+import com.terapid.physiogestion.viewmodel.ResumenAvisosViewModel
+import com.terapid.physiogestion.vista.componentes.TarjetaActivarNotificaciones
+import com.terapid.physiogestion.vista.componentes.TarjetaAvisosSinLeer
+import com.terapid.physiogestion.vista.componentes.VigilarAvisos
+import com.terapid.physiogestion.vista.componentes.notificacionesOVacio
+import com.terapid.physiogestion.vista.componentes.resumenOVacio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -64,7 +70,12 @@ fun RecepcionPantalla(
     alAgendar: () -> Unit = {},
     alReprogramar: (Cita) -> Unit = {},
     alAbrirPacientes: () -> Unit = {},
+    avisos: ResumenAvisosViewModel? = null,
+    alAbrirAvisos: () -> Unit = {},
 ) {
+    val resumenAvisos by avisos.resumenOVacio.collectAsStateWithLifecycle()
+    val notificaciones by avisos.notificacionesOVacio.collectAsStateWithLifecycle()
+    if (avisos != null) VigilarAvisos(avisos)
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(
@@ -72,7 +83,11 @@ fun RecepcionPantalla(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { EncabezadoRol("Agenda de la clínica", usuario, alCerrarSesion, alCambiarContrasena) }
+            item { EncabezadoRol("Agenda de la clínica", usuario, alCerrarSesion, alCambiarContrasena, resumenAvisos.sinLeer, alAbrirAvisos.takeIf { avisos != null }) }
+            if (avisos != null) {
+                item { TarjetaAvisosSinLeer(resumenAvisos, alAbrirAvisos) }
+                item { TarjetaActivarNotificaciones(notificaciones, "Te avisamos cuando un paciente cancele su cita desde la app, para ofrecer esa hora a alguien más.", avisos::activarNotificaciones) }
+            }
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(onClick = alAgendar, modifier = Modifier.weight(1f).heightIn(min = 52.dp), colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Turquesa)) {

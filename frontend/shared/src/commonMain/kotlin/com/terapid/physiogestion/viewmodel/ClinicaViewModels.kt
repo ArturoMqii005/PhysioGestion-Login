@@ -357,7 +357,12 @@ data class MisCitasUiState(
     val proximas: List<Cita> get() = citas.filter { it.abierta }
 }
 
-class MisCitasViewModel(private val clinica: ClinicaRepositorio, hoy: String = hoyIso()) : ViewModel() {
+class MisCitasViewModel(
+    private val clinica: ClinicaRepositorio,
+    hoy: String = hoyIso(),
+    /** Recibe las citas cada vez que cambian (programa sus recordatorios, NOT-02). */
+    private val alCambiarCitas: (List<Cita>) -> Unit = {},
+) : ViewModel() {
     private val _estado = MutableStateFlow(MisCitasUiState(hoy = hoy))
     val estado: StateFlow<MisCitasUiState> = _estado.asStateFlow()
 
@@ -370,6 +375,7 @@ class MisCitasViewModel(private val clinica: ClinicaRepositorio, hoy: String = h
             try {
                 val citas = clinica.citas()
                 _estado.update { it.copy(cargando = false, citas = citas) }
+                alCambiarCitas(citas)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -389,6 +395,7 @@ class MisCitasViewModel(private val clinica: ClinicaRepositorio, hoy: String = h
             try {
                 val nueva = clinica.cambiarEstadoCita(cita.id, EstadoCita.CANCELADA)
                 _estado.update { s -> s.copy(procesando = false, citas = s.citas.map { if (it.id == nueva.id) nueva else it }, aviso = "Cancelaste tu cita. Si quieres otra fecha, llama a la clínica.") }
+                alCambiarCitas(_estado.value.citas)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

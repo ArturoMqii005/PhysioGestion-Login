@@ -70,6 +70,35 @@ class PreferenciasRepositorio(
     fun ultimaSincronizacion(): Long? =
         preferencias.leerLargo(ClavesAlmacen.FECHA_ULTIMA_SINCRONIZACION, 0L).takeIf { it > 0L }
 
+    // ---- Avisos y recordatorios ----
+
+    /** null si este teléfono nunca revisó los avisos de ese usuario. */
+    fun ultimoAvisoVisto(usuarioId: Int): Int? =
+        ClavesAlmacen.ultimoAvisoVisto(usuarioId).let { if (preferencias.contiene(it)) preferencias.leerEntero(it) else null }
+
+    fun guardarUltimoAvisoVisto(usuarioId: Int, id: Int) = preferencias.guardarEntero(ClavesAlmacen.ultimoAvisoVisto(usuarioId), id)
+
+    /** Hora del recordatorio diario de la rutina en minutos del día; null = apagado (NOT-01). */
+    fun recordatorioRutina(pacienteId: Int): Int? =
+        ClavesAlmacen.recordatorioRutina(pacienteId).let { if (preferencias.contiene(it)) preferencias.leerEntero(it) else null }
+
+    fun guardarRecordatorioRutina(pacienteId: Int, minutosDelDia: Int?) {
+        val clave = ClavesAlmacen.recordatorioRutina(pacienteId)
+        if (minutosDelDia == null) preferencias.borrar(clave) else preferencias.guardarEntero(clave, minutosDelDia)
+    }
+
+    /** true si hoy el paciente ya registró una sesión (el recordatorio de la rutina ya no hace falta). */
+    fun yaEntrenoHoy(pacienteId: Int): Boolean =
+        preferencias.leerTexto(ClavesAlmacen.ultimoDiaActivo(pacienteId)) == claveDelDia(reloj())
+
+    /** NOT-04: devuelve true (y lo anota) solo la primera vez del día que se avisa de sesiones sin enviar. */
+    fun tocaAvisarPendientes(): Boolean {
+        val hoy = claveDelDia(reloj())
+        if (preferencias.leerTexto(ClavesAlmacen.DIA_AVISO_PENDIENTES) == hoy) return false
+        preferencias.guardarTexto(ClavesAlmacen.DIA_AVISO_PENDIENTES, hoy)
+        return true
+    }
+
     // ---- Configuración ----
 
     var verificacionCamaraActiva: Boolean

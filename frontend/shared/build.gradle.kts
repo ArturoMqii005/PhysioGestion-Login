@@ -59,6 +59,10 @@ kotlin {
             implementation(libs.camerax.lifecycle)
             implementation(libs.camerax.view)
             implementation(libs.mlkit.pose)
+            // Avisos y recordatorios (sin Firebase): WorkManager revisa el servidor en segundo
+            // plano y NotificationCompat muestra la notificación del sistema.
+            implementation(libs.androidx.work.runtime)
+            implementation(libs.androidx.core.ktx)
         }
         jvmMain.dependencies {
             // Motor HTTP especifico de escritorio (JVM)

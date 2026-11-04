@@ -3,6 +3,7 @@ package com.terapid.physiogestion.vista.componentes
 import androidx.compose.ui.graphics.Color
 import com.terapid.physiogestion.modelo.EstadoCita
 import com.terapid.physiogestion.modelo.Rol
+import com.terapid.physiogestion.modelo.TipoAviso
 import com.terapid.physiogestion.modelo.Semaforo
 import com.terapid.physiogestion.servicio.movimiento.RangoArticular
 import com.terapid.physiogestion.vista.tema.ColoresPhysio
@@ -74,4 +75,25 @@ val RangoArticular.color: Color
         RangoArticular.ACEPTABLE -> ColoresPhysio.Pendiente
         RangoArticular.OBJETIVO_ALCANZADO -> ColoresPhysio.Exito
         RangoArticular.EXCEDIDO -> ColoresPhysio.Violeta
+    }
+
+/** Tipo de aviso con texto y color (RC-25). */
+val TipoAviso.etiqueta: String
+    get() = when (this) {
+        TipoAviso.DOLOR_ALTO -> "Dolor alto"
+        TipoAviso.CITA_NUEVA -> "Cita nueva"
+        TipoAviso.CITA_REPROGRAMADA -> "Cita reprogramada"
+        TipoAviso.CITA_CANCELADA -> "Cita cancelada"
+        TipoAviso.RUTINA_ACTUALIZADA -> "Rutina"
+        TipoAviso.PACIENTE_ASIGNADO -> "Paciente nuevo"
+    }
+
+val TipoAviso.color: Color
+    get() = when (this) {
+        TipoAviso.DOLOR_ALTO -> ColoresPhysio.Alerta
+        TipoAviso.CITA_NUEVA -> ColoresPhysio.Turquesa
+        TipoAviso.CITA_REPROGRAMADA -> ColoresPhysio.Pendiente
+        TipoAviso.CITA_CANCELADA -> ColoresPhysio.TextoSecundario
+        TipoAviso.RUTINA_ACTUALIZADA -> ColoresPhysio.AzulClaro
+        TipoAviso.PACIENTE_ASIGNADO -> ColoresPhysio.Violeta
     }

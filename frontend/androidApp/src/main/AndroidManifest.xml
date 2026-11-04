@@ -6,6 +6,11 @@
     <!-- Android 17+: conectarse a la red local (10.0.2.2 del emulador o la IP de la computadora) -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
+    <!-- AVISOS Y RECORDATORIOS (sin Firebase): mostrar notificaciones (Android 13+ lo pregunta al usuario).
+         WorkManager añade por su cuenta los permisos para saber si hay red y para
+         volver a programar los trabajos después de reiniciar el teléfono. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- HABILITACIÓN DE SENSORES -->
     <!-- Verificación visual del ejercicio (RFN-27) -->
     <uses-permission android:name="android.permission.CAMERA" />
@@ -23,6 +28,7 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
+        android:name=".PhysioGestionApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"

@@ -1,5 +1,11 @@
 package com.terapid.physiogestion.vista
 
+import com.terapid.physiogestion.viewmodel.ResumenAvisosViewModel
+import com.terapid.physiogestion.vista.componentes.TarjetaActivarNotificaciones
+import com.terapid.physiogestion.vista.componentes.TarjetaAvisosSinLeer
+import com.terapid.physiogestion.vista.componentes.VigilarAvisos
+import com.terapid.physiogestion.vista.componentes.notificacionesOVacio
+import com.terapid.physiogestion.vista.componentes.resumenOVacio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -59,8 +65,13 @@ fun InicioPacientePantalla(
     alAbrirPerfil: () -> Unit,
     alCerrarSesion: () -> Unit,
     misCitas: MisCitasViewModel? = null,
+    avisos: ResumenAvisosViewModel? = null,
+    alAbrirAvisos: () -> Unit = {},
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
+    val resumenAvisos by avisos.resumenOVacio.collectAsStateWithLifecycle()
+    val notificaciones by avisos.notificacionesOVacio.collectAsStateWithLifecycle()
+    if (avisos != null) VigilarAvisos(avisos)
     // Cada vez que la pantalla aparece (también al regresar de la rutina) se actualiza el resumen.
     LaunchedEffect(Unit) { viewModel.cargar() }
 
@@ -70,7 +81,11 @@ fun InicioPacientePantalla(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { EncabezadoRol("Mi tratamiento", usuario, alCerrarSesion) }
+            item { EncabezadoRol("Mi tratamiento", usuario, alCerrarSesion, avisosSinLeer = resumenAvisos.sinLeer, alAbrirAvisos = alAbrirAvisos.takeIf { avisos != null }) }
+            if (avisos != null) {
+                item { TarjetaAvisosSinLeer(resumenAvisos, alAbrirAvisos) }
+                item { TarjetaActivarNotificaciones(notificaciones, "Te recordamos tus citas un día y una hora antes, y te avisamos cuando tu fisioterapeuta cambie tu rutina.", avisos::activarNotificaciones) }
+            }
 
             estado.aviso?.let { aviso ->
                 item {

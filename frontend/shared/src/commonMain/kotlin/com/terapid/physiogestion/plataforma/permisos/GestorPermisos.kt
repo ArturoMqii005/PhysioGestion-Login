@@ -13,6 +13,9 @@ enum class Permiso {
 
     /** Contador de pasos (RFN-39). */
     ACTIVIDAD_FISICA,
+
+    /** Avisos y recordatorios (NOT-01..04). Android lo pide desde la versión 13. */
+    NOTIFICACIONES,
 }
 
 /**

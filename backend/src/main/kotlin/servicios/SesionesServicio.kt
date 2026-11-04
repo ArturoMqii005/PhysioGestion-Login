@@ -41,6 +41,8 @@ class SesionesServicio(
     sesionesIniciales: List<SesionTerapia> = emptyList(),
     almacen: AlmacenDocumentos = AlmacenEnMemoria(),
     json: Json = Json { ignoreUnknownKeys = true },
+    /** Se llama cuando una sesión queda en ROJO (dolor alto) para avisar al fisioterapeuta (NOT-03). */
+    private val alQuedarEnRojo: (SesionTerapia) -> Unit = {},
 ) {
     private val colSesiones = Coleccion(almacen, "sesiones", SesionTerapia.serializer(), json) { it.id.toString() }
     private val colClaves = Coleccion(almacen, "claves_idempotencia", ClaveUsada.serializer(), json) { it.llave }
@@ -139,6 +141,7 @@ class SesionesServicio(
             clavesUsadas[it] = sesion.id
             colClaves.guardar(ClaveUsada(it, sesion.id))
         }
+        if (sesion.semaforo == Semaforo.ROJO) avisarRojo(sesion)
         return Creacion(sesion, nueva = true)
     }
 
@@ -260,7 +263,13 @@ class SesionesServicio(
         val actualizada = sesion.copy(semaforo = semaforo(sesion.porcentajeCumplimiento, sesion.dolorDespues, umbral))
         sesiones[actualizada.id] = actualizada
         colSesiones.guardar(actualizada)
+        // Si el paciente corrige el dolor y la sesión pasa a rojo, también se avisa (una vez por sesión).
+        if (actualizada.semaforo == Semaforo.ROJO && sesion.semaforo != Semaforo.ROJO) avisarRojo(actualizada)
         return actualizada
+    }
+
+    private fun avisarRojo(sesion: SesionTerapia) {
+        runCatching { alQuedarEnRojo(sesion) }
     }
 
     private fun validarDolor(vararg niveles: Int) {

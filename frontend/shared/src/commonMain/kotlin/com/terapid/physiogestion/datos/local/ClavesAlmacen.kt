@@ -25,6 +25,14 @@ object ClavesAlmacen {
     fun rachaDias(pacienteId: Int) = "racha_dias_$pacienteId"
     fun ultimoDiaActivo(pacienteId: Int) = "ultimo_dia_activo_$pacienteId"
 
+    // ---- Avisos y recordatorios (NOT-01..04) ----
+    /** Id del aviso más reciente que este teléfono ya mostró a ese usuario (para no repetir notificaciones). */
+    fun ultimoAvisoVisto(usuarioId: Int) = "ultimo_aviso_visto_$usuarioId"
+    /** Minutos del día del recordatorio de la rutina (18:30 = 1110); si no existe, está apagado. */
+    fun recordatorioRutina(pacienteId: Int) = "recordatorio_rutina_$pacienteId"
+    /** Día en que ya se avisó de sesiones sin enviar (un aviso por día como máximo). */
+    const val DIA_AVISO_PENDIENTES = "dia_aviso_pendientes"
+
     // ---- Contador de pasos: lectura del sensor al empezar el día ----
     const val PASOS_DIA_BASE = "pasos_dia_base"
     const val PASOS_VALOR_BASE = "pasos_valor_base"

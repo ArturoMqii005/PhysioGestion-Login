@@ -13,7 +13,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.terapid.physiogestion.dependencias.Dependencias
+import com.terapid.physiogestion.modelo.Aviso
 import com.terapid.physiogestion.modelo.Rol
+import com.terapid.physiogestion.modelo.TipoAviso
+import com.terapid.physiogestion.servicio.ReglasAvisos
+import com.terapid.physiogestion.viewmodel.AvisosViewModel
+import com.terapid.physiogestion.viewmodel.ResumenAvisosViewModel
+import com.terapid.physiogestion.vista.AvisosPantalla
 import com.terapid.physiogestion.modelo.Usuario
 import com.terapid.physiogestion.plataforma.ahoraEnMilisegundos
 import com.terapid.physiogestion.plataforma.claveDelDia
@@ -91,6 +97,23 @@ fun NavegacionPrincipal() {
         }
     }
 
+    // Notificaciones (NOT-01..04): con la sesión abierta, Android revisa los avisos en
+    // segundo plano y programa el recordatorio de la rutina; al cerrarla se cancela todo.
+    val usuarioActivo = sesion?.takeIf { !it.requiereConsentimiento && !it.debeCambiarContrasena }?.usuario
+    LaunchedEffect(usuarioActivo?.id) {
+        val notificador = Dependencias.notificador
+        if (usuarioActivo == null) {
+            notificador.detenerTodo()
+            Dependencias.avisos.limpiar()
+            return@LaunchedEffect
+        }
+        notificador.iniciarRevision(usuarioActivo.rol)
+        val pacienteId = usuarioActivo.pacienteId
+        if (usuarioActivo.rol == Rol.PACIENTE && pacienteId != null) {
+            notificador.programarRecordatorioRutina(Dependencias.preferencias.recordatorioRutina(pacienteId))
+        }
+    }
+
     NavHost(navController = navegador, startDestination = RutaLogin) {
         composable<RutaLogin> {
             LoginPantalla(
@@ -158,6 +181,8 @@ fun NavegacionPrincipal() {
                 alCerrarSesion = sesionVm::cerrarSesion,
                 alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
                 alAbrirPacientes = { navegador.navigate(RutaPacientes) },
+                avisos = resumenAvisos(),
+                alAbrirAvisos = { navegador.navigate(RutaAvisos) },
             )
         }
         composable<RutaRecepcion> {
@@ -171,6 +196,38 @@ fun NavegacionPrincipal() {
                 alAgendar = { navegador.navigate(RutaAgendarCita) },
                 alReprogramar = { cita -> navegador.navigate(cita.aRutaReprogramar()) },
                 alAbrirPacientes = { navegador.navigate(RutaPacientes) },
+                avisos = resumenAvisos(),
+                alAbrirAvisos = { navegador.navigate(RutaAvisos) },
+            )
+        }
+
+        // ---------------- Avisos (NOT-01..04) ----------------
+
+        composable<RutaAvisos> {
+            val usuario = sesion?.usuario ?: return@composable
+            val esPaciente = usuario.rol == Rol.PACIENTE
+            AvisosPantalla(
+                viewModel = viewModel { AvisosViewModel(Dependencias.avisos, { Dependencias.notificador }, Dependencias.permisos) },
+                motivoNotificaciones = when (usuario.rol) {
+                    Rol.FISIOTERAPEUTA -> "Te avisamos en cuanto un paciente termine su sesión con dolor alto, aunque tengas la app cerrada."
+                    Rol.PACIENTE -> "Te recordamos tus citas un día y una hora antes, y tu rutina a la hora que elijas en tu perfil."
+                    else -> "Te avisamos cuando un paciente cancele su cita desde la app."
+                },
+                textoVacio = when (usuario.rol) {
+                    Rol.FISIOTERAPEUTA -> "Sin avisos. Aquí aparecerán las sesiones con dolor alto, los pacientes nuevos y los cambios en tus citas."
+                    Rol.PACIENTE -> "Sin avisos. Aquí aparecerán tus citas nuevas o reprogramadas y los cambios en tu rutina."
+                    else -> "Sin avisos. Aquí aparecerán las citas que cancelen los pacientes desde la app."
+                },
+                destino = { aviso -> destinoDeAviso(aviso, esPaciente) },
+                alRegresar = { navegador.popBackStack() },
+                alAbrirAviso = { aviso ->
+                    when {
+                        destinoDeAviso(aviso, esPaciente) == null -> Unit
+                        !esPaciente -> aviso.pacienteId?.let { navegador.navigate(RutaFichaPaciente(it)) }
+                        aviso.tipo == TipoAviso.RUTINA_ACTUALIZADA -> navegador.navigate(RutaRutina)
+                        else -> navegador.popBackStack() // las citas se ven en el inicio del paciente
+                    }
+                },
             )
         }
 
@@ -240,7 +297,16 @@ fun NavegacionPrincipal() {
             val usuario = sesion?.usuario ?: return@composable
             InicioPacientePantalla(
                 usuario = usuario,
-                misCitas = viewModel { MisCitasViewModel(Dependencias.clinica) },
+                misCitas = viewModel {
+                    MisCitasViewModel(Dependencias.clinica) { citas ->
+                        // NOT-02: un recordatorio un día antes y otro una hora antes de cada cita.
+                        Dependencias.notificador.programarRecordatoriosDeCitas(
+                            ReglasAvisos.recordatoriosDeCitas(citas, claveDelDia(ahoraEnMilisegundos())),
+                        )
+                    }
+                },
+                avisos = resumenAvisos(),
+                alAbrirAvisos = { navegador.navigate(RutaAvisos) },
                 viewModel = viewModel {
                     InicioPacienteViewModel(
                         pacienteId = usuario.pacienteId ?: 0,
@@ -344,6 +410,7 @@ fun NavegacionPrincipal() {
                         almacenamiento = Dependencias.almacenamiento,
                         archivos = Dependencias.archivos,
                         permisos = Dependencias.permisos,
+                        notificador = { Dependencias.notificador },
                     )
                 },
                 alRegresar = { navegador.popBackStack() },
@@ -370,6 +437,19 @@ private fun rutinaViewModelCompartido(navegador: NavHostController, usuario: Usu
         runCatching { navegador.getBackStackEntry<RutaRutina>() }.getOrNull()
     } ?: return null
     return viewModel(entradaRutina) { crearRutinaViewModel(usuario) }
+}
+
+/** Contador de avisos de la vista del rol (uno por pantalla, comparte el repositorio). */
+@Composable
+private fun resumenAvisos(): ResumenAvisosViewModel =
+    viewModel { ResumenAvisosViewModel(Dependencias.avisos, { Dependencias.notificador }, Dependencias.permisos) }
+
+/** Texto del enlace de un aviso, o null si solo se marca como leído. */
+private fun destinoDeAviso(aviso: Aviso, esPaciente: Boolean): String? = when {
+    !esPaciente -> if (aviso.pacienteId != null) "Ver ficha" else null
+    aviso.tipo == TipoAviso.RUTINA_ACTUALIZADA -> "Ver mi rutina"
+    aviso.tipo in setOf(TipoAviso.CITA_NUEVA, TipoAviso.CITA_REPROGRAMADA, TipoAviso.CITA_CANCELADA) -> "Ver mis citas"
+    else -> null
 }
 
 /** AgendaViewModel de la pantalla de recepción que está debajo en la pila (para recargarla al volver). */

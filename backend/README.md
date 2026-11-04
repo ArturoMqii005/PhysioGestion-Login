@@ -78,10 +78,17 @@ backend/
 | DELETE | `/api/v1/sesiones/{id}` | PACIENTE (solo las suyas) | **204 No Content**; la segunda vez, 404 |
 | POST | `/api/v1/resultados-ejercicio` | PACIENTE | Resumen medido con sensores → 201 |
 | GET | `/api/v1/resultados-ejercicio` | PACIENTE, FISIOTERAPEUTA | Resultados de sensores |
+| GET | `/api/v1/avisos?desde=` | Con token (cada quien los suyos) | `BandejaAvisos`: los 50 más recientes, `sinLeer` y `ultimoId`. Con `desde`, solo los de id mayor |
+| POST | `/api/v1/avisos/leidos` | Con token | `{"ids":[3,4]}` o `{"todos":true}` → bandeja actualizada |
 
 Errores de validación (dolor fuera de 0 a 10, ejercicio que no está en la rutina) responden **422** con un mensaje claro.
 Cada sesión trae su **semáforo**: ROJO si el dolor después alcanza el umbral de la rutina, AMARILLO si el cumplimiento es menor a 60 %, VERDE en otro caso.
 Las rutas de `/auth` aceptan como máximo 30 peticiones por minuto por IP (429 con `Retry-After`).
+
+**Avisos (v1.4):** el servidor los genera y los guarda en la colección `avisos` (máximo 100 por usuario). Una sesión
+en ROJO avisa al fisioterapeuta asignado una sola vez; agendar, reprogramar o cancelar una cita avisa al paciente (y,
+si la cancela él, a su fisioterapeuta y a recepción); guardar una rutina avisa al paciente; asignar un paciente avisa
+al fisioterapeuta. La app los consulta con `GET /avisos` y muestra la notificación: no se usa Firebase.
 
 ## Seguridad de las cuentas
 

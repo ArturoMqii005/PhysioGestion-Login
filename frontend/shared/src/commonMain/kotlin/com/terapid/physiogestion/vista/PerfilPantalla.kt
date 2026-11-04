@@ -21,6 +21,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import com.terapid.physiogestion.servicio.ReglasAvisos
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.terapid.physiogestion.datos.local.LIMITE_CACHE_VIDEOS_MB
@@ -61,6 +63,50 @@ fun PerfilPantalla(
                     "Racha actual: ${estado.racha} " + if (estado.racha == 1) "día seguido" else "días seguidos",
                     style = MaterialTheme.typography.bodyMedium,
                 )
+            }
+
+            Seccion("Recordatorios") {
+                if (!estado.notificacionesDisponibles) {
+                    Text(
+                        "Los recordatorios llegan como notificación en la app de Android.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Recordarme hacer mi rutina")
+                            Text(
+                                "Una notificación al día. Si ya registraste tu sesión ese día, no te molesta.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = estado.recordatorioActivo,
+                            onCheckedChange = viewModel::cambiarRecordatorio,
+                            colors = SwitchDefaults.colors(checkedTrackColor = ColoresPhysio.Turquesa),
+                        )
+                    }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(onClick = { viewModel.moverHora(-1) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("− 30 min") }
+                        Text(
+                            ReglasAvisos.horaLegible(estado.horaRecordatorio),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (estado.recordatorioActivo) ColoresPhysio.Turquesa else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f),
+                        )
+                        OutlinedButton(onClick = { viewModel.moverHora(1) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("+ 30 min") }
+                    }
+                    Text(
+                        "Tus citas se recuerdan solas: un día antes y una hora antes." +
+                            if (estado.notificacionesPermitidas) "" else " Para recibirlas, permite las notificaciones de la app.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (estado.notificacionesPermitidas) MaterialTheme.colorScheme.onSurfaceVariant else ColoresPhysio.Pendiente,
+                    )
+                }
             }
 
             Seccion("Permisos") {
