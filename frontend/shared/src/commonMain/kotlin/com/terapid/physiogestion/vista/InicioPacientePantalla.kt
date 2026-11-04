@@ -248,12 +248,12 @@ private fun Portada(
                 Iconos.Campana,
                 if (avisosSinLeer > 0) "Avisos, $avisosSinLeer sin leer" else "Avisos",
                 alAbrirAvisos,
-                tamano = 44.dp,
+                tamano = 48.dp,
                 fondo = ColoresPhysio.Fondo.copy(alpha = 0.55f),
                 insignia = avisosSinLeer,
             )
             Box(
-                Modifier.padding(start = 10.dp).size(44.dp).clip(CircleShape).background(ColoresPhysio.Lila)
+                Modifier.padding(start = 10.dp).size(48.dp).clip(CircleShape).background(ColoresPhysio.Lila)
                     .presionable(escala = 0.9f, etiqueta = "Mi perfil", alPulsar = alAbrirPerfil)
                     .semantics { contentDescription = "Mi perfil" },
                 contentAlignment = Alignment.Center,

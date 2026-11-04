@@ -103,7 +103,7 @@ fun EjercicioPantalla(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                BotonRedondo(Iconos.Cerrar, "Salir del ejercicio", alRegresar, tamano = 44.dp)
+                BotonRedondo(Iconos.Cerrar, "Salir del ejercicio", alRegresar, tamano = 48.dp)
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         ejercicio?.zonaCorporal ?: "",
@@ -120,7 +120,7 @@ fun EjercicioPantalla(
                         maxLines = 2,
                     )
                 }
-                BotonRedondo(Iconos.Info, if (verIndicaciones) "Ocultar indicaciones" else "Ver indicaciones", { verIndicaciones = !verIndicaciones }, tamano = 44.dp)
+                BotonRedondo(Iconos.Info, if (verIndicaciones) "Ocultar indicaciones" else "Ver indicaciones", { verIndicaciones = !verIndicaciones }, tamano = 48.dp)
             }
             ejercicio?.let { e ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {

@@ -133,9 +133,9 @@ private fun ContenidoRutina(
                     avance = 0.15f + 0.85f * estado.avance,
                 )
                 Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    BotonRedondo(Iconos.Atras, "Volver al inicio", alRegresar, tamano = 44.dp, fondo = ColoresPhysio.Fondo.copy(alpha = 0.55f))
+                    BotonRedondo(Iconos.Atras, "Volver al inicio", alRegresar, tamano = 48.dp, fondo = ColoresPhysio.Fondo.copy(alpha = 0.55f))
                     Box(Modifier.weight(1f))
-                    BotonRedondo(Iconos.Reloj, "Ver mi historial", alVerHistorial, tamano = 44.dp, fondo = ColoresPhysio.Fondo.copy(alpha = 0.55f))
+                    BotonRedondo(Iconos.Reloj, "Ver mi historial", alVerHistorial, tamano = 48.dp, fondo = ColoresPhysio.Fondo.copy(alpha = 0.55f))
                 }
                 Column(
                     Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 218.dp),

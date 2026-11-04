@@ -18,7 +18,7 @@ import com.terapid.physiogestion.vista.tema.ColoresPhysio
 @Composable
 fun EncabezadoSecundario(titulo: String, alRegresar: () -> Unit, subtitulo: String? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        BotonRedondo(Iconos.Atras, "Regresar", alRegresar, tamano = 44.dp)
+        BotonRedondo(Iconos.Atras, "Regresar", alRegresar, tamano = 48.dp)
         Text(titulo, style = MaterialTheme.typography.headlineMedium, color = ColoresPhysio.Texto, modifier = Modifier.padding(top = 6.dp))
         if (subtitulo != null) {
             Text(subtitulo, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

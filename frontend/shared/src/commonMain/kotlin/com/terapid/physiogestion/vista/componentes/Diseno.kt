@@ -162,7 +162,7 @@ fun BotonPildora(
     val tinta = if (violeta) Color.White else ColoresPhysio.Fondo
     Row(
         modifier
-            .heightIn(min = if (compacta) 44.dp else 54.dp)
+            .heightIn(min = if (compacta) MINIMO_TOQUE else 54.dp)
             .clip(RoundedCornerShape(50))
             .background(if (habilitado) fondo else ColoresPhysio.SuperficieAlta)
             .presionable(habilitado = habilitado, alPulsar = alPulsar)
@@ -182,6 +182,9 @@ fun BotonPildora(
     }
 }
 
+/** Área mínima que se puede tocar con el dedo (RNF-13): ningún botón mide menos. */
+val MINIMO_TOQUE = 48.dp
+
 /** Botón redondo de un solo ícono (con su descripción para el lector de pantalla). */
 @Composable
 fun BotonRedondo(
@@ -194,14 +197,15 @@ fun BotonRedondo(
     colorIcono: Color = Color.White,
     insignia: Int = 0,
 ) {
-    Box(modifier.size(tamano)) {
+    val lado = tamano.coerceAtLeast(MINIMO_TOQUE)
+    Box(modifier.size(lado)) {
         Box(
             Modifier.fillMaxSize().clip(CircleShape).background(fondo)
                 .presionable(escala = 0.9f, etiqueta = descripcion, alPulsar = alPulsar)
                 .semantics { contentDescription = descripcion },
             contentAlignment = Alignment.Center,
         ) {
-            Icono(icono, null, tamano = tamano * 0.42f, color = colorIcono)
+            Icono(icono, null, tamano = lado * 0.42f, color = colorIcono)
         }
         if (insignia > 0) Insignia(insignia, Modifier.align(Alignment.TopEnd))
     }
@@ -238,7 +242,7 @@ fun PuntosCarrusel(estado: PagerState, modifier: Modifier = Modifier) {
 @Composable
 fun TituloSeccion(texto: String, modifier: Modifier = Modifier, alPulsar: (() -> Unit)? = null) {
     Row(
-        modifier.then(if (alPulsar != null) Modifier.presionable(escala = 0.98f, alPulsar = alPulsar) else Modifier).heightIn(min = 44.dp),
+        modifier.then(if (alPulsar != null) Modifier.presionable(escala = 0.98f, alPulsar = alPulsar) else Modifier).heightIn(min = MINIMO_TOQUE),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {

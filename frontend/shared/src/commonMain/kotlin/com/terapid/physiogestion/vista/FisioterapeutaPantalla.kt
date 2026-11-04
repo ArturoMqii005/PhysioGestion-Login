@@ -99,7 +99,7 @@ fun FisioterapeutaPantalla(
                         Text(ahora.substringBefore(" "), color = ColoresPhysio.TextoSecundario, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         Text(saludo(horaActual) + ", " + primerNombre(usuario.nombre), style = MaterialTheme.typography.headlineMedium, color = ColoresPhysio.Texto)
                     }
-                    BotonRedondo(Iconos.Salir, "Cerrar sesión", alCerrarSesion, tamano = 44.dp)
+                    BotonRedondo(Iconos.Salir, "Cerrar sesión", alCerrarSesion, tamano = 48.dp)
                 }
                 if (alCambiarContrasena != null) BotonEnlace("Cambiar contraseña", alCambiarContrasena)
             }
