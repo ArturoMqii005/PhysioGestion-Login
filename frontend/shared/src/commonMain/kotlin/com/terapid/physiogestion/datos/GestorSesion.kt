@@ -29,6 +29,12 @@ class GestorSesion(private val persistencia: PersistenciaSesion? = null) {
         }
     }
 
+    /** Cambia la sesión abierta (por ejemplo, ya aceptó el aviso de privacidad) y la vuelve a guardar. */
+    fun actualizar(cambio: (Sesion) -> Sesion) {
+        val actual = _sesion.value ?: return
+        abrir(cambio(actual))
+    }
+
     /** Mensaje para el login cuando la sesión se cerró sola (por ejemplo, el servidor ya no reconoce el token). */
     private var avisoDeCierre: String? = null
 

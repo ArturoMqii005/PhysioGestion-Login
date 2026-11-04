@@ -1,6 +1,8 @@
 package com.terapid.physiogestion.navegacion
 
 import com.terapid.physiogestion.modelo.Rol
+import com.terapid.physiogestion.modelo.Sesion
+import com.terapid.physiogestion.modelo.Usuario
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -25,5 +27,17 @@ class RutasTest {
         assertEquals(RutaEjercicio(3), RutaEjercicio(3))
         assertEquals(7, RutaDetalleSesion(7).idSesion)
         kotlin.test.assertNotEquals(RutaEjercicio(3), RutaEjercicio(4))
+    }
+
+    @Test
+    fun antesDeLaVistaDelRolSePideLoQueFalta() {
+        val paciente = Sesion("t", Usuario(5, "paciente", "Jorge", Rol.PACIENTE, pacienteId = 1))
+        assertEquals(RutaPaciente, rutaPara(paciente))
+        assertEquals(RutaAvisoPrivacidad, rutaPara(paciente.copy(requiereConsentimiento = true)))
+        // Con las dos pendientes, primero el aviso y después la contraseña.
+        assertEquals(RutaAvisoPrivacidad, rutaPara(paciente.copy(requiereConsentimiento = true, debeCambiarContrasena = true)))
+        val fisio = Sesion("t", Usuario(9, "sofia", "Sofía", Rol.FISIOTERAPEUTA), debeCambiarContrasena = true)
+        assertEquals(RutaCambiarContrasena(obligatorio = true), rutaPara(fisio))
+        assertEquals(RutaFisioterapeuta, rutaPara(fisio.copy(debeCambiarContrasena = false)))
     }
 }

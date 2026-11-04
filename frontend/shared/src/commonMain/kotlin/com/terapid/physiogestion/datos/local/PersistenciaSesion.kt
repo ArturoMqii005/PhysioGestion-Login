@@ -16,6 +16,11 @@ class PersistenciaSesion(
 ) {
     fun guardar(sesion: Sesion) {
         preferencias.guardarTexto(ClavesAlmacen.SESION_USUARIO, json.encodeToString(Usuario.serializer(), sesion.usuario))
+        val pendientes = listOfNotNull(
+            "AVISO".takeIf { sesion.requiereConsentimiento },
+            "CONTRASENA".takeIf { sesion.debeCambiarContrasena },
+        )
+        preferencias.guardarTexto(ClavesAlmacen.SESION_PENDIENTES, pendientes.joinToString(","))
         seguro.guardarToken(sesion.token)
     }
 
@@ -24,7 +29,13 @@ class PersistenciaSesion(
         val usuario = preferencias.leerTexto(ClavesAlmacen.SESION_USUARIO).takeIf { it.isNotBlank() } ?: return null
         val token = seguro.leerToken() ?: return null
         return try {
-            Sesion(token = token, usuario = json.decodeFromString(Usuario.serializer(), usuario))
+            val pendientes = preferencias.leerTexto(ClavesAlmacen.SESION_PENDIENTES).split(',')
+            Sesion(
+                token = token,
+                usuario = json.decodeFromString(Usuario.serializer(), usuario),
+                requiereConsentimiento = "AVISO" in pendientes,
+                debeCambiarContrasena = "CONTRASENA" in pendientes,
+            )
         } catch (_: Exception) {
             borrar()
             null
@@ -34,6 +45,7 @@ class PersistenciaSesion(
     /** Cierra la sesión y elimina todo rastro del token en el dispositivo. */
     fun borrar() {
         preferencias.borrar(ClavesAlmacen.SESION_USUARIO)
+        preferencias.borrar(ClavesAlmacen.SESION_PENDIENTES)
         seguro.borrarToken()
     }
 }

@@ -46,9 +46,21 @@ backend/
 |---|---|---|---|
 | GET | `/` | Público | Texto de estado |
 | GET | `/api/v1/salud` | Público | `EstadoServidor`: estado, versión, entorno, región, commit desplegado y segundos encendido |
-| POST | `/api/v1/auth/login` | Público | `LoginRespuesta` (token + usuario con rol) o 401 |
+| POST | `/api/v1/auth/login` | Público | `LoginRespuesta` (token + usuario + pendientes) o 401. Acepta usuario **o correo**. 5 fallos → **429** por 5 min |
 | POST | `/api/v1/auth/logout` | Con token | 204 |
-| GET | `/api/v1/usuarios` | ADMINISTRADOR | Lista de usuarios sin contraseña |
+| POST | `/api/v1/auth/registro` | Público | Paciente con **código de invitación** → 201 y código de 6 dígitos al correo |
+| POST | `/api/v1/auth/verificar-correo` | Público | Confirma el correo (vence en 15 min, 5 intentos) |
+| POST | `/api/v1/auth/reenviar-verificacion` | Público | 202 (misma respuesta exista o no la cuenta) |
+| POST | `/api/v1/auth/recuperacion` | Público | 202 y código para restablecer (misma respuesta exista o no el correo) |
+| POST | `/api/v1/auth/restablecer` | Público | Código + contraseña nueva; cierra todas las sesiones |
+| GET | `/api/v1/aviso-privacidad` | Público | Texto vigente del aviso de privacidad |
+| GET | `/api/v1/usuarios/yo` | Con token | Cuenta y pendientes (aviso, contraseña temporal) |
+| PATCH | `/api/v1/usuarios/yo/contrasena` | Con token | Cambio de contraseña; cierra las otras sesiones |
+| POST | `/api/v1/usuarios/yo/consentimiento` | PACIENTE | Acepta el aviso de privacidad |
+| GET | `/api/v1/usuarios` | ADMINISTRADOR | Lista de usuarios sin contraseña (con activo y correo verificado) |
+| POST | `/api/v1/usuarios` | ADMINISTRADOR | Alta de personal con contraseña temporal → 201 |
+| PATCH | `/api/v1/usuarios/{id}` | ADMINISTRADOR | Activar o desactivar una cuenta |
+| GET / POST | `/api/v1/invitaciones` | ADMINISTRADOR, RECEPCIONISTA | Códigos de invitación para pacientes nuevos (7 días, un solo uso) |
 | GET | `/api/v1/citas` | ADMINISTRADOR, RECEPCIONISTA, FISIOTERAPEUTA | Agenda del día. El fisioterapeuta solo recibe las suyas |
 | GET | `/api/v1/pacientes/{id}/rutina` | PACIENTE (solo la suya), FISIOTERAPEUTA | Rutina vigente (con ángulo objetivo y si se mide con sensores) |
 | GET | `/api/v1/sesiones?idPaciente=&pagina=&tamano=` | PACIENTE (las suyas), FISIOTERAPEUTA (sus pacientes) | Historial paginado; total en `X-Total-Count` |
@@ -62,7 +74,26 @@ backend/
 
 Errores de validación (dolor fuera de 0 a 10, ejercicio que no está en la rutina) responden **422** con un mensaje claro.
 Cada sesión trae su **semáforo**: ROJO si el dolor después alcanza el umbral de la rutina, AMARILLO si el cumplimiento es menor a 60 %, VERDE en otro caso.
-En esta etapa las sesiones viven en memoria (se recargan de `sesiones.json` al reiniciar), igual que los tokens.
+Las rutas de `/auth` aceptan como máximo 30 peticiones por minuto por IP (429 con `Retry-After`).
+
+## Seguridad de las cuentas
+
+- Las contraseñas se guardan **solo como hash BCrypt** (`contrasenaHash` en `usuarios.json`); los tokens y los códigos, como SHA-256.
+- El token vence tras **30 días sin uso** y cada petición lo renueva.
+- Recuperar y restablecer siguen las recomendaciones de OWASP: respuesta idéntica exista o no el correo,
+  código de un solo uso de 15 minutos con 5 intentos y cierre de todas las sesiones al cambiar la contraseña.
+
+## Variables de entorno
+
+| Variable | Para qué | Si falta |
+|---|---|---|
+| `PORT` | Puerto (Railway lo asigna) | 8080 |
+| `DATABASE_URL` | PostgreSQL de Railway: usuarios, sesiones y mediciones **sobreviven a los reinicios** | Todo vive en memoria |
+| `BREVO_API_KEY` y `CORREO_REMITENTE` | Envío de los códigos por correo con la API de Brevo (300 correos/día gratis) | Los códigos se escriben en el registro del servidor |
+| `NOMBRE_REMITENTE` | Nombre que ve el paciente en el correo | PhysioGestion |
+| `CORS_ORIGENES` | Dominios web permitidos, separados por coma | Cualquier origen |
+
+`/api/v1/salud` muestra `baseDatos` (memoria o postgresql) y `correoConfigurado`.
 
 Ejemplo de login:
 
@@ -77,7 +108,7 @@ Content-Type: application/json
 
 - `gradlew.bat run`: inicia el servidor en http://localhost:8080
 - Otro puerto (variable de entorno): `set PORT=8090` y luego `gradlew.bat run`
-- `gradlew.bat test`: ejecuta las 16 pruebas
+- `gradlew.bat test`: ejecuta las 32 pruebas (incluye registro, recuperación, bloqueo y persistencia con SQLite)
 
 ## Despliegue en Railway
 
@@ -102,7 +133,11 @@ En Railway: **New Project → Deploy from GitHub repo → PhysioGestion-Login**,
 
 Notas:
 - Si Railway dice que no encuentra el Dockerfile, agregar en **Variables** `RAILWAY_DOCKERFILE_PATH=Dockerfile`.
-- Los datos y los tokens viven en memoria: cada nuevo despliegue o reinicio vuelve a cargar los JSON y pide iniciar sesión otra vez.
+- **Base de datos:** en el proyecto de Railway, **+ New → Database → PostgreSQL**. Después, en el servicio del backend,
+  **Variables → New Variable → Add Reference → `DATABASE_URL`** del servicio Postgres. Sin esa variable, los datos viven en memoria
+  y se pierden cada vez que el contenedor se duerme o se redespliega.
+- **Correo:** crear una cuenta gratis en Brevo, verificar el correo remitente (Senders) y generar una clave en **SMTP & API → API Keys**.
+  En Railway agregar `BREVO_API_KEY` y `CORREO_REMITENTE`. Railway bloquea el SMTP en los planes gratuitos; Brevo se usa por HTTPS.
 - Revisión desde la terminal con la CLI de Railway: `railway logs` (registros) y `railway ssh` (consola dentro del contenedor).
 - El contenedor usa unos 90 MB de memoria; el `-XX:MaxRAMPercentage=75` del Dockerfile lo mantiene dentro del límite del plan.
 

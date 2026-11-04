@@ -31,8 +31,14 @@ class DatosInvalidos(mensaje: String) : ErrorApi(mensaje)
 /** 409: choca con otro registro (por ejemplo, dos sesiones con la misma hora de inicio). */
 class Conflicto(mensaje: String) : ErrorApi(mensaje)
 
-/** 429: demasiadas peticiones en poco tiempo. */
-class DemasiadasSolicitudes : ErrorApi("Hiciste demasiadas solicitudes seguidas. Espera un momento.")
+/** 429: demasiadas peticiones en poco tiempo, o el acceso se bloqueó por intentos fallidos (USR-15). */
+class DemasiadasSolicitudes(mensaje: String = "Hiciste demasiadas solicitudes seguidas. Espera un momento.") : ErrorApi(mensaje)
+
+/** 403 en el login: la contraseña es correcta, pero falta confirmar el correo (USR-20). */
+class CorreoSinVerificar(mensaje: String, val correo: String) : ErrorApi(mensaje)
+
+/** 403 en el login: el administrador desactivó la cuenta. */
+class CuentaDesactivada(mensaje: String) : ErrorApi(mensaje)
 
 /** 5xx: la falla está en el servidor, no en la app. */
 class ErrorDelServidor(causa: Throwable? = null) : ErrorApi(
@@ -66,14 +72,18 @@ suspend fun <T> llamarApi(esLogin: Boolean = false, llamada: suspend () -> T): T
         throw e
     } catch (e: ResponseException) {
         val codigo = e.response.status.value
+        val error = if (codigo == 401 || codigo >= 500) null else errorDelServidor(e)
         throw when {
             codigo == 401 -> if (esLogin) CredencialesInvalidas() else SesionVencida()
+            codigo == 403 && esLogin && error?.codigo == "CORREO_NO_VERIFICADO" ->
+                CorreoSinVerificar(error.mensaje, error.correo.orEmpty())
+            codigo == 403 && esLogin && error?.codigo == "CUENTA_DESACTIVADA" -> CuentaDesactivada(error.mensaje)
             codigo == 403 -> SinPermiso()
-            codigo == 404 -> NoEncontrado(mensajeDelServidor(e) ?: "No se encontró la información.")
+            codigo == 404 -> NoEncontrado(error?.mensaje ?: "No se encontró la información.")
             codigo == 400 || codigo == 422 ->
-                DatosInvalidos(mensajeDelServidor(e) ?: "Los datos enviados no son válidos.")
-            codigo == 409 -> Conflicto(mensajeDelServidor(e) ?: "La operación choca con otro registro.")
-            codigo == 429 -> DemasiadasSolicitudes()
+                DatosInvalidos(error?.mensaje ?: "Los datos enviados no son válidos.")
+            codigo == 409 -> Conflicto(error?.mensaje ?: "La operación choca con otro registro.")
+            codigo == 429 -> error?.mensaje?.let(::DemasiadasSolicitudes) ?: DemasiadasSolicitudes()
             codigo in 500..599 -> ErrorDelServidor(e)
             else -> RespuestaInesperada(e)
         }
@@ -83,10 +93,10 @@ suspend fun <T> llamarApi(esLogin: Boolean = false, llamada: suspend () -> T): T
         throw ServidorNoDisponible(e)
     }
 
-/** Lee el campo "mensaje" del JSON de error del backend, si viene. */
-private suspend fun mensajeDelServidor(e: ResponseException): String? =
+/** Lee el JSON de error del backend ({"mensaje", "codigo", "correo"}), si viene. */
+private suspend fun errorDelServidor(e: ResponseException): ErrorRespuesta? =
     try {
-        e.response.body<ErrorRespuesta>().mensaje
+        e.response.body<ErrorRespuesta>()
     } catch (_: Exception) {
         null
     }

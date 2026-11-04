@@ -42,6 +42,7 @@ fun PerfilPantalla(
     viewModel: PerfilViewModel,
     alRegresar: () -> Unit,
     alCerrarSesion: () -> Unit,
+    alCambiarContrasena: () -> Unit = {},
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -54,6 +55,7 @@ fun PerfilPantalla(
             TarjetaPhysio {
                 Text(usuario.nombre, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text("@${usuario.usuario}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                usuario.correo?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 Etiqueta(usuario.rol.etiqueta, usuario.rol.color)
                 Text(
                     "Racha actual: ${estado.racha} " + if (estado.racha == 1) "día seguido" else "días seguidos",
@@ -115,6 +117,9 @@ fun PerfilPantalla(
 
             estado.aviso?.let { Text(it, color = ColoresPhysio.Turquesa) }
 
+            OutlinedButton(onClick = alCambiarContrasena, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text("Cambiar contraseña")
+            }
             OutlinedButton(onClick = alCerrarSesion, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Text("Cerrar sesión")
             }

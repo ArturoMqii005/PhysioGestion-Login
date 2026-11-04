@@ -1,6 +1,7 @@
 package com.terapid.physiogestion.datos
 
 import com.terapid.physiogestion.modelos.Cita
+import com.terapid.physiogestion.modelos.Invitacion
 import com.terapid.physiogestion.modelos.Rutina
 import com.terapid.physiogestion.modelos.SesionTerapia
 import com.terapid.physiogestion.modelos.UsuarioRegistrado
@@ -13,7 +14,10 @@ import kotlinx.serialization.json.Json
  */
 class AlmacenJson(private val json: Json) {
 
+    /** Cuentas de ejemplo. Solo traen el hash BCrypt de cada contraseña (USR-13). */
     val usuarios: List<UsuarioRegistrado> = leer("usuarios.json")
+    /** Invitación de ejemplo para probar el registro de un paciente nuevo. */
+    val invitaciones: List<Invitacion> = leer("invitaciones.json")
     val citas: List<Cita> = leer("citas.json")
     val rutinas: List<Rutina> = leer("rutinas.json")
     val sesiones: List<SesionTerapia> = leer("sesiones.json")

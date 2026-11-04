@@ -16,6 +16,12 @@ import com.terapid.physiogestion.dependencias.Dependencias
 import com.terapid.physiogestion.modelo.Usuario
 import com.terapid.physiogestion.viewmodel.AdministradorViewModel
 import com.terapid.physiogestion.viewmodel.AgendaViewModel
+import com.terapid.physiogestion.viewmodel.AvisoPrivacidadViewModel
+import com.terapid.physiogestion.viewmodel.CambiarContrasenaViewModel
+import com.terapid.physiogestion.viewmodel.InvitacionesViewModel
+import com.terapid.physiogestion.viewmodel.RecuperarContrasenaViewModel
+import com.terapid.physiogestion.viewmodel.RegistroViewModel
+import com.terapid.physiogestion.viewmodel.VerificarCorreoViewModel
 import com.terapid.physiogestion.viewmodel.DetalleSesionViewModel
 import com.terapid.physiogestion.viewmodel.EjercicioViewModel
 import com.terapid.physiogestion.viewmodel.EscalerasViewModel
@@ -26,6 +32,11 @@ import com.terapid.physiogestion.viewmodel.PerfilViewModel
 import com.terapid.physiogestion.viewmodel.RutinaViewModel
 import com.terapid.physiogestion.viewmodel.SesionViewModel
 import com.terapid.physiogestion.vista.AdministradorPantalla
+import com.terapid.physiogestion.vista.AvisoPrivacidadPantalla
+import com.terapid.physiogestion.vista.CambiarContrasenaPantalla
+import com.terapid.physiogestion.vista.RecuperarContrasenaPantalla
+import com.terapid.physiogestion.vista.RegistroPantalla
+import com.terapid.physiogestion.vista.VerificarCorreoPantalla
 import com.terapid.physiogestion.vista.DetalleSesionPantalla
 import com.terapid.physiogestion.vista.EjercicioPantalla
 import com.terapid.physiogestion.vista.EscalerasPantalla
@@ -58,7 +69,8 @@ fun NavegacionPrincipal() {
     val sesion by sesionVm.sesion.collectAsStateWithLifecycle()
 
     LaunchedEffect(sesion) {
-        val destino: Any = sesion?.let { rutaInicialPara(it.usuario.rol) } ?: RutaLogin
+        // Primero lo que falta (aviso de privacidad, contraseña temporal) y después la vista del rol.
+        val destino: Any = sesion?.let(::rutaPara) ?: RutaLogin
         val actual = navegador.currentDestination ?: return@LaunchedEffect
         if (actual.hasRoute(destino::class)) return@LaunchedEffect
         navegador.navigate(destino) {
@@ -69,14 +81,61 @@ fun NavegacionPrincipal() {
 
     NavHost(navController = navegador, startDestination = RutaLogin) {
         composable<RutaLogin> {
-            LoginPantalla(viewModel { LoginViewModel(Dependencias.autenticacion, Dependencias.preferencias) })
+            LoginPantalla(
+                viewModel { LoginViewModel(Dependencias.autenticacion, Dependencias.preferencias) },
+                alCrearCuenta = { navegador.navigate(RutaRegistro) },
+                alOlvidarContrasena = { navegador.navigate(RutaRecuperarContrasena) },
+                alVerificarCorreo = { correo -> navegador.navigate(RutaVerificarCorreo(correo)) },
+            )
+        }
+
+        // ---------------- Cuentas (USR-01, USR-10, USR-11, USR-12, USR-20, USR-21) ----------------
+
+        composable<RutaRegistro> {
+            RegistroPantalla(
+                viewModel = viewModel { RegistroViewModel(Dependencias.cuentas) },
+                alRegresar = { navegador.popBackStack() },
+                // Al crear la cuenta se reemplaza el registro por la verificación: «atrás» regresa al login.
+                alRegistrado = { correo ->
+                    navegador.navigate(RutaVerificarCorreo(correo)) { popUpTo<RutaLogin>() }
+                },
+            )
+        }
+        composable<RutaVerificarCorreo> { entrada ->
+            val ruta = entrada.toRoute<RutaVerificarCorreo>()
+            VerificarCorreoPantalla(
+                viewModel = viewModel { VerificarCorreoViewModel(ruta.correo, Dependencias.cuentas) },
+                alRegresar = { navegador.popBackStack() },
+                alTerminar = { navegador.popBackStack(RutaLogin, inclusive = false) },
+            )
+        }
+        composable<RutaRecuperarContrasena> {
+            RecuperarContrasenaPantalla(
+                viewModel = viewModel { RecuperarContrasenaViewModel(Dependencias.cuentas) },
+                alRegresar = { navegador.popBackStack() },
+            )
+        }
+        composable<RutaAvisoPrivacidad> {
+            AvisoPrivacidadPantalla(
+                viewModel = viewModel { AvisoPrivacidadViewModel(Dependencias.cuentas) },
+                alRechazar = sesionVm::cerrarSesion,
+            )
+        }
+        composable<RutaCambiarContrasena> { entrada ->
+            val ruta = entrada.toRoute<RutaCambiarContrasena>()
+            CambiarContrasenaPantalla(
+                viewModel = viewModel { CambiarContrasenaViewModel(ruta.obligatorio, Dependencias.cuentas, sesion?.usuario?.usuario) },
+                alRegresar = { navegador.popBackStack() },
+                alCerrarSesion = sesionVm::cerrarSesion,
+            )
         }
         composable<RutaAdministrador> {
             val usuario = sesion?.usuario ?: return@composable
             AdministradorPantalla(
                 usuario = usuario,
-                viewModel = viewModel { AdministradorViewModel(Dependencias.clinica) },
+                viewModel = viewModel { AdministradorViewModel(Dependencias.clinica, Dependencias.cuentas, usuario.id) },
                 alCerrarSesion = sesionVm::cerrarSesion,
+                alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
             )
         }
         composable<RutaFisioterapeuta> {
@@ -85,6 +144,7 @@ fun NavegacionPrincipal() {
                 usuario = usuario,
                 viewModel = viewModel { AgendaViewModel(Dependencias.clinica, conSeguimiento = true) },
                 alCerrarSesion = sesionVm::cerrarSesion,
+                alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
             )
         }
         composable<RutaRecepcion> {
@@ -93,6 +153,8 @@ fun NavegacionPrincipal() {
                 usuario = usuario,
                 viewModel = viewModel { AgendaViewModel(Dependencias.clinica) },
                 alCerrarSesion = sesionVm::cerrarSesion,
+                invitaciones = viewModel { InvitacionesViewModel(Dependencias.cuentas) },
+                alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
             )
         }
 
@@ -209,6 +271,7 @@ fun NavegacionPrincipal() {
                 },
                 alRegresar = { navegador.popBackStack() },
                 alCerrarSesion = sesionVm::cerrarSesion,
+                alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
             )
         }
     }

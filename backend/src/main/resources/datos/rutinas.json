@@ -53,5 +53,60 @@
         "zonaCorporal": "Muslo"
       }
     ]
+  },
+  {
+    "id": 102,
+    "pacienteId": 2,
+    "paciente": "María López Hernández",
+    "fisioterapeuta": "Ft. Mariana Soto Gil",
+    "metaFuncional": "Caminar al mercado sin dolor de rodilla",
+    "umbralDolor": 6,
+    "vigenteDesde": "03/11/2026",
+    "ejercicios": [
+      {
+        "id": 1,
+        "nombre": "Sentadilla asistida con silla",
+        "indicaciones": "Siéntate y levántate de una silla firme sin usar las manos. Mantén las rodillas alineadas con la punta de los pies.",
+        "series": 3,
+        "repeticiones": 10,
+        "descansoSegundos": 45,
+        "zonaCorporal": "Rodilla",
+        "anguloObjetivo": 90,
+        "medibleConSensores": true,
+        "admiteVerificacionPorCamara": true
+      },
+      {
+        "id": 2,
+        "nombre": "Puente de glúteo",
+        "indicaciones": "Acostado boca arriba con las rodillas flexionadas, eleva la cadera hasta alinear hombros, cadera y rodillas. Sostén 3 segundos arriba.",
+        "series": 3,
+        "repeticiones": 12,
+        "descansoSegundos": 30,
+        "zonaCorporal": "Cadera",
+        "anguloObjetivo": 35,
+        "medibleConSensores": true,
+        "admiteVerificacionPorCamara": true
+      },
+      {
+        "id": 3,
+        "nombre": "Elevación de talones",
+        "indicaciones": "De pie y apoyado en una pared, sube sobre las puntas de los pies y baja despacio.",
+        "series": 3,
+        "repeticiones": 15,
+        "descansoSegundos": 30,
+        "zonaCorporal": "Tobillo",
+        "anguloObjetivo": 20,
+        "medibleConSensores": true
+      },
+      {
+        "id": 4,
+        "nombre": "Estiramiento de isquiotibiales",
+        "indicaciones": "Sentado en el borde de una silla, estira una pierna y lleva el pecho hacia adelante sin redondear la espalda. Sostén 30 segundos por lado.",
+        "series": 2,
+        "repeticiones": 1,
+        "descansoSegundos": 20,
+        "zonaCorporal": "Muslo"
+      }
+    ]
   }
 ]

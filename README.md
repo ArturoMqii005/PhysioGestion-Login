@@ -69,10 +69,24 @@ Sobre el proyecto del login se integraron las prácticas de la estructura de la 
 |Fisioterapeuta|`fisio`|`Fisio2026`|Mi agenda de hoy: solo sus citas, con la siguiente resaltada, y el seguimiento remoto de sus pacientes|
 |Fisioterapeuta|`fisio2`|`Fisio2026`|Mi agenda de hoy (otra agenda)|
 |Recepción|`recepcion`|`Recepcion2026`|Agenda de la clínica, agrupada por fisioterapeuta|
-|Paciente|`paciente`|`Paciente2026`|Mi tratamiento: rutina con medición por sensores, historial (editar/eliminar), perfil y pasos|
+|Paciente|`paciente`|`Paciente2026`|Primero el aviso de privacidad; después Mi tratamiento: rutina con sensores o cámara, escaleras, historial, perfil y pasos|
 
-> En esta etapa las credenciales son predefinidas y están en texto plano dentro del JSON, como lo pide la práctica.
-> En la siguiente etapa se cambiarán por una base de datos con contraseñas cifradas.
+> Desde la versión 1.2 `usuarios.json` guarda solo el **hash BCrypt** de cada contraseña. También se puede entrar con el correo.
+
+**Paciente nuevo:** en el login, «Crear mi cuenta» con el código de invitación `DEMO-2026` (María López Hernández, paciente 2,
+con rutina de la Ft. Mariana Soto). Recepción genera códigos nuevos desde su pantalla. Sin proveedor de correo configurado,
+el código de 6 dígitos aparece en el registro del servidor (`railway logs`).
+
+## Lo que se agregó en la versión 1.2 (cuentas seguras)
+
+|Función|Dónde|
+|-|-|
+|Registro del paciente con código de invitación, verificación del correo y aceptación del aviso de privacidad|`RegistroPantalla`, `VerificarCorreoPantalla`, `AvisoPrivacidadPantalla` · `/auth/registro`, `/auth/verificar-correo`|
+|«¿Olvidaste tu contraseña?»: código de un solo uso por correo y restablecimiento|`RecuperarContrasenaPantalla` · `/auth/recuperacion`, `/auth/restablecer`|
+|Cambio de contraseña desde el perfil (todos los roles) y contraseña temporal obligatoria para el personal nuevo|`CambiarContrasenaPantalla` · `PATCH /usuarios/yo/contrasena`|
+|Hash BCrypt, token con vencimiento, bloqueo tras 5 intentos y límite de 30 peticiones por minuto|`backend/.../servicios/Contrasenas.kt`, `AutenticacionServicio.kt`, `plugins/LimiteSolicitudes.kt`|
+|Alta y desactivación del personal (administrador) e invitaciones (recepción)|`AdministradorPantalla`, `RecepcionPantalla`|
+|Base de datos PostgreSQL en Railway: lo registrado sobrevive a los reinicios|`backend/.../datos/AlmacenJdbc.kt` (variable `DATABASE_URL`)|
 
 ## Conexión con el serializador (kotlinx.serialization)
 

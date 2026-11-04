@@ -6,8 +6,14 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.plugins.cors.routing.CORS
 
-/** CORS: permite que una futura versión web de la app consuma esta API. */
-fun Application.configureHttp() {
+/**
+ * CORS: permite que una versión web de la app consuma esta API (SRV-04).
+ *
+ * VARIABLE DE ENTORNO CORS_ORIGENES: lista separada por comas de los dominios
+ * permitidos («https://physiogestion.web.app»). Si no existe (desarrollo local),
+ * se acepta cualquier origen. La app móvil no usa CORS: solo aplica a navegadores.
+ */
+fun Application.configureHttp(origenes: List<String> = origenesPermitidos()) {
     install(CORS) {
         allowMethod(HttpMethod.Options)
         allowMethod(HttpMethod.Post)
@@ -19,6 +25,16 @@ fun Application.configureHttp() {
         allowHeader("Idempotency-Key")
         exposeHeader(HttpHeaders.Location)
         exposeHeader("X-Total-Count")
-        anyHost() // Solo para la etapa local; en producción se limita al dominio de la clínica.
+        if (origenes.isEmpty()) {
+            anyHost()
+        } else {
+            origenes.forEach { origen ->
+                val esquema = origen.substringBefore("://", "https")
+                allowHost(origen.substringAfter("://").trimEnd('/'), schemes = listOf(esquema))
+            }
+        }
     }
 }
+
+fun origenesPermitidos(): List<String> =
+    System.getenv("CORS_ORIGENES").orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() }

@@ -8,6 +8,8 @@ object ClavesAlmacen {
 
     // ---- Sesión (el token NO va aquí: va cifrado en AlmacenSeguro) ----
     const val SESION_USUARIO = "sesion_usuario"
+    /** Lo que falta antes de abrir la vista del rol: «AVISO», «CONTRASENA» (separados por coma). */
+    const val SESION_PENDIENTES = "sesion_pendientes"
 
     // ---- Conexión ----
     /** Última dirección del servidor con la que se inició sesión correctamente. */

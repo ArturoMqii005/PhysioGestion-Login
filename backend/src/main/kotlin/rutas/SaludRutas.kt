@@ -14,7 +14,7 @@ import java.lang.management.ManagementFactory
  * Railway inyecta como variables de entorno el nombre del entorno, la
  * región y, cuando el despliegue viene de GitHub, el commit desplegado.
  */
-fun Route.rutasSalud() {
+fun Route.rutasSalud(baseDatos: String) {
     get("/salud") {
         call.respond(
             EstadoServidor(
@@ -26,6 +26,8 @@ fun Route.rutasSalud() {
                 commit = System.getenv("RAILWAY_GIT_COMMIT_SHA")?.take(7),
                 java = System.getProperty("java.version"),
                 segundosActivo = ManagementFactory.getRuntimeMXBean().uptime / 1000,
+                baseDatos = baseDatos,
+                correoConfigurado = !System.getenv("BREVO_API_KEY").isNullOrBlank() && !System.getenv("CORREO_REMITENTE").isNullOrBlank(),
             )
         )
     }

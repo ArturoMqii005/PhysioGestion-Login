@@ -1,0 +1,10 @@
+[
+  {
+    "codigo": "DEMO-2026",
+    "pacienteId": 2,
+    "nombrePaciente": "María López Hernández",
+    "creadaPor": "Ana Torres Vega",
+    "creadaEn": "2026-11-03T16:00:00Z",
+    "venceEn": "2026-12-31T23:59:59Z"
+  }
+]

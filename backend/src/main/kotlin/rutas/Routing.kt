@@ -16,9 +16,13 @@ import io.ktor.server.routing.routing
  * app instalada siga funcionando cuando cambie la API (RI-02).
  *
  *  GET  /api/v1/salud                      público (estado, versión y commit desplegado)
- *  POST /api/v1/auth/login                 público
+ *  GET  /api/v1/aviso-privacidad          público
+ *  POST /api/v1/auth/login                 público (también registro, verificar-correo,
+ *                                          reenviar-verificacion, recuperacion y restablecer)
  *  POST /api/v1/auth/logout                con token
- *  GET  /api/v1/usuarios                   ADMINISTRADOR
+ *  GET  /api/v1/usuarios                   ADMINISTRADOR (también POST alta y PATCH activar/desactivar)
+ *  GET  /api/v1/usuarios/yo                con token (PATCH /contrasena, POST /consentimiento)
+ *  GET  /api/v1/invitaciones               ADMINISTRADOR, RECEPCIONISTA (POST crea una)
  *  GET  /api/v1/citas                      ADMINISTRADOR, RECEPCIONISTA, FISIOTERAPEUTA (solo las suyas)
  *  GET  /api/v1/pacientes/{id}/rutina      PACIENTE (solo la suya), FISIOTERAPEUTA
  *
@@ -37,16 +41,17 @@ fun Application.configureRouting(
     almacen: AlmacenJson,
     autenticacion: AutenticacionServicio,
     sesiones: SesionesServicio,
+    baseDatos: String = "memoria",
 ) {
     routing {
         get("/") {
             call.respondText("PhysioGestion API v1 en funcionamiento")
         }
         route("/api/v1") {
-            rutasSalud()
+            rutasSalud(baseDatos)
             rutasAutenticacion(autenticacion)
             authenticate(AUTH_SESION) {
-                rutasUsuarios(almacen)
+                rutasUsuarios(autenticacion)
                 rutasCitas(almacen)
                 rutasRutinas(almacen)
                 rutasSesiones(sesiones)

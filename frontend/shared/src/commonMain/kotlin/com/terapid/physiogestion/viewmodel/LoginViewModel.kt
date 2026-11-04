@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.terapid.physiogestion.datos.AutenticacionRepositorio
 import com.terapid.physiogestion.datos.PreferenciasRepositorio
 import com.terapid.physiogestion.datos.remoto.ConfiguracionApi
+import com.terapid.physiogestion.datos.remoto.CorreoSinVerificar
 import com.terapid.physiogestion.datos.remoto.ErrorApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,8 @@ data class LoginUiState(
     val error: String? = null,
     val urlServidor: String = ConfiguracionApi.urlServidor,
     val editandoServidor: Boolean = false,
+    /** Si no es null, la cuenta existe pero falta confirmar este correo: la vista abre la verificación. */
+    val correoPorVerificar: String? = null,
 )
 
 /**
@@ -38,7 +41,7 @@ class LoginViewModel(
     private val _estado = MutableStateFlow(LoginUiState(error = autenticacion.tomarAvisoDeCierre()))
     val estado: StateFlow<LoginUiState> = _estado.asStateFlow()
 
-    fun cambiarUsuario(texto: String) = _estado.update { it.copy(usuario = texto.take(40), error = null) }
+    fun cambiarUsuario(texto: String) = _estado.update { it.copy(usuario = texto.take(120), error = null) }
 
     fun cambiarContrasena(texto: String) = _estado.update { it.copy(contrasena = texto.take(64), error = null) }
 
@@ -47,6 +50,14 @@ class LoginViewModel(
     fun alternarEdicionServidor() = _estado.update { it.copy(editandoServidor = !it.editandoServidor) }
 
     fun cambiarServidor(url: String) = _estado.update { it.copy(urlServidor = url, error = null) }
+
+    /** La vista ya abrió la pantalla de verificación. */
+    fun verificacionAbierta() = _estado.update { it.copy(correoPorVerificar = null) }
+
+    /** Antes de abrir el registro o la recuperación, el servidor elegido queda configurado. */
+    fun aplicarServidor() {
+        ConfiguracionApi.urlServidor = _estado.value.urlServidor.trim()
+    }
 
     fun iniciarSesion() {
         val actual = _estado.value
@@ -65,6 +76,8 @@ class LoginViewModel(
                 _estado.update { it.copy(cargando = false, contrasena = "") }
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: CorreoSinVerificar) {
+                _estado.update { it.copy(cargando = false, contrasena = "", correoPorVerificar = e.correo, error = null) }
             } catch (e: ErrorApi) {
                 _estado.update { it.copy(cargando = false, error = e.message) }
             } catch (e: Exception) {

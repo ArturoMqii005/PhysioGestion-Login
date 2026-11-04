@@ -15,7 +15,12 @@ class AutenticacionRepositorio(
     /** Valida las credenciales en el backend; si son correctas, abre la sesión. */
     suspend fun iniciarSesion(usuario: String, contrasena: String): Sesion {
         val respuesta = api.iniciarSesion(usuario, contrasena)
-        val sesion = Sesion(token = respuesta.token, usuario = respuesta.usuario)
+        val sesion = Sesion(
+            token = respuesta.token,
+            usuario = respuesta.usuario,
+            requiereConsentimiento = respuesta.requiereConsentimiento,
+            debeCambiarContrasena = respuesta.debeCambiarContrasena,
+        )
         gestor.abrir(sesion)
         return sesion
     }

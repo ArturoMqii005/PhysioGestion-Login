@@ -1,5 +1,8 @@
 package com.terapid.physiogestion.servicios
 
+import com.terapid.physiogestion.datos.AlmacenDocumentos
+import com.terapid.physiogestion.datos.AlmacenEnMemoria
+import com.terapid.physiogestion.datos.Coleccion
 import com.terapid.physiogestion.modelos.CrearSesionSolicitud
 import com.terapid.physiogestion.modelos.MetodoMedicion
 import com.terapid.physiogestion.modelos.ModificarSesionSolicitud
@@ -13,8 +16,14 @@ import com.terapid.physiogestion.modelos.Semaforo
 import com.terapid.physiogestion.modelos.SesionTerapia
 import com.terapid.physiogestion.plugins.Conflicto
 import com.terapid.physiogestion.plugins.DatosNoProcesables
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+
+/** Clave de idempotencia ya usada y la sesión que creó (se guarda para que sobreviva a un reinicio). */
+@Serializable
+data class ClaveUsada(val llave: String, val idSesion: Int)
 
 /** Resultado de un POST: la sesión y si se creó ahora (201) o ya existía por la clave de idempotencia (200). */
 data class Creacion(val sesion: SesionTerapia, val nueva: Boolean)
@@ -23,26 +32,39 @@ data class Creacion(val sesion: SesionTerapia, val nueva: Boolean)
  * Reglas del recurso /sesiones y de los resultados medidos con sensores.
  *
  * En la etapa local todo vive en memoria (igual que los tokens): al
- * reiniciar el servidor se vuelve a cargar sesiones.json. En la siguiente
- * etapa este servicio usará la base de datos.
+ * reiniciar el servidor se vuelve a cargar sesiones.json. Con [almacen] en
+ * PostgreSQL (SRV-08), cada cambio se escribe en la base y se recupera al arrancar.
  */
 class SesionesServicio(
     private val rutinas: List<Rutina>,
     sesionesIniciales: List<SesionTerapia> = emptyList(),
+    almacen: AlmacenDocumentos = AlmacenEnMemoria(),
+    json: Json = Json { ignoreUnknownKeys = true },
 ) {
+    private val colSesiones = Coleccion(almacen, "sesiones", SesionTerapia.serializer(), json) { it.id.toString() }
+    private val colClaves = Coleccion(almacen, "claves_idempotencia", ClaveUsada.serializer(), json) { it.llave }
+    private val colResultados = Coleccion(almacen, "resultados_ejercicio", ResultadoEjercicio.serializer(), json) { it.id.toString() }
+    private val colEscaleras = Coleccion(almacen, "pruebas_escaleras", PruebaEscalerasRegistrada.serializer(), json) { it.id.toString() }
+
     private val sesiones = ConcurrentHashMap<Int, SesionTerapia>().apply {
-        sesionesIniciales.forEach { put(it.id, it) }
+        colSesiones.cargar(sesionesIniciales).forEach { put(it.id, it) }
     }
-    private val siguienteId = AtomicInteger((sesionesIniciales.maxOfOrNull { it.id } ?: 0) + 1)
+    private val siguienteId = AtomicInteger((sesiones.keys.maxOrNull() ?: 0) + 1)
 
     /** "pacienteId:clave" -> id de la sesión creada con esa clave (Idempotency-Key). */
-    private val clavesUsadas = ConcurrentHashMap<String, Int>()
+    private val clavesUsadas = ConcurrentHashMap<String, Int>().apply {
+        colClaves.cargar().forEach { put(it.llave, it.idSesion) }
+    }
 
-    private val resultados = ConcurrentHashMap<Int, ResultadoEjercicio>()
-    private val siguienteResultado = AtomicInteger(1)
+    private val resultados = ConcurrentHashMap<Int, ResultadoEjercicio>().apply {
+        colResultados.cargar().forEach { put(it.id, it) }
+    }
+    private val siguienteResultado = AtomicInteger((resultados.keys.maxOrNull() ?: 0) + 1)
 
-    private val pruebasEscaleras = ConcurrentHashMap<Int, PruebaEscalerasRegistrada>()
-    private val siguientePrueba = AtomicInteger(1)
+    private val pruebasEscaleras = ConcurrentHashMap<Int, PruebaEscalerasRegistrada>().apply {
+        colEscaleras.cargar().forEach { put(it.id, it) }
+    }
+    private val siguientePrueba = AtomicInteger((pruebasEscaleras.keys.maxOrNull() ?: 0) + 1)
 
     fun rutinaDelPaciente(pacienteId: Int): Rutina? = rutinas.firstOrNull { it.pacienteId == pacienteId }
 
@@ -111,7 +133,11 @@ class SesionesServicio(
             semaforo = semaforo(porcentaje, s.dolorDespues, rutina.umbralDolor),
         )
         sesiones[sesion.id] = sesion
-        llave?.let { clavesUsadas[it] = sesion.id }
+        colSesiones.guardar(sesion)
+        llave?.let {
+            clavesUsadas[it] = sesion.id
+            colClaves.guardar(ClaveUsada(it, sesion.id))
+        }
         return Creacion(sesion, nueva = true)
     }
 
@@ -152,7 +178,11 @@ class SesionesServicio(
     /** true si existía y se borró; false si ya no estaba (DELETE es idempotente). */
     fun eliminar(id: Int): Boolean {
         val borrada = sesiones.remove(id) ?: return false
-        clavesUsadas.entries.removeIf { it.value == borrada.id }
+        colSesiones.borrar(id.toString())
+        clavesUsadas.entries.filter { it.value == borrada.id }.forEach {
+            clavesUsadas.remove(it.key)
+            colClaves.borrar(it.key)
+        }
         return true
     }
 
@@ -185,6 +215,7 @@ class SesionesServicio(
             metodo = s.metodo,
         )
         resultados[resultado.id] = resultado
+        colResultados.guardar(resultado)
         return resultado
     }
 
@@ -214,6 +245,7 @@ class SesionesServicio(
             duracionSegundos = s.duracionSegundos,
         )
         pruebasEscaleras[prueba.id] = prueba
+        colEscaleras.guardar(prueba)
         return prueba
     }
 
@@ -226,6 +258,7 @@ class SesionesServicio(
         val umbral = rutinaDelPaciente(sesion.pacienteId)?.umbralDolor ?: UMBRAL_DOLOR_PREDETERMINADO
         val actualizada = sesion.copy(semaforo = semaforo(sesion.porcentajeCumplimiento, sesion.dolorDespues, umbral))
         sesiones[actualizada.id] = actualizada
+        colSesiones.guardar(actualizada)
         return actualizada
     }
 

@@ -3,7 +3,7 @@ package com.terapid.physiogestion.modelos
 import kotlinx.serialization.Serializable
 
 /** Versión de la API que se publica en GET /api/v1/salud. Se sube con cada despliegue. */
-const val VERSION_API = "1.1.1"
+const val VERSION_API = "1.2.0"
 
 /**
  * Respuesta de GET /api/v1/salud: confirma que el servidor está vivo y
@@ -20,4 +20,8 @@ data class EstadoServidor(
     val commit: String? = null,
     val java: String,
     val segundosActivo: Long,
+    /** Dónde se guardan los datos: «memoria» (se pierden al reiniciar) o «postgresql» (SRV-08). */
+    val baseDatos: String,
+    /** true si los códigos llegan por correo (Brevo); false si solo se escriben en el registro. */
+    val correoConfigurado: Boolean,
 )

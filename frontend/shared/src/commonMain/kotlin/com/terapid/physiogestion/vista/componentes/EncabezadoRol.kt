@@ -22,6 +22,7 @@ fun EncabezadoRol(
     titulo: String,
     usuario: Usuario,
     alCerrarSesion: () -> Unit,
+    alCambiarContrasena: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -41,5 +42,6 @@ fun EncabezadoRol(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        if (alCambiarContrasena != null) BotonEnlace("Cambiar contraseña", alCambiarContrasena)
     }
 }

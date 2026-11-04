@@ -20,11 +20,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.terapid.physiogestion.plataforma.Entorno
 import com.terapid.physiogestion.plataforma.Plataforma
 import com.terapid.physiogestion.viewmodel.LoginViewModel
+import com.terapid.physiogestion.vista.componentes.BotonEnlace
 import com.terapid.physiogestion.vista.componentes.TarjetaPhysio
 import com.terapid.physiogestion.vista.tema.ColoresPhysio
 
@@ -47,8 +50,19 @@ import com.terapid.physiogestion.vista.tema.ColoresPhysio
  * pasa lo que escribe el usuario. Las credenciales las valida el backend.
  */
 @Composable
-fun LoginPantalla(viewModel: LoginViewModel) {
+fun LoginPantalla(
+    viewModel: LoginViewModel,
+    alCrearCuenta: () -> Unit = {},
+    alOlvidarContrasena: () -> Unit = {},
+    alVerificarCorreo: (correo: String) -> Unit = {},
+) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
+    LaunchedEffect(estado.correoPorVerificar) {
+        estado.correoPorVerificar?.let {
+            viewModel.verificacionAbierta()
+            alVerificarCorreo(it)
+        }
+    }
 
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(
@@ -81,7 +95,7 @@ fun LoginPantalla(viewModel: LoginViewModel) {
                     OutlinedTextField(
                         value = estado.usuario,
                         onValueChange = viewModel::cambiarUsuario,
-                        label = { Text("Usuario") },
+                        label = { Text("Usuario o correo") },
                         singleLine = true,
                         enabled = !estado.cargando,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Next),
@@ -116,6 +130,27 @@ fun LoginPantalla(viewModel: LoginViewModel) {
                             Text("Iniciar sesión", fontWeight = FontWeight.Bold)
                         }
                     }
+                    BotonEnlace(
+                        "¿Olvidaste tu contraseña?",
+                        { viewModel.aplicarServidor(); alOlvidarContrasena() },
+                        habilitado = !estado.cargando,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    )
+                }
+
+                // Registro del paciente nuevo con el código de invitación (USR-01).
+                TarjetaPhysio {
+                    Text("¿Eres paciente nuevo?", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Crea tu cuenta con el código de invitación que te dieron en la recepción.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(
+                        onClick = { viewModel.aplicarServidor(); alCrearCuenta() },
+                        enabled = !estado.cargando,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    ) { Text("Crear mi cuenta") }
                 }
 
                 // Servidor (etapa local): permite apuntar a la IP de la computadora desde un celular físico.

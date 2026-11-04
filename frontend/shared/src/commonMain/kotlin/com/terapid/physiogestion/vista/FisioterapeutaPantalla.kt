@@ -42,6 +42,7 @@ fun FisioterapeutaPantalla(
     usuario: Usuario,
     viewModel: AgendaViewModel,
     alCerrarSesion: () -> Unit,
+    alCambiarContrasena: (() -> Unit)? = null,
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val hoy = formatearFechaHora(ahoraEnMilisegundos()).substringBefore(" ")
@@ -51,7 +52,7 @@ fun FisioterapeutaPantalla(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { EncabezadoRol("Mi agenda de hoy", usuario, alCerrarSesion) }
+            item { EncabezadoRol("Mi agenda de hoy", usuario, alCerrarSesion, alCambiarContrasena) }
 
             when {
                 estado.cargando -> item { Cargando("Cargando tu agenda…") }

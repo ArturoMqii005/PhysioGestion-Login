@@ -1,6 +1,7 @@
 package com.terapid.physiogestion.navegacion
 
 import com.terapid.physiogestion.modelo.Rol
+import com.terapid.physiogestion.modelo.Sesion
 import kotlinx.serialization.Serializable
 
 /*
@@ -56,4 +57,36 @@ fun rutaInicialPara(rol: Rol): Any = when (rol) {
     Rol.FISIOTERAPEUTA -> RutaFisioterapeuta
     Rol.RECEPCIONISTA -> RutaRecepcion
     Rol.PACIENTE -> RutaPaciente
+}
+
+// ---------------- Cuentas (antes de iniciar sesión o antes de abrir la vista del rol) ----------------
+
+/** Registro del paciente con el código de invitación (USR-01). */
+@Serializable
+data object RutaRegistro
+
+/** Confirmar el correo con el código de 6 dígitos (USR-20). */
+@Serializable
+data class RutaVerificarCorreo(val correo: String)
+
+/** «¿Olvidaste tu contraseña?»: pedir el código y restablecer (USR-10, USR-11). */
+@Serializable
+data object RutaRecuperarContrasena
+
+/** Aviso de privacidad que el paciente acepta antes de usar la app (USR-21). */
+@Serializable
+data object RutaAvisoPrivacidad
+
+/** Cambio de contraseña: desde el perfil, u obligatorio si la cuenta trae una temporal (USR-02, USR-12). */
+@Serializable
+data class RutaCambiarContrasena(val obligatorio: Boolean)
+
+/**
+ * A dónde lleva una sesión recién abierta: primero lo que falta (aviso de
+ * privacidad o contraseña temporal) y después la vista de su rol.
+ */
+fun rutaPara(sesion: Sesion): Any = when {
+    sesion.requiereConsentimiento -> RutaAvisoPrivacidad
+    sesion.debeCambiarContrasena -> RutaCambiarContrasena(obligatorio = true)
+    else -> rutaInicialPara(sesion.usuario.rol)
 }

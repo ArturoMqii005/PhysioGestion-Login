@@ -2,37 +2,42 @@
   {
     "id": 1,
     "usuario": "admin",
-    "contrasena": "Admin2026",
+    "contrasenaHash": "$2a$10$eLiivJJuCYYSZ3vKU/5PuuZxtxBRyzmDbqBplAm0TOPD3vw4xvOem",
     "nombre": "Laura Méndez Ríos",
-    "rol": "ADMINISTRADOR"
+    "rol": "ADMINISTRADOR",
+    "correo": "admin@physiogestion.test"
   },
   {
     "id": 2,
     "usuario": "fisio",
-    "contrasena": "Fisio2026",
+    "contrasenaHash": "$2a$10$h4t1bor7ih7C7If/x8YgMuq9HrIxErRxNdVutaEW3XDZd2z1Jx/mC",
     "nombre": "Ft. Carlos Ortega Luna",
-    "rol": "FISIOTERAPEUTA"
+    "rol": "FISIOTERAPEUTA",
+    "correo": "carlos.ortega@physiogestion.test"
   },
   {
     "id": 3,
     "usuario": "fisio2",
-    "contrasena": "Fisio2026",
+    "contrasenaHash": "$2a$10$h4t1bor7ih7C7If/x8YgMuq9HrIxErRxNdVutaEW3XDZd2z1Jx/mC",
     "nombre": "Ft. Mariana Soto Gil",
-    "rol": "FISIOTERAPEUTA"
+    "rol": "FISIOTERAPEUTA",
+    "correo": "mariana.soto@physiogestion.test"
   },
   {
     "id": 4,
     "usuario": "recepcion",
-    "contrasena": "Recepcion2026",
+    "contrasenaHash": "$2a$10$//sHCMCW7Wm4xrb5xDRWG.u9JIrwrvZptUp2XkR/nCTiJCyoe2K/C",
     "nombre": "Ana Torres Vega",
-    "rol": "RECEPCIONISTA"
+    "rol": "RECEPCIONISTA",
+    "correo": "recepcion@physiogestion.test"
   },
   {
     "id": 5,
     "usuario": "paciente",
-    "contrasena": "Paciente2026",
+    "contrasenaHash": "$2a$10$pu04geSf3zPnxHB1YrXl0.lXoC5XOhnPu6bVzT98ph27R9PbI/nEa",
     "nombre": "Jorge Ramírez Cruz",
     "rol": "PACIENTE",
-    "pacienteId": 1
+    "pacienteId": 1,
+    "correo": "jorge.ramirez@physiogestion.test"
   }
 ]
