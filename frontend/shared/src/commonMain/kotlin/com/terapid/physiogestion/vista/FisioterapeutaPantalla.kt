@@ -282,10 +282,17 @@ private fun TarjetaSeguimiento(sesion: SesionTerapia, modifier: Modifier = Modif
             color = ColoresPhysio.TextoSecundario,
             fontSize = 13.sp,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // FIS-03: qué se midió y con qué método (una etiqueta por renglón para que no se corten).
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Etiqueta(sesion.semaforo.etiqueta, sesion.semaforo.color)
             val conCamara = sesion.ejercicios.count { it.verificadoConCamara }
-            if (conCamara > 0) Etiqueta("$conCamara con cámara", ColoresPhysio.Exito)
+            val conSensores = sesion.ejercicios.count { it.verificado } - conCamara
+            if (conCamara > 0) {
+                Etiqueta(if (conCamara == 1) "1 verificado con cámara" else "$conCamara verificados con cámara", ColoresPhysio.Exito)
+            }
+            if (conSensores > 0) {
+                Etiqueta(if (conSensores == 1) "1 medido con sensores" else "$conSensores medidos con sensores", ColoresPhysio.AzulClaro)
+            }
         }
         sesion.observacion?.let {
             Text("“$it”", color = ColoresPhysio.TextoSecundario, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
