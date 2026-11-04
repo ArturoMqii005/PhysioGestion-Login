@@ -31,6 +31,17 @@ val EstadoCita.etiqueta: String
         EstadoCita.CONFIRMADA -> "Confirmada"
         EstadoCita.ATENDIDA -> "Atendida"
         EstadoCita.CANCELADA -> "Cancelada"
+        EstadoCita.NO_ASISTIO -> "No asistió"
+    }
+
+/** Para las tarjetas de conteo: «Pendientes», «No asistieron». */
+val EstadoCita.plural: String
+    get() = when (this) {
+        EstadoCita.PENDIENTE -> "Pendientes"
+        EstadoCita.CONFIRMADA -> "Confirmadas"
+        EstadoCita.ATENDIDA -> "Atendidas"
+        EstadoCita.CANCELADA -> "Canceladas"
+        EstadoCita.NO_ASISTIO -> "No asistieron"
     }
 
 val EstadoCita.color: Color
@@ -39,6 +50,7 @@ val EstadoCita.color: Color
         EstadoCita.CONFIRMADA -> ColoresPhysio.AzulClaro
         EstadoCita.ATENDIDA -> ColoresPhysio.Exito
         EstadoCita.CANCELADA -> ColoresPhysio.Alerta
+        EstadoCita.NO_ASISTIO -> ColoresPhysio.Violeta
     }
 
 /** Semáforo con texto: el color nunca va solo (RC-25). */

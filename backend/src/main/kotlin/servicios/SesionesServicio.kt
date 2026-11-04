@@ -36,7 +36,8 @@ data class Creacion(val sesion: SesionTerapia, val nueva: Boolean)
  * PostgreSQL (SRV-08), cada cambio se escribe en la base y se recupera al arrancar.
  */
 class SesionesServicio(
-    private val rutinas: List<Rutina>,
+    /** Rutinas vigentes; vienen de [ClinicaServicio], que permite modificarlas (RUT-08). */
+    private val rutinas: () -> List<Rutina>,
     sesionesIniciales: List<SesionTerapia> = emptyList(),
     almacen: AlmacenDocumentos = AlmacenEnMemoria(),
     json: Json = Json { ignoreUnknownKeys = true },
@@ -66,11 +67,11 @@ class SesionesServicio(
     }
     private val siguientePrueba = AtomicInteger((pruebasEscaleras.keys.maxOrNull() ?: 0) + 1)
 
-    fun rutinaDelPaciente(pacienteId: Int): Rutina? = rutinas.firstOrNull { it.pacienteId == pacienteId }
+    fun rutinaDelPaciente(pacienteId: Int): Rutina? = rutinas().firstOrNull { it.pacienteId == pacienteId }
 
     /** Pacientes cuya rutina asignó el fisioterapeuta indicado. */
     fun pacientesDe(nombreFisioterapeuta: String): Set<Int> =
-        rutinas.filter { it.fisioterapeuta == nombreFisioterapeuta }.map { it.pacienteId }.toSet()
+        rutinas().filter { it.fisioterapeuta == nombreFisioterapeuta }.map { it.pacienteId }.toSet()
 
     // ---------------------------------------------------------------- GET
 

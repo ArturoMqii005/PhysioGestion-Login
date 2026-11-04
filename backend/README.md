@@ -61,8 +61,15 @@ backend/
 | POST | `/api/v1/usuarios` | ADMINISTRADOR | Alta de personal con contraseña temporal → 201 |
 | PATCH | `/api/v1/usuarios/{id}` | ADMINISTRADOR | Activar o desactivar una cuenta |
 | GET / POST | `/api/v1/invitaciones` | ADMINISTRADOR, RECEPCIONISTA | Códigos de invitación para pacientes nuevos (7 días, un solo uso) |
-| GET | `/api/v1/citas` | ADMINISTRADOR, RECEPCIONISTA, FISIOTERAPEUTA | Agenda del día. El fisioterapeuta solo recibe las suyas |
-| GET | `/api/v1/pacientes/{id}/rutina` | PACIENTE (solo la suya), FISIOTERAPEUTA | Rutina vigente (con ángulo objetivo y si se mide con sensores) |
+| GET | `/api/v1/citas?fecha=2026-11-04` | ADMINISTRADOR, RECEPCIONISTA, FISIOTERAPEUTA, PACIENTE | Agenda del día (hoy si no se indica). El fisioterapeuta solo recibe las suyas; el paciente, sus próximas citas |
+| GET | `/api/v1/citas/libres?fisioterapeutaId=&fecha=&duracion=` | ADMINISTRADOR, RECEPCIONISTA | Horas de inicio libres, cada 30 min de 07:00 a 21:00 |
+| POST | `/api/v1/citas` | ADMINISTRADOR, RECEPCIONISTA | Agenda una cita → 201. Choque con otra cita del fisioterapeuta → **409** |
+| PATCH | `/api/v1/citas/{id}` | ADMINISTRADOR, RECEPCIONISTA | Reprograma (fecha, hora, fisioterapeuta, duración) |
+| POST | `/api/v1/citas/{id}/estado` | según el rol | Recepción confirma o cancela; el fisioterapeuta marca atendida o no asistió; el paciente cancela la suya |
+| GET | `/api/v1/pacientes` · `/api/v1/pacientes/{id}` | FISIOTERAPEUTA (los suyos), RECEPCIONISTA, ADMINISTRADOR | Lista y ficha (recepción no ve datos de salud) |
+| PATCH | `/api/v1/pacientes/{id}/fisioterapeuta` | RECEPCIONISTA, ADMINISTRADOR | Asigna o cambia el fisioterapeuta |
+| GET | `/api/v1/pacientes/{id}/rutina` | PACIENTE (solo la suya), FISIOTERAPEUTA (sus pacientes) | Rutina vigente (con ángulo objetivo y si se mide con sensores) |
+| PUT | `/api/v1/pacientes/{id}/rutina` | FISIOTERAPEUTA | Crea o modifica la rutina con ejercicios del catálogo (`GET /api/v1/ejercicios`) |
 | GET | `/api/v1/sesiones?idPaciente=&pagina=&tamano=` | PACIENTE (las suyas), FISIOTERAPEUTA (sus pacientes) | Historial paginado; total en `X-Total-Count` |
 | GET | `/api/v1/sesiones/{id}` | PACIENTE, FISIOTERAPEUTA | Una sesión |
 | POST | `/api/v1/sesiones` | PACIENTE | **201 Created** + `Location`. Con `Idempotency-Key` repetida responde 200 y no duplica. Misma hora de inicio: **409** |
@@ -108,7 +115,7 @@ Content-Type: application/json
 
 - `gradlew.bat run`: inicia el servidor en http://localhost:8080
 - Otro puerto (variable de entorno): `set PORT=8090` y luego `gradlew.bat run`
-- `gradlew.bat test`: ejecuta las 32 pruebas (incluye registro, recuperación, bloqueo y persistencia con SQLite)
+- `gradlew.bat test`: ejecuta las 42 pruebas (cuentas, citas, pacientes, rutinas y persistencia con SQLite)
 
 ## Despliegue en Railway
 

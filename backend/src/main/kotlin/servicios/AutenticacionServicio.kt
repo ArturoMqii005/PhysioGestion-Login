@@ -372,15 +372,36 @@ class AutenticacionServicio(
         return AltaUsuarioRespuesta(creado.aPublico(), temporal)
     }
 
-    /** Activa o desactiva una cuenta (ADM-03). Desactivar cierra sus sesiones; el historial se conserva. */
-    fun cambiarEstado(id: Int, activo: Boolean, quienPide: Int): UsuarioAdministrado {
-        if (id == quienPide && !activo) throw DatosNoProcesables("No puedes desactivar tu propia cuenta.")
+    /**
+     * Edita una cuenta (ADM-03): activar o desactivar, nombre, correo y rol. Desactivar
+     * cierra sus sesiones; el historial se conserva. Los pacientes no cambian de rol.
+     */
+    fun editar(id: Int, s: com.terapid.physiogestion.modelos.EstadoCuentaSolicitud, quienPide: Int): UsuarioAdministrado = synchronized(this) {
         val u = usuarios[id] ?: throw io.ktor.server.plugins.NotFoundException("Ese usuario no existe.")
-        val actualizado = u.copy(activo = activo)
+        if (id == quienPide && s.activo == false) throw DatosNoProcesables("No puedes desactivar tu propia cuenta.")
+        if (id == quienPide && s.rol != null && s.rol != u.rol) throw DatosNoProcesables("No puedes cambiar tu propio rol.")
+        if (s.rol != null && s.rol != u.rol && (s.rol == Rol.PACIENTE || u.rol == Rol.PACIENTE)) {
+            throw DatosNoProcesables("Las cuentas de paciente no cambian de rol.")
+        }
+        val nombre = s.nombre?.trim()?.replace(Regex("\\s+"), " ")?.also {
+            if (it.length !in 5..80) throw DatosNoProcesables("Escribe el nombre completo.")
+        }
+        val correoNuevo = s.correo?.trim()?.lowercase()?.also {
+            validarCorreo(it)
+            if (usuarios.values.any { o -> o.id != id && o.correo.equals(it, ignoreCase = true) }) throw Conflicto("Ese correo ya tiene una cuenta.")
+        }
+        val actualizado = u.copy(
+            activo = s.activo ?: u.activo,
+            nombre = nombre ?: u.nombre,
+            correo = correoNuevo ?: u.correo,
+            rol = s.rol ?: u.rol,
+        )
         guardarUsuario(actualizado)
-        if (!activo) cerrarSesionesDe(id)
-        return actualizado.administrado()
+        if (!actualizado.activo || actualizado.rol != u.rol) cerrarSesionesDe(id)
+        actualizado.administrado()
     }
+
+    fun usuario(id: Int): UsuarioRegistrado? = usuarios[id]
 
     fun listar(): List<UsuarioAdministrado> = usuarios.values.sortedBy { it.id }.map { it.administrado() }
 

@@ -1,0 +1,131 @@
+[
+  {
+    "id": 1,
+    "nombre": "Sentadilla asistida con silla",
+    "indicaciones": "Siéntate y levántate de una silla firme sin usar las manos. Mantén las rodillas alineadas con la punta de los pies.",
+    "series": 3,
+    "repeticiones": 10,
+    "descansoSegundos": 45,
+    "zonaCorporal": "Rodilla",
+    "anguloObjetivo": 90,
+    "medibleConSensores": true,
+    "admiteVerificacionPorCamara": true
+  },
+  {
+    "id": 2,
+    "nombre": "Puente de glúteo",
+    "indicaciones": "Acostado boca arriba con las rodillas flexionadas, eleva la cadera hasta alinear hombros, cadera y rodillas. Sostén 3 segundos arriba.",
+    "series": 3,
+    "repeticiones": 12,
+    "descansoSegundos": 30,
+    "zonaCorporal": "Cadera",
+    "anguloObjetivo": 35,
+    "medibleConSensores": true,
+    "admiteVerificacionPorCamara": true
+  },
+  {
+    "id": 3,
+    "nombre": "Elevación de talones",
+    "indicaciones": "De pie y apoyado en una pared, sube sobre las puntas de los pies y baja despacio.",
+    "series": 3,
+    "repeticiones": 15,
+    "descansoSegundos": 30,
+    "zonaCorporal": "Tobillo",
+    "anguloObjetivo": 20,
+    "medibleConSensores": true
+  },
+  {
+    "id": 4,
+    "nombre": "Estiramiento de isquiotibiales",
+    "indicaciones": "Sentado en el borde de una silla, estira una pierna y lleva el pecho hacia adelante sin redondear la espalda. Sostén 30 segundos por lado.",
+    "series": 2,
+    "repeticiones": 1,
+    "descansoSegundos": 20,
+    "zonaCorporal": "Muslo"
+  },
+  {
+    "id": 5,
+    "nombre": "Extensión de rodilla sentado",
+    "indicaciones": "Sentado en una silla, estira la rodilla hasta dejar la pierna recta, sostén 2 segundos y baja despacio.",
+    "series": 3,
+    "repeticiones": 12,
+    "descansoSegundos": 30,
+    "zonaCorporal": "Rodilla",
+    "anguloObjetivo": 70,
+    "medibleConSensores": true
+  },
+  {
+    "id": 6,
+    "nombre": "Sentadilla en pared",
+    "indicaciones": "Con la espalda apoyada en la pared, baja doblando las rodillas sin pasar la punta de los pies y sube despacio.",
+    "series": 3,
+    "repeticiones": 10,
+    "descansoSegundos": 45,
+    "zonaCorporal": "Rodilla",
+    "anguloObjetivo": 60,
+    "medibleConSensores": true,
+    "admiteVerificacionPorCamara": true
+  },
+  {
+    "id": 7,
+    "nombre": "Elevación de pierna recta",
+    "indicaciones": "Acostado boca arriba, con una rodilla doblada, eleva la otra pierna recta hasta la altura de la rodilla contraria.",
+    "series": 3,
+    "repeticiones": 10,
+    "descansoSegundos": 30,
+    "zonaCorporal": "Cadera",
+    "anguloObjetivo": 45,
+    "medibleConSensores": true
+  },
+  {
+    "id": 8,
+    "nombre": "Abducción de cadera de lado",
+    "indicaciones": "Acostado de lado, eleva la pierna de arriba sin girar la cadera y baja despacio.",
+    "series": 3,
+    "repeticiones": 12,
+    "descansoSegundos": 30,
+    "zonaCorporal": "Cadera",
+    "anguloObjetivo": 30,
+    "medibleConSensores": true
+  },
+  {
+    "id": 9,
+    "nombre": "Marcha en el lugar",
+    "indicaciones": "De pie junto a una mesa, sube una rodilla a la altura de la cadera y alterna sin prisa.",
+    "series": 2,
+    "repeticiones": 20,
+    "descansoSegundos": 30,
+    "zonaCorporal": "Cadera",
+    "anguloObjetivo": 60,
+    "medibleConSensores": true
+  },
+  {
+    "id": 10,
+    "nombre": "Rotación externa de hombro con banda",
+    "indicaciones": "Con el codo pegado al cuerpo y doblado a 90°, abre el antebrazo hacia afuera estirando la banda.",
+    "series": 3,
+    "repeticiones": 12,
+    "descansoSegundos": 30,
+    "zonaCorporal": "Hombro",
+    "anguloObjetivo": 45,
+    "medibleConSensores": true
+  },
+  {
+    "id": 11,
+    "nombre": "Retracción cervical",
+    "indicaciones": "Sentado con la espalda recta, lleva la barbilla hacia atrás sin inclinar la cabeza y sostén 5 segundos.",
+    "series": 2,
+    "repeticiones": 10,
+    "descansoSegundos": 20,
+    "zonaCorporal": "Cuello"
+  },
+  {
+    "id": 12,
+    "nombre": "Estiramiento de pantorrilla en pared",
+    "indicaciones": "Con las manos en la pared, lleva una pierna atrás con el talón apoyado y sostén 30 segundos por lado.",
+    "series": 2,
+    "repeticiones": 1,
+    "descansoSegundos": 20,
+    "zonaCorporal": "Tobillo"
+  }
+]

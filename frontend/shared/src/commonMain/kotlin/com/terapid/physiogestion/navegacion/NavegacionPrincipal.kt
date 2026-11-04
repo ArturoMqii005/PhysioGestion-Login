@@ -13,9 +13,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.terapid.physiogestion.dependencias.Dependencias
+import com.terapid.physiogestion.modelo.Rol
 import com.terapid.physiogestion.modelo.Usuario
+import com.terapid.physiogestion.plataforma.ahoraEnMilisegundos
+import com.terapid.physiogestion.plataforma.claveDelDia
 import com.terapid.physiogestion.viewmodel.AdministradorViewModel
 import com.terapid.physiogestion.viewmodel.AgendaViewModel
+import com.terapid.physiogestion.viewmodel.AgendarCitaViewModel
+import com.terapid.physiogestion.viewmodel.EditarRutinaViewModel
+import com.terapid.physiogestion.viewmodel.FichaPacienteViewModel
+import com.terapid.physiogestion.viewmodel.MisCitasViewModel
+import com.terapid.physiogestion.viewmodel.PacientesViewModel
 import com.terapid.physiogestion.viewmodel.AvisoPrivacidadViewModel
 import com.terapid.physiogestion.viewmodel.CambiarContrasenaViewModel
 import com.terapid.physiogestion.viewmodel.InvitacionesViewModel
@@ -32,6 +40,10 @@ import com.terapid.physiogestion.viewmodel.PerfilViewModel
 import com.terapid.physiogestion.viewmodel.RutinaViewModel
 import com.terapid.physiogestion.viewmodel.SesionViewModel
 import com.terapid.physiogestion.vista.AdministradorPantalla
+import com.terapid.physiogestion.vista.AgendarCitaPantalla
+import com.terapid.physiogestion.vista.EditarRutinaPantalla
+import com.terapid.physiogestion.vista.FichaPacientePantalla
+import com.terapid.physiogestion.vista.PacientesPantalla
 import com.terapid.physiogestion.vista.AvisoPrivacidadPantalla
 import com.terapid.physiogestion.vista.CambiarContrasenaPantalla
 import com.terapid.physiogestion.vista.RecuperarContrasenaPantalla
@@ -145,6 +157,7 @@ fun NavegacionPrincipal() {
                 viewModel = viewModel { AgendaViewModel(Dependencias.clinica, conSeguimiento = true) },
                 alCerrarSesion = sesionVm::cerrarSesion,
                 alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
+                alAbrirPacientes = { navegador.navigate(RutaPacientes) },
             )
         }
         composable<RutaRecepcion> {
@@ -155,6 +168,69 @@ fun NavegacionPrincipal() {
                 alCerrarSesion = sesionVm::cerrarSesion,
                 invitaciones = viewModel { InvitacionesViewModel(Dependencias.cuentas) },
                 alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
+                alAgendar = { navegador.navigate(RutaAgendarCita) },
+                alReprogramar = { cita -> navegador.navigate(cita.aRutaReprogramar()) },
+                alAbrirPacientes = { navegador.navigate(RutaPacientes) },
+            )
+        }
+
+        // ---------------- Operación clínica (CIT-05..08, PAC-02..04, RUT-08) ----------------
+
+        composable<RutaAgendarCita> {
+            val agenda = agendaDeRecepcion(navegador)
+            AgendarCitaPantalla(
+                viewModel = viewModel { AgendarCitaViewModel(Dependencias.clinica) },
+                alRegresar = { navegador.popBackStack() },
+                alGuardar = { cita ->
+                    navegador.popBackStack()
+                    agenda?.mostrar(cita)
+                },
+            )
+        }
+        composable<RutaReprogramarCita> { entrada ->
+            val ruta = entrada.toRoute<RutaReprogramarCita>()
+            val agenda = agendaDeRecepcion(navegador)
+            AgendarCitaPantalla(
+                viewModel = viewModel { AgendarCitaViewModel(Dependencias.clinica, reprogramar = ruta.aCita()) },
+                alRegresar = { navegador.popBackStack() },
+                alGuardar = { cita ->
+                    navegador.popBackStack()
+                    agenda?.mostrar(cita)
+                },
+            )
+        }
+        composable<RutaPacientes> {
+            PacientesPantalla(
+                viewModel = viewModel { PacientesViewModel(Dependencias.clinica) },
+                hoy = claveDelDia(ahoraEnMilisegundos()),
+                alRegresar = { navegador.popBackStack() },
+                alAbrir = { id -> navegador.navigate(RutaFichaPaciente(id)) },
+            )
+        }
+        composable<RutaFichaPaciente> { entrada ->
+            val usuario = sesion?.usuario ?: return@composable
+            val ruta = entrada.toRoute<RutaFichaPaciente>()
+            FichaPacientePantalla(
+                viewModel = viewModel(entrada) {
+                    FichaPacienteViewModel(ruta.pacienteId, Dependencias.clinica, puedeAsignar = usuario.rol != Rol.FISIOTERAPEUTA)
+                },
+                hoy = claveDelDia(ahoraEnMilisegundos()),
+                puedeEditarRutina = usuario.rol == Rol.FISIOTERAPEUTA,
+                alRegresar = { navegador.popBackStack() },
+                alEditarRutina = { navegador.navigate(RutaEditarRutina(ruta.pacienteId)) },
+            )
+        }
+        composable<RutaEditarRutina> { entrada ->
+            val ruta = entrada.toRoute<RutaEditarRutina>()
+            val ficha = remember(navegador) { runCatching { navegador.previousBackStackEntry }.getOrNull() }
+            EditarRutinaPantalla(
+                viewModel = viewModel { EditarRutinaViewModel(ruta.pacienteId, Dependencias.clinica) },
+                alRegresar = { navegador.popBackStack() },
+                alGuardar = {
+                    navegador.popBackStack()
+                    // La ficha vuelve a cargar para mostrar la rutina nueva.
+                    ficha?.let { e -> runCatching { androidx.lifecycle.ViewModelProvider.create(e)[FichaPacienteViewModel::class].cargar() } }
+                },
             )
         }
 
@@ -164,6 +240,7 @@ fun NavegacionPrincipal() {
             val usuario = sesion?.usuario ?: return@composable
             InicioPacientePantalla(
                 usuario = usuario,
+                misCitas = viewModel { MisCitasViewModel(Dependencias.clinica) },
                 viewModel = viewModel {
                     InicioPacienteViewModel(
                         pacienteId = usuario.pacienteId ?: 0,
@@ -293,4 +370,13 @@ private fun rutinaViewModelCompartido(navegador: NavHostController, usuario: Usu
         runCatching { navegador.getBackStackEntry<RutaRutina>() }.getOrNull()
     } ?: return null
     return viewModel(entradaRutina) { crearRutinaViewModel(usuario) }
+}
+
+/** AgendaViewModel de la pantalla de recepción que está debajo en la pila (para recargarla al volver). */
+@Composable
+private fun agendaDeRecepcion(navegador: NavHostController): AgendaViewModel? {
+    val entrada = remember(navegador) {
+        runCatching { navegador.getBackStackEntry<RutaRecepcion>() }.getOrNull()
+    } ?: return null
+    return viewModel(entrada) { AgendaViewModel(Dependencias.clinica) }
 }

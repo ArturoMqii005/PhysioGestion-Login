@@ -15,7 +15,15 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import com.terapid.physiogestion.servicio.ReglasAgenda
+import com.terapid.physiogestion.viewmodel.MisCitasViewModel
+import com.terapid.physiogestion.vista.componentes.BotonEnlace
+import com.terapid.physiogestion.vista.componentes.DialogoCancelarCita
+import com.terapid.physiogestion.vista.componentes.Etiqueta
+import com.terapid.physiogestion.vista.componentes.color
+import com.terapid.physiogestion.vista.componentes.etiqueta
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -50,6 +58,7 @@ fun InicioPacientePantalla(
     alAbrirHistorial: () -> Unit,
     alAbrirPerfil: () -> Unit,
     alCerrarSesion: () -> Unit,
+    misCitas: MisCitasViewModel? = null,
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     // Cada vez que la pantalla aparece (también al regresar de la rutina) se actualiza el resumen.
@@ -73,6 +82,8 @@ fun InicioPacientePantalla(
             }
 
             item { TarjetaRutinaDeHoy(estado, alAbrirRutina, viewModel::cargar) }
+
+            if (misCitas != null) item { TarjetaMisCitas(misCitas) }
 
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -215,4 +226,29 @@ private fun TarjetaPasos(estadoPasos: EstadoPasos, viewModel: InicioPacienteView
             }
         }
     }
+}
+
+/** Próximas citas del paciente (CIT-08), con la opción de cancelarlas. */
+@Composable
+private fun TarjetaMisCitas(viewModel: MisCitasViewModel) {
+    val e by viewModel.estado.collectAsStateWithLifecycle()
+    if (e.cargando) return
+    TarjetaPhysio {
+        Text("Mis próximas citas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        if (e.proximas.isEmpty()) {
+            Text("No tienes citas agendadas. Para agendar, llama a la clínica.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        e.proximas.forEach { c ->
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("${ReglasAgenda.etiquetaDia(c.fecha, e.hoy)} · ${c.horario}", fontWeight = FontWeight.SemiBold)
+                    Text("${c.fisioterapeuta} · ${c.motivo}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Etiqueta(c.estado.etiqueta, c.estado.color)
+            }
+            BotonEnlace("Cancelar esta cita", { viewModel.pedirCancelar(c) }, habilitado = !e.procesando)
+        }
+        e.aviso?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = ColoresPhysio.Turquesa) }
+    }
+    e.cancelando?.let { c -> DialogoCancelarCita(c, null, null, viewModel::confirmarCancelacion, viewModel::cerrarCancelacion) }
 }

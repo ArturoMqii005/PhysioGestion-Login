@@ -1,5 +1,7 @@
 package com.terapid.physiogestion.navegacion
 
+import com.terapid.physiogestion.modelo.Cita
+import com.terapid.physiogestion.modelo.EstadoCita
 import com.terapid.physiogestion.modelo.Rol
 import com.terapid.physiogestion.modelo.Sesion
 import kotlinx.serialization.Serializable
@@ -90,3 +92,42 @@ fun rutaPara(sesion: Sesion): Any = when {
     sesion.debeCambiarContrasena -> RutaCambiarContrasena(obligatorio = true)
     else -> rutaInicialPara(sesion.usuario.rol)
 }
+
+// ---------------- Operación clínica (fase 2) ----------------
+
+/** Recepción agenda una cita nueva (CIT-05). */
+@Serializable
+data object RutaAgendarCita
+
+/** Recepción reprograma una cita: los datos viajan en la ruta (pacienteId = 0 si no tiene cuenta). */
+@Serializable
+data class RutaReprogramarCita(
+    val id: Int,
+    val paciente: String,
+    val pacienteId: Int,
+    val fisioterapeutaId: Int,
+    val fisioterapeuta: String,
+    val fecha: String,
+    val hora: String,
+    val duracion: Int,
+    val motivo: String,
+)
+
+/** Lista de pacientes (PAC-02). */
+@Serializable
+data object RutaPacientes
+
+/** Ficha de un paciente (PAC-03). */
+@Serializable
+data class RutaFichaPaciente(val pacienteId: Int)
+
+/** El fisioterapeuta arma o modifica la rutina (RUT-08). */
+@Serializable
+data class RutaEditarRutina(val pacienteId: Int)
+
+fun Cita.aRutaReprogramar() = RutaReprogramarCita(id, paciente, pacienteId ?: 0, fisioterapeutaId, fisioterapeuta, fecha, hora, duracionMinutos, motivo)
+
+fun RutaReprogramarCita.aCita() = Cita(
+    id = id, hora = hora, paciente = paciente, fisioterapeutaId = fisioterapeutaId, fisioterapeuta = fisioterapeuta,
+    motivo = motivo, estado = EstadoCita.PENDIENTE, fecha = fecha, pacienteId = pacienteId.takeIf { it > 0 }, duracionMinutos = duracion,
+)

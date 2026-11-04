@@ -1,6 +1,8 @@
 package com.terapid.physiogestion
 
 import com.terapid.physiogestion.datos.AlmacenJdbc
+import com.terapid.physiogestion.modelos.Cita
+import com.terapid.physiogestion.modelos.CitaSolicitud
 import com.terapid.physiogestion.modelos.CrearSesionSolicitud
 import com.terapid.physiogestion.modelos.Dificultad
 import com.terapid.physiogestion.modelos.EjercicioRealizado
@@ -60,6 +62,8 @@ class PersistenciaTest {
     fun `cuentas, tokens y sesiones sobreviven al reinicio`() {
         var token = ""
         var idSesion = 0
+        var dia = java.time.LocalDate.now(java.time.ZoneId.of("America/Mexico_City")).plusDays(1)
+        if (dia.dayOfWeek == java.time.DayOfWeek.SUNDAY) dia = dia.plusDays(1)
         testApplication {
             val c = arrancar()
             c.json("/api/v1/auth/registro", RegistroSolicitud("DEMO-2026", "maria.lopez", "maria@correo.com", "Rodilla2026", true))
@@ -81,6 +85,10 @@ class PersistenciaTest {
             assertEquals(HttpStatusCode.Created, creada.status)
             idSesion = creada.body<SesionTerapia>().id
             assertEquals("sqlite", c.get("/api/v1/salud").body<EstadoServidor>().baseDatos)
+            // También se guardan la cita agendada por recepción y la rutina que modifica el fisioterapeuta.
+            val recepcion = c.json("/api/v1/auth/login", LoginSolicitud("recepcion", "Recepcion2026")).body<LoginRespuesta>().token
+            val cita = c.json("/api/v1/citas", CitaSolicitud("", 2, 3, dia.toString(), "10:00", 50, "Valoración inicial"), recepcion)
+            assertEquals(HttpStatusCode.Created, cita.status)
         }
 
         // Segundo arranque, como cuando Railway despierta el contenedor.
@@ -92,6 +100,11 @@ class PersistenciaTest {
             // La invitación ya usada no se «revive» con los datos de ejemplo.
             val otra = c.json("/api/v1/auth/registro", RegistroSolicitud("DEMO-2026", "otra.cuenta", "otra@correo.com", "Rodilla2026", true))
             assertEquals(HttpStatusCode.UnprocessableEntity, otra.status)
+            val recepcion = c.json("/api/v1/auth/login", LoginSolicitud("recepcion", "Recepcion2026")).body<LoginRespuesta>().token
+            val agenda = c.get("/api/v1/citas?fecha=$dia") { bearerAuth(recepcion) }.body<List<Cita>>()
+            assertEquals("María López Hernández", agenda.single { it.motivo == "Valoración inicial" }.paciente)
+            // Las citas de ejemplo no se duplican al volver a arrancar.
+            assertEquals(1, c.get("/api/v1/pacientes") { bearerAuth(recepcion) }.body<List<com.terapid.physiogestion.modelos.PacienteResumen>>().count { it.pacienteId == 2 })
         }
     }
 

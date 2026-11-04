@@ -10,6 +10,7 @@ import com.terapid.physiogestion.modelos.SesionTerapia
 import com.terapid.physiogestion.modelos.UsuarioPublico
 import com.terapid.physiogestion.plugins.AccesoDenegado
 import com.terapid.physiogestion.plugins.exigirRol
+import com.terapid.physiogestion.servicios.ClinicaServicio
 import com.terapid.physiogestion.servicios.SesionesServicio
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -40,12 +41,12 @@ const val ENCABEZADO_IDEMPOTENCIA = "Idempotency-Key"
  *  PATCH  /sesiones/{id}           modificar solo algunos     (parcial)
  *  DELETE /sesiones/{id}           eliminar -> 204            (idempotente: la segunda vez responde 404)
  */
-fun Route.rutasSesiones(servicio: SesionesServicio) {
+fun Route.rutasSesiones(servicio: SesionesServicio, clinica: ClinicaServicio) {
     route("/sesiones") {
 
         get {
             val usuario = call.exigirRol(Rol.PACIENTE, Rol.FISIOTERAPEUTA)
-            val pacientes = call.pacientesVisibles(usuario, servicio)
+            val pacientes = call.pacientesVisibles(usuario, clinica)
             val pagina = call.parametroEntero("pagina", 0).coerceAtLeast(0)
             val tamano = call.parametroEntero("tamano", 20).coerceIn(1, 50)
             call.response.header("X-Total-Count", servicio.contar(pacientes).toString())
@@ -54,7 +55,7 @@ fun Route.rutasSesiones(servicio: SesionesServicio) {
 
         get("/{id}") {
             val usuario = call.exigirRol(Rol.PACIENTE, Rol.FISIOTERAPEUTA)
-            call.respond(call.sesionVisible(usuario, servicio))
+            call.respond(call.sesionVisible(usuario, servicio, clinica))
         }
 
         post {
@@ -102,7 +103,7 @@ fun Route.rutasSesiones(servicio: SesionesServicio) {
         }
         get {
             val usuario = call.exigirRol(Rol.PACIENTE, Rol.FISIOTERAPEUTA)
-            call.respond(servicio.resultadosDe(call.pacientesVisibles(usuario, servicio)))
+            call.respond(servicio.resultadosDe(call.pacientesVisibles(usuario, clinica)))
         }
     }
 
@@ -116,7 +117,7 @@ fun Route.rutasSesiones(servicio: SesionesServicio) {
         }
         get {
             val usuario = call.exigirRol(Rol.PACIENTE, Rol.FISIOTERAPEUTA)
-            call.respond(servicio.pruebasEscalerasDe(call.pacientesVisibles(usuario, servicio)))
+            call.respond(servicio.pruebasEscalerasDe(call.pacientesVisibles(usuario, clinica)))
         }
     }
 }
@@ -125,7 +126,7 @@ fun Route.rutasSesiones(servicio: SesionesServicio) {
  * Pacientes que puede consultar el usuario: el paciente solo a sí mismo y el
  * fisioterapeuta a los pacientes cuya rutina él asignó.
  */
-private fun ApplicationCall.pacientesVisibles(usuario: UsuarioPublico, servicio: SesionesServicio): Set<Int> {
+private fun ApplicationCall.pacientesVisibles(usuario: UsuarioPublico, clinica: ClinicaServicio): Set<Int> {
     val pedido = request.queryParameters["idPaciente"]?.let {
         it.toIntOrNull() ?: throw BadRequestException("idPaciente debe ser un número.")
     }
@@ -134,7 +135,7 @@ private fun ApplicationCall.pacientesVisibles(usuario: UsuarioPublico, servicio:
         if (pedido != null && pedido != propio) throw AccesoDenegado("Solo puedes consultar tus propias sesiones.")
         setOf(propio)
     } else {
-        val suyos = servicio.pacientesDe(usuario.nombre)
+        val suyos = clinica.pacientesDe(usuario.id)
         if (pedido == null) suyos
         else if (pedido in suyos) setOf(pedido)
         else throw AccesoDenegado("Ese paciente no está en tu seguimiento.")
@@ -150,10 +151,10 @@ private fun ApplicationCall.parametroEntero(nombre: String, porDefecto: Int): In
     } ?: porDefecto
 
 /** Sesión que el usuario puede ver (404 si no existe, 403 si es de otro paciente). */
-private fun ApplicationCall.sesionVisible(usuario: UsuarioPublico, servicio: SesionesServicio): SesionTerapia {
+private fun ApplicationCall.sesionVisible(usuario: UsuarioPublico, servicio: SesionesServicio, clinica: ClinicaServicio): SesionTerapia {
     val id = idDeRuta()
     val sesion = servicio.obtener(id) ?: throw NotFoundException("La sesión $id no existe o ya fue eliminada.")
-    if (sesion.pacienteId !in pacientesVisibles(usuario, servicio)) {
+    if (sesion.pacienteId !in pacientesVisibles(usuario, clinica)) {
         throw AccesoDenegado("No puedes consultar esta sesión.")
     }
     return sesion

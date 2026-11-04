@@ -77,6 +77,17 @@ Sobre el proyecto del login se integraron las prácticas de la estructura de la 
 con rutina de la Ft. Mariana Soto). Recepción genera códigos nuevos desde su pantalla. Sin proveedor de correo configurado,
 el código de 6 dígitos aparece en el registro del servidor (`railway logs`).
 
+## Lo que se agregó en la versión 1.3 (operación clínica)
+
+|Función|Dónde|
+|-|-|
+|Recepción agenda, reprograma, confirma y cancela citas con fecha; solo muestra horas libres y el servidor evita choques|`AgendarCitaPantalla`, `RecepcionPantalla` · `/citas`, `/citas/libres`|
+|El fisioterapeuta marca «atendida» o «no asistió» y navega por días|`FisioterapeutaPantalla`|
+|El paciente ve sus próximas citas y puede cancelarlas|`InicioPacientePantalla` (Mis próximas citas)|
+|Lista y ficha de pacientes; recepción asigna el fisioterapeuta|`PacientesPantalla`, `FichaPacientePantalla` · `/pacientes`|
+|El fisioterapeuta arma y modifica la rutina con un catálogo de 12 ejercicios|`EditarRutinaPantalla` · `PUT /pacientes/{id}/rutina`|
+|El administrador edita nombre, correo y rol de las cuentas|`AdministradorPantalla` · `PATCH /usuarios/{id}`|
+
 ## Lo que se agregó en la versión 1.2 (cuentas seguras)
 
 |Función|Dónde|

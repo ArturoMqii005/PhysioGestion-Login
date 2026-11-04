@@ -12,6 +12,7 @@ import com.terapid.physiogestion.plugins.configureSerialization
 import com.terapid.physiogestion.plugins.configureStatusPages
 import com.terapid.physiogestion.rutas.configureRouting
 import com.terapid.physiogestion.servicios.AutenticacionServicio
+import com.terapid.physiogestion.servicios.ClinicaServicio
 import com.terapid.physiogestion.servicios.CorreoEnRegistro
 import com.terapid.physiogestion.servicios.EnviadorCorreo
 import com.terapid.physiogestion.servicios.SesionesServicio
@@ -51,7 +52,16 @@ fun Application.modulo(
         almacen = almacenDocumentos,
         json = json,
     )
-    val sesiones = SesionesServicio(almacen.rutinas, almacen.sesiones, almacenDocumentos, json)
+    val clinica = ClinicaServicio(
+        rutinasIniciales = almacen.rutinas,
+        citasIniciales = almacen.citas,
+        catalogo = almacen.ejercicios,
+        cuentas = autenticacion,
+        reloj = reloj,
+        almacen = almacenDocumentos,
+        json = json,
+    )
+    val sesiones = SesionesServicio(clinica::rutinas, almacen.sesiones, almacenDocumentos, json)
 
     configureMonitoreo()
     configureHttp()
@@ -59,5 +69,5 @@ fun Application.modulo(
     configureStatusPages()
     configureLimiteSolicitudes(limitePorMinuto)
     configureSeguridad(autenticacion)
-    configureRouting(almacen, autenticacion, sesiones, almacenDocumentos.tipo)
+    configureRouting(almacen, autenticacion, sesiones, clinica, almacenDocumentos.tipo)
 }

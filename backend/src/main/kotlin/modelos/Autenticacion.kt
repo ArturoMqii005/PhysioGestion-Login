@@ -136,9 +136,14 @@ data class AltaUsuarioRespuesta(
     val contrasenaTemporal: String,
 )
 
-/** PATCH /api/v1/usuarios/{id} (ADMINISTRADOR): activar o desactivar una cuenta. */
+/** PATCH /api/v1/usuarios/{id} (ADMINISTRADOR): activar o desactivar una cuenta y editar sus datos (ADM-03). */
 @Serializable
-data class EstadoCuentaSolicitud(val activo: Boolean)
+data class EstadoCuentaSolicitud(
+    val activo: Boolean? = null,
+    val nombre: String? = null,
+    val correo: String? = null,
+    val rol: Rol? = null,
+)
 
 /** Usuario con los datos que necesita el panel de administración. */
 @Serializable

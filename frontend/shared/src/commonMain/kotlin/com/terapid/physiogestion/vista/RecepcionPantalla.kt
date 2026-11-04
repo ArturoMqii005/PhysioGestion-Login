@@ -10,7 +10,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import com.terapid.physiogestion.modelo.fechaIsoLegible
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import com.terapid.physiogestion.modelo.Cita
+import com.terapid.physiogestion.vista.componentes.AccionCita
 import com.terapid.physiogestion.vista.componentes.BotonEnlace
+import com.terapid.physiogestion.vista.componentes.DialogoCancelarCita
+import com.terapid.physiogestion.vista.componentes.MensajeInfo
+import com.terapid.physiogestion.vista.componentes.SelectorDia
 import com.terapid.physiogestion.vista.componentes.BotonPrincipal
 import com.terapid.physiogestion.vista.componentes.CampoTexto
 import com.terapid.physiogestion.vista.componentes.Etiqueta
@@ -42,6 +51,7 @@ import com.terapid.physiogestion.vista.componentes.TarjetaCita
 import com.terapid.physiogestion.vista.componentes.TarjetaDato
 import com.terapid.physiogestion.vista.componentes.color
 import com.terapid.physiogestion.vista.componentes.etiqueta
+import com.terapid.physiogestion.vista.componentes.plural
 
 /** VISTA del rol RECEPCIONISTA: agenda de toda la clínica, agrupada por fisioterapeuta. */
 @Composable
@@ -51,6 +61,9 @@ fun RecepcionPantalla(
     alCerrarSesion: () -> Unit,
     invitaciones: InvitacionesViewModel? = null,
     alCambiarContrasena: (() -> Unit)? = null,
+    alAgendar: () -> Unit = {},
+    alReprogramar: (Cita) -> Unit = {},
+    alAbrirPacientes: () -> Unit = {},
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -60,7 +73,18 @@ fun RecepcionPantalla(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { EncabezadoRol("Agenda de la clínica", usuario, alCerrarSesion, alCambiarContrasena) }
-            if (invitaciones != null) item { TarjetaInvitarPaciente(invitaciones) }
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(onClick = alAgendar, modifier = Modifier.weight(1f).heightIn(min = 52.dp), colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Turquesa)) {
+                        Text("Agendar cita", fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(onClick = alAbrirPacientes, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) { Text("Pacientes") }
+                }
+            }
+            item {
+                SelectorDia(estado.etiquetaDia, { viewModel.cambiarDia(-1) }, { viewModel.cambiarDia(1) }, if (estado.fecha != estado.hoy) viewModel::irAHoy else null)
+            }
+            estado.aviso?.let { item { MensajeInfo(it) } }
 
             when {
                 estado.cargando -> item { Cargando("Cargando agenda…") }
@@ -70,7 +94,7 @@ fun RecepcionPantalla(
                     items(EstadoCita.entries.chunked(2)) { par ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             par.forEach { e ->
-                                TarjetaDato(estado.cuantas(e).toString(), e.etiqueta + "s", e.color, Modifier.weight(1f))
+                                TarjetaDato(estado.cuantas(e).toString(), e.plural, e.color, Modifier.weight(1f))
                             }
                         }
                     }
@@ -82,11 +106,25 @@ fun RecepcionPantalla(
                                 modifier = Modifier.padding(top = 4.dp),
                             )
                         }
-                        items(citas, key = { it.id }) { TarjetaCita(it, mostrarFisioterapeuta = false) }
+                        items(citas, key = { it.id }) { cita ->
+                            val ocupada = estado.procesando == cita.id
+                            TarjetaCita(cita, mostrarFisioterapeuta = false) {
+                                if (cita.estado == EstadoCita.PENDIENTE) AccionCita("Confirmar", { viewModel.confirmar(cita) }, !ocupada)
+                                AccionCita("Reprogramar", { alReprogramar(cita) }, !ocupada)
+                                AccionCita("Cancelar", { viewModel.pedirCancelar(cita) }, !ocupada)
+                            }
+                        }
+                    }
+                    if (estado.citas.isEmpty()) {
+                        item { Text("No hay citas este día.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
             }
+            if (invitaciones != null) item { TarjetaInvitarPaciente(invitaciones) }
         }
+    }
+    estado.cancelando?.let { c ->
+        DialogoCancelarCita(c, estado.notaCancelacion, viewModel::cambiarNota, viewModel::confirmarCancelacion, viewModel::cerrarCancelacion)
     }
 }
 

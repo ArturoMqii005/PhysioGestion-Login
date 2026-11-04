@@ -1,6 +1,7 @@
 package com.terapid.physiogestion.datos
 
 import com.terapid.physiogestion.modelos.Cita
+import com.terapid.physiogestion.modelos.Ejercicio
 import com.terapid.physiogestion.modelos.Invitacion
 import com.terapid.physiogestion.modelos.Rutina
 import com.terapid.physiogestion.modelos.SesionTerapia
@@ -20,6 +21,8 @@ class AlmacenJson(private val json: Json) {
     val invitaciones: List<Invitacion> = leer("invitaciones.json")
     val citas: List<Cita> = leer("citas.json")
     val rutinas: List<Rutina> = leer("rutinas.json")
+    /** Catálogo de ejercicios con el que el fisioterapeuta arma las rutinas (RUT-08). */
+    val ejercicios: List<Ejercicio> = leer("ejercicios.json")
     val sesiones: List<SesionTerapia> = leer("sesiones.json")
 
     /** Lee un archivo de resources/datos y lo deserializa a una lista del tipo indicado. */

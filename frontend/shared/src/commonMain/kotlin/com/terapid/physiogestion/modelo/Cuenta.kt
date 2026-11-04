@@ -65,5 +65,11 @@ data class AltaUsuarioSolicitud(val usuario: String, val nombre: String, val rol
 @Serializable
 data class AltaUsuarioRespuesta(val usuario: Usuario, val contrasenaTemporal: String)
 
+/** PATCH /api/v1/usuarios/{id}: solo viaja lo que cambia (activar, nombre, correo o rol). */
 @Serializable
-data class EstadoCuentaSolicitud(val activo: Boolean)
+data class EstadoCuentaSolicitud(
+    val activo: Boolean? = null,
+    val nombre: String? = null,
+    val correo: String? = null,
+    val rol: Rol? = null,
+)

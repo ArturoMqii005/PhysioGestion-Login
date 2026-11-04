@@ -3,6 +3,7 @@ package com.terapid.physiogestion.rutas
 import com.terapid.physiogestion.datos.AlmacenJson
 import com.terapid.physiogestion.plugins.AUTH_SESION
 import com.terapid.physiogestion.servicios.AutenticacionServicio
+import com.terapid.physiogestion.servicios.ClinicaServicio
 import com.terapid.physiogestion.servicios.SesionesServicio
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
@@ -23,8 +24,10 @@ import io.ktor.server.routing.routing
  *  GET  /api/v1/usuarios                   ADMINISTRADOR (también POST alta y PATCH activar/desactivar)
  *  GET  /api/v1/usuarios/yo                con token (PATCH /contrasena, POST /consentimiento)
  *  GET  /api/v1/invitaciones               ADMINISTRADOR, RECEPCIONISTA (POST crea una)
- *  GET  /api/v1/citas                      ADMINISTRADOR, RECEPCIONISTA, FISIOTERAPEUTA (solo las suyas)
- *  GET  /api/v1/pacientes/{id}/rutina      PACIENTE (solo la suya), FISIOTERAPEUTA
+ *  GET  /api/v1/citas?fecha=               agenda (también POST agendar, PATCH reprogramar, POST {id}/estado, GET libres)
+ *  GET  /api/v1/pacientes                  lista y ficha de pacientes, asignación de fisioterapeuta
+ *  GET  /api/v1/pacientes/{id}/rutina      PACIENTE (solo la suya), FISIOTERAPEUTA (también PUT para modificarla)
+ *  GET  /api/v1/ejercicios                 catálogo · GET /api/v1/fisioterapeutas
  *
  *  GET    /api/v1/sesiones?idPaciente=     PACIENTE (las suyas), FISIOTERAPEUTA (sus pacientes)
  *  GET    /api/v1/sesiones/{id}            PACIENTE, FISIOTERAPEUTA
@@ -41,6 +44,7 @@ fun Application.configureRouting(
     almacen: AlmacenJson,
     autenticacion: AutenticacionServicio,
     sesiones: SesionesServicio,
+    clinica: ClinicaServicio,
     baseDatos: String = "memoria",
 ) {
     routing {
@@ -51,10 +55,10 @@ fun Application.configureRouting(
             rutasSalud(baseDatos)
             rutasAutenticacion(autenticacion)
             authenticate(AUTH_SESION) {
-                rutasUsuarios(autenticacion)
-                rutasCitas(almacen)
-                rutasRutinas(almacen)
-                rutasSesiones(sesiones)
+                rutasUsuarios(autenticacion, clinica)
+                rutasCitas(clinica)
+                rutasRutinas(clinica, sesiones)
+                rutasSesiones(sesiones, clinica)
             }
         }
     }

@@ -69,11 +69,11 @@ class CuentaApi(private val cliente: HttpClient) {
 
     suspend fun darDeAlta(s: AltaUsuarioSolicitud, token: String): AltaUsuarioRespuesta = enviar("usuarios", s, token)
 
-    suspend fun cambiarEstado(id: Int, activo: Boolean, token: String): Usuario = llamarApi {
+    suspend fun editarUsuario(id: Int, cambios: EstadoCuentaSolicitud, token: String): Usuario = llamarApi {
         cliente.patch(ConfiguracionApi.api("usuarios/$id")) {
             bearerAuth(token)
             contentType(ContentType.Application.Json)
-            setBody(EstadoCuentaSolicitud(activo))
+            setBody(cambios)
         }.body()
     }
 

@@ -2,6 +2,8 @@ package com.terapid.physiogestion.vista
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +12,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -95,6 +99,7 @@ fun AdministradorPantalla(
                             esYo = u.id == usuario.id,
                             cambiando = estado.cambiandoId == u.id,
                             alAlternar = if (viewModel.puedeAdministrar) ({ viewModel.alternarActivo(u) }) else null,
+                            alEditar = if (viewModel.puedeAdministrar) ({ viewModel.abrirEdicion(u) }) else null,
                         )
                     }
                 }
@@ -109,6 +114,36 @@ fun AdministradorPantalla(
             }
         }
     }
+    DialogoEditarUsuario(viewModel)
+}
+
+/** Edición de nombre, correo y rol de una cuenta (ADM-03). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DialogoEditarUsuario(viewModel: AdministradorViewModel) {
+    val e by viewModel.estado.collectAsStateWithLifecycle()
+    val u = e.editando ?: return
+    AlertDialog(
+        onDismissRequest = viewModel::cerrarEdicion,
+        title = { Text("Editar a ${u.nombre}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CampoTexto(e.edNombre, viewModel::cambiarEdNombre, "Nombre completo", habilitado = !e.guardandoEdicion, mayusculas = KeyboardCapitalization.Words)
+                CampoTexto(e.edCorreo, viewModel::cambiarEdCorreo, "Correo", habilitado = !e.guardandoEdicion, teclado = KeyboardType.Email)
+                if (u.rol != Rol.PACIENTE) {
+                    Text("Rol", style = MaterialTheme.typography.labelLarge)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(Rol.FISIOTERAPEUTA, Rol.RECEPCIONISTA, Rol.ADMINISTRADOR).forEach { rol ->
+                            FilterChip(selected = e.edRol == rol, onClick = { viewModel.cambiarEdRol(rol) }, label = { Text(rol.etiqueta, maxLines = 1) })
+                        }
+                    }
+                }
+                MensajeError(e.errorEdicion)
+            }
+        },
+        confirmButton = { TextButton(onClick = viewModel::guardarEdicion, enabled = !e.guardandoEdicion) { Text("Guardar") } },
+        dismissButton = { TextButton(onClick = viewModel::cerrarEdicion) { Text("Cancelar") } },
+    )
 }
 
 /** Alta de fisioterapeutas, recepcionistas y administradores con contraseña temporal (USR-02). */
@@ -169,7 +204,7 @@ private fun FormularioAlta(viewModel: AdministradorViewModel) {
 }
 
 @Composable
-private fun FilaUsuario(u: Usuario, esYo: Boolean, cambiando: Boolean, alAlternar: (() -> Unit)?) {
+private fun FilaUsuario(u: Usuario, esYo: Boolean, cambiando: Boolean, alAlternar: (() -> Unit)?, alEditar: (() -> Unit)?) {
     TarjetaPhysio(borde = if (u.activo) MaterialTheme.colorScheme.outline else ColoresPhysio.Alerta) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -184,6 +219,7 @@ private fun FilaUsuario(u: Usuario, esYo: Boolean, cambiando: Boolean, alAlterna
             if (!u.correoVerificado) Etiqueta("Correo sin confirmar", ColoresPhysio.Pendiente)
             if (esYo) Etiqueta("Tú", ColoresPhysio.AzulClaro)
             Column(Modifier.weight(1f)) {}
+            if (alEditar != null) BotonEnlace("Editar", alEditar, habilitado = !cambiando)
             if (alAlternar != null && !esYo) {
                 BotonEnlace(if (u.activo) "Desactivar" else "Activar", alAlternar, habilitado = !cambiando)
             }

@@ -5,6 +5,7 @@ import com.terapid.physiogestion.datos.remoto.SesionVencida
 import com.terapid.physiogestion.modelo.AltaUsuarioRespuesta
 import com.terapid.physiogestion.modelo.AltaUsuarioSolicitud
 import com.terapid.physiogestion.modelo.AvisoPrivacidad
+import com.terapid.physiogestion.modelo.EstadoCuentaSolicitud
 import com.terapid.physiogestion.modelo.Invitacion
 import com.terapid.physiogestion.modelo.RegistroRespuesta
 import com.terapid.physiogestion.modelo.RegistroSolicitud
@@ -61,7 +62,11 @@ class CuentaRepositorio(
     suspend fun darDeAlta(usuario: String, nombre: String, rol: Rol, correo: String): AltaUsuarioRespuesta =
         conSesion { api.darDeAlta(AltaUsuarioSolicitud(usuario.trim().lowercase(), nombre.trim(), rol, correo.trim().lowercase()), it) }
 
-    suspend fun cambiarEstado(id: Int, activo: Boolean): Usuario = conSesion { api.cambiarEstado(id, activo, it) }
+    suspend fun cambiarEstado(id: Int, activo: Boolean): Usuario = conSesion { api.editarUsuario(id, EstadoCuentaSolicitud(activo = activo), it) }
+
+    /** Edita nombre, correo o rol (ADM-03). */
+    suspend fun editarUsuario(id: Int, nombre: String?, correo: String?, rol: Rol?): Usuario =
+        conSesion { api.editarUsuario(id, EstadoCuentaSolicitud(nombre = nombre?.trim(), correo = correo?.trim()?.lowercase(), rol = rol), it) }
 
     private suspend fun <T> conSesion(llamada: suspend (String) -> T): T =
         try {

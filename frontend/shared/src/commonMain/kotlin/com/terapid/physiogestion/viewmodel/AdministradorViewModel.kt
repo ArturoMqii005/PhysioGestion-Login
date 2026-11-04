@@ -37,6 +37,13 @@ data class AdministradorUiState(
     /** Usuario que se está activando o desactivando (para deshabilitar su botón). */
     val cambiandoId: Int? = null,
     val aviso: String? = null,
+    /** Edición de una cuenta (ADM-03). */
+    val editando: Usuario? = null,
+    val edNombre: String = "",
+    val edCorreo: String = "",
+    val edRol: Rol = Rol.FISIOTERAPEUTA,
+    val guardandoEdicion: Boolean = false,
+    val errorEdicion: String? = null,
 ) {
     /** Cuántos usuarios hay de cada rol, para las tarjetas de resumen. */
     val porRol: Map<Rol, Int> get() = Rol.entries.associateWith { rol -> usuarios.count { it.rol == rol } }
@@ -104,6 +111,55 @@ class AdministradorViewModel(
                 throw e
             } catch (e: Exception) {
                 _estado.update { it.copy(alta = it.alta.copy(creando = false, error = mensajeDe(e))) }
+            }
+        }
+    }
+
+    // ---- Editar (ADM-03) ----
+
+    fun abrirEdicion(u: Usuario) = _estado.update {
+        it.copy(editando = u, edNombre = u.nombre, edCorreo = u.correo.orEmpty(), edRol = u.rol, errorEdicion = null)
+    }
+    fun cerrarEdicion() = _estado.update { it.copy(editando = null) }
+    fun cambiarEdNombre(t: String) = _estado.update { it.copy(edNombre = t.take(80), errorEdicion = null) }
+    fun cambiarEdCorreo(t: String) = _estado.update { it.copy(edCorreo = t.trim().take(120), errorEdicion = null) }
+    fun cambiarEdRol(r: Rol) = _estado.update { it.copy(edRol = r, errorEdicion = null) }
+
+    fun guardarEdicion() {
+        val repo = cuentas ?: return
+        val s = _estado.value
+        val u = s.editando ?: return
+        if (s.guardandoEdicion) return
+        val problema = when {
+            s.edNombre.trim().length < 5 -> "Escribe el nombre completo."
+            s.edCorreo.isNotBlank() -> ReglasCuenta.problemaCorreo(s.edCorreo.lowercase())
+            else -> null
+        }
+        if (problema != null) {
+            _estado.update { it.copy(errorEdicion = problema) }
+            return
+        }
+        _estado.update { it.copy(guardandoEdicion = true, errorEdicion = null) }
+        viewModelScope.launch {
+            try {
+                val actualizado = repo.editarUsuario(
+                    u.id,
+                    nombre = s.edNombre.trim().takeIf { it != u.nombre },
+                    correo = s.edCorreo.trim().takeIf { it.isNotEmpty() && !it.equals(u.correo, ignoreCase = true) },
+                    rol = s.edRol.takeIf { it != u.rol },
+                )
+                _estado.update { st ->
+                    st.copy(
+                        guardandoEdicion = false,
+                        editando = null,
+                        usuarios = st.usuarios.map { if (it.id == u.id) actualizado else it },
+                        aviso = "Se guardaron los cambios de ${actualizado.nombre}.",
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _estado.update { it.copy(guardandoEdicion = false, errorEdicion = mensajeDe(e)) }
             }
         }
     }

@@ -13,6 +13,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.OutlinedButton
+import com.terapid.physiogestion.vista.componentes.AccionCita
+import com.terapid.physiogestion.vista.componentes.MensajeInfo
+import com.terapid.physiogestion.vista.componentes.SelectorDia
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -43,6 +49,7 @@ fun FisioterapeutaPantalla(
     viewModel: AgendaViewModel,
     alCerrarSesion: () -> Unit,
     alCambiarContrasena: (() -> Unit)? = null,
+    alAbrirPacientes: () -> Unit = {},
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val hoy = formatearFechaHora(ahoraEnMilisegundos()).substringBefore(" ")
@@ -52,7 +59,16 @@ fun FisioterapeutaPantalla(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { EncabezadoRol("Mi agenda de hoy", usuario, alCerrarSesion, alCambiarContrasena) }
+            item { EncabezadoRol("Mi agenda", usuario, alCerrarSesion, alCambiarContrasena) }
+            item {
+                OutlinedButton(onClick = alAbrirPacientes, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                    Text("Mis pacientes · fichas y rutinas")
+                }
+            }
+            item {
+                SelectorDia(estado.etiquetaDia, { viewModel.cambiarDia(-1) }, { viewModel.cambiarDia(1) }, if (estado.fecha != estado.hoy) viewModel::irAHoy else null)
+            }
+            estado.aviso?.let { item { MensajeInfo(it) } }
 
             when {
                 estado.cargando -> item { Cargando("Cargando tu agenda…") }
@@ -60,7 +76,7 @@ fun FisioterapeutaPantalla(
                 else -> {
                     item {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            TarjetaDato(estado.citas.size.toString(), "Citas hoy · $hoy", ColoresPhysio.Turquesa, Modifier.weight(1f))
+                            TarjetaDato(estado.citas.size.toString(), if (estado.fecha == estado.hoy) "Citas hoy · $hoy" else "Citas · ${estado.etiquetaDia}", ColoresPhysio.Turquesa, Modifier.weight(1f))
                             TarjetaDato(
                                 estado.cuantas(EstadoCita.ATENDIDA).toString(),
                                 "Atendidas",
@@ -70,11 +86,19 @@ fun FisioterapeutaPantalla(
                         }
                     }
                     if (estado.citas.isEmpty()) {
-                        item { Text("No tienes citas registradas para hoy.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        item { Text("No tienes citas registradas este día.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                     val siguiente = estado.siguiente
                     items(estado.citas, key = { it.id }) { cita ->
-                        TarjetaCita(cita, mostrarFisioterapeuta = false, resaltada = cita.id == siguiente?.id)
+                        val acciones: (@Composable RowScope.() -> Unit)? = if (estado.puedeMarcarAsistencia) {
+                            {
+                                AccionCita("Atendida", { viewModel.marcarAsistencia(cita, llego = true) }, estado.procesando != cita.id)
+                                AccionCita("No asistió", { viewModel.marcarAsistencia(cita, llego = false) }, estado.procesando != cita.id)
+                            }
+                        } else {
+                            null
+                        }
+                        TarjetaCita(cita, mostrarFisioterapeuta = false, resaltada = cita.id == siguiente?.id, acciones = acciones)
                     }
 
                     // Seguimiento remoto: lo que los pacientes registraron en casa (GET /sesiones).
