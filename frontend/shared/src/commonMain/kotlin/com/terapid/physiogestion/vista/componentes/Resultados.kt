@@ -64,7 +64,7 @@ fun FilaHistorial(sesion: RegistroSesion) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text("+${sesion.puntos} pts", color = ColoresPhysio.Turquesa, fontWeight = FontWeight.Bold)
+            Text("+${sesion.puntos} pts", color = ColoresPhysio.Lila, fontWeight = FontWeight.Bold)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (sesion.pendienteEnvio) Etiqueta("Pendiente de envío", ColoresPhysio.Pendiente)

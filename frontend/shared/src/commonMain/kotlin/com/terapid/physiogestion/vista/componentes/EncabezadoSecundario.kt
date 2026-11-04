@@ -2,25 +2,24 @@ package com.terapid.physiogestion.vista.componentes
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.terapid.physiogestion.plataforma.Entorno
 import com.terapid.physiogestion.vista.tema.ColoresPhysio
 
-/** Encabezado de las pantallas internas del paciente: botón para regresar y título. */
+/**
+ * Encabezado de las pantallas internas: botón redondo para regresar (como en
+ * las apps de Apple) y el título grande debajo.
+ */
 @Composable
 fun EncabezadoSecundario(titulo: String, alRegresar: () -> Unit, subtitulo: String? = null) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        TextButton(onClick = alRegresar, modifier = Modifier.heightIn(min = 48.dp)) {
-            Text("‹ Regresar", color = ColoresPhysio.Turquesa)
-        }
-        Text(titulo, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        BotonRedondo(Iconos.Atras, "Regresar", alRegresar, tamano = 44.dp)
+        Text(titulo, style = MaterialTheme.typography.headlineMedium, color = ColoresPhysio.Texto, modifier = Modifier.padding(top = 6.dp))
         if (subtitulo != null) {
             Text(subtitulo, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

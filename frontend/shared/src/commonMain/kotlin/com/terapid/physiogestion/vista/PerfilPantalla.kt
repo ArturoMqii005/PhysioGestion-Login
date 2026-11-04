@@ -85,7 +85,7 @@ fun PerfilPantalla(
                         Switch(
                             checked = estado.recordatorioActivo,
                             onCheckedChange = viewModel::cambiarRecordatorio,
-                            colors = SwitchDefaults.colors(checkedTrackColor = ColoresPhysio.Turquesa),
+                            colors = SwitchDefaults.colors(checkedTrackColor = ColoresPhysio.Lila),
                         )
                     }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -94,7 +94,7 @@ fun PerfilPantalla(
                             ReglasAvisos.horaLegible(estado.horaRecordatorio),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
-                            color = if (estado.recordatorioActivo) ColoresPhysio.Turquesa else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (estado.recordatorioActivo) ColoresPhysio.Lila else MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.weight(1f),
                         )
@@ -123,7 +123,7 @@ fun PerfilPantalla(
                     Switch(
                         checked = estado.camaraActiva,
                         onCheckedChange = viewModel::cambiarVerificacionCamara,
-                        colors = SwitchDefaults.colors(checkedTrackColor = ColoresPhysio.Turquesa),
+                        colors = SwitchDefaults.colors(checkedTrackColor = ColoresPhysio.Lila),
                     )
                 }
             }
@@ -161,7 +161,7 @@ fun PerfilPantalla(
                 Dato("Versión de la app", estado.version)
             }
 
-            estado.aviso?.let { Text(it, color = ColoresPhysio.Turquesa) }
+            estado.aviso?.let { Text(it, color = ColoresPhysio.Lila) }
 
             OutlinedButton(onClick = alCambiarContrasena, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Text("Cambiar contraseña")

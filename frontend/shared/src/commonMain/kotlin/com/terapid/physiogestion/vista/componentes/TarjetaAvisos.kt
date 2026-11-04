@@ -60,7 +60,7 @@ fun VigilarAvisos(viewModel: ResumenAvisosViewModel) {
 fun TarjetaAvisosSinLeer(resumen: ResumenAvisos, alAbrir: () -> Unit) {
     val ultimo = resumen.destacado ?: return
     if (resumen.sinLeer == 0) return
-    val color = if (ultimo.urgente) ColoresPhysio.Alerta else ColoresPhysio.Turquesa
+    val color = if (ultimo.urgente) ColoresPhysio.Alerta else ColoresPhysio.Lila
     TarjetaPhysio(borde = color, fondo = if (ultimo.urgente) ColoresPhysio.FondoAlerta else MaterialTheme.colorScheme.surface) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             Etiqueta(ultimo.tipo.etiqueta, ultimo.tipo.color)
@@ -93,7 +93,7 @@ fun TarjetaActivarNotificaciones(estado: EstadoNotificaciones, motivo: String, a
             Text("Activa las notificaciones", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Text(motivo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        estado.mensaje?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = ColoresPhysio.Turquesa) }
+        estado.mensaje?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = ColoresPhysio.Lila) }
         if (estado.pedirlo) {
             OutlinedButton(onClick = alActivar, modifier = Modifier.heightIn(min = 48.dp)) { Text("Permitir notificaciones") }
         }

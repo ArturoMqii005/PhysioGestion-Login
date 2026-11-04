@@ -369,7 +369,7 @@ private fun DialogoCatalogo(disponibles: List<Ejercicio>, alElegir: (Ejercicio) 
             Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (disponibles.isEmpty()) Text("Ya agregaste todos los ejercicios del catálogo.")
                 disponibles.groupBy { it.zonaCorporal }.forEach { (zona, lista) ->
-                    Text(zona, color = ColoresPhysio.Turquesa, fontWeight = FontWeight.SemiBold)
+                    Text(zona, color = ColoresPhysio.Lila, fontWeight = FontWeight.SemiBold)
                     lista.forEach { ej ->
                         Column(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Button) { alElegir(ej) }) {
                             Text(ej.nombre, fontWeight = FontWeight.Medium)

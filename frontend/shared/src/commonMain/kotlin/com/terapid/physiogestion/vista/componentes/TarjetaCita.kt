@@ -34,10 +34,10 @@ fun TarjetaCita(
     resaltada: Boolean = false,
     acciones: (@Composable RowScope.() -> Unit)? = null,
 ) {
-    TarjetaPhysio(borde = if (resaltada) ColoresPhysio.Turquesa else MaterialTheme.colorScheme.outline) {
+    TarjetaPhysio(borde = if (resaltada) ColoresPhysio.Lila else MaterialTheme.colorScheme.outline) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.width(84.dp)) {
-                Text(cita.hora, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = ColoresPhysio.Turquesa)
+                Text(cita.hora, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = ColoresPhysio.Lila)
                 Text("${cita.duracionMinutos} min", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -50,7 +50,7 @@ fun TarjetaCita(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             Etiqueta(cita.estado.etiqueta, cita.estado.color)
-            if (resaltada) Etiqueta("Siguiente", ColoresPhysio.Turquesa)
+            if (resaltada) Etiqueta("Siguiente", ColoresPhysio.Lila)
             if (cita.pacienteId == null) Etiqueta("Sin cuenta en la app", ColoresPhysio.TextoSecundario)
         }
         cita.nota?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }

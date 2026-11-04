@@ -72,7 +72,7 @@ fun DetalleSesionPantalla(
                     if (estado.editando) FormularioEdicion(estado, viewModel) else Acciones(estado, viewModel)
                 }
             }
-            estado.aviso?.let { Text(it, color = ColoresPhysio.Turquesa, style = MaterialTheme.typography.bodyMedium) }
+            estado.aviso?.let { Text(it, color = ColoresPhysio.Lila, style = MaterialTheme.typography.bodyMedium) }
             DetalleTecnico(estado.detalleTecnico)
         }
     }
@@ -146,7 +146,7 @@ private fun Acciones(estado: DetalleSesionUiState, viewModel: DetalleSesionViewM
             onClick = viewModel::guardarNota,
             enabled = !estado.guardando,
             modifier = Modifier.heightIn(min = 48.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Turquesa),
+            colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Violeta),
         ) {
             Text("Guardar nota")
         }
@@ -165,7 +165,7 @@ private fun Acciones(estado: DetalleSesionUiState, viewModel: DetalleSesionViewM
 
 @Composable
 private fun FormularioEdicion(estado: DetalleSesionUiState, viewModel: DetalleSesionViewModel) {
-    TarjetaPhysio(borde = ColoresPhysio.Turquesa) {
+    TarjetaPhysio(borde = ColoresPhysio.Lila) {
         Text("Editar la sesión", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         Text(
             "Se reemplazan todos estos datos. Si dejas la nota vacía, se borra.",
@@ -190,7 +190,7 @@ private fun FormularioEdicion(estado: DetalleSesionUiState, viewModel: DetalleSe
                 onClick = viewModel::reemplazar,
                 enabled = !estado.guardando,
                 modifier = Modifier.weight(1f).heightIn(min = 48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Turquesa),
+                colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Violeta),
             ) {
                 Text("Guardar cambios")
             }

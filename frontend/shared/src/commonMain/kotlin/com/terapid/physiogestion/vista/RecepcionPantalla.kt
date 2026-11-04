@@ -90,7 +90,7 @@ fun RecepcionPantalla(
             }
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = alAgendar, modifier = Modifier.weight(1f).heightIn(min = 52.dp), colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Turquesa)) {
+                    Button(onClick = alAgendar, modifier = Modifier.weight(1f).heightIn(min = 52.dp), colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Violeta)) {
                         Text("Agendar cita", fontWeight = FontWeight.Bold)
                     }
                     OutlinedButton(onClick = alAbrirPacientes, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) { Text("Pacientes") }
@@ -159,13 +159,13 @@ private fun TarjetaInvitarPaciente(viewModel: InvitacionesViewModel) {
         )
         val nueva = e.nueva
         if (nueva != null) {
-            TarjetaPhysio(borde = ColoresPhysio.Turquesa) {
+            TarjetaPhysio(borde = ColoresPhysio.Lila) {
                 Text("Código para ${nueva.nombrePaciente}", style = MaterialTheme.typography.bodyMedium)
                 Text(
                     nueva.codigo,
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Black,
-                    color = ColoresPhysio.Turquesa,
+                    color = ColoresPhysio.Lila,
                     modifier = Modifier.semantics { contentDescription = "Código " + nueva.codigo.toList().joinToString(" ") },
                 )
                 Text(

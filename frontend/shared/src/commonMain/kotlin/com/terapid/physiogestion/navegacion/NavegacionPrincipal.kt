@@ -1,6 +1,33 @@
 package com.terapid.physiogestion.navegacion
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.terapid.physiogestion.viewmodel.ProgresoViewModel
+import com.terapid.physiogestion.vista.ProgresoPantalla
+import com.terapid.physiogestion.vista.componentes.BarraPestanas
+import com.terapid.physiogestion.vista.componentes.Iconos
+import com.terapid.physiogestion.vista.componentes.Pestana
+import com.terapid.physiogestion.vista.tema.ColoresPhysio
+import com.terapid.physiogestion.vista.tema.LocalTransicionCompartida
+import com.terapid.physiogestion.vista.tema.TransicionesNavegacion
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -80,6 +107,7 @@ import com.terapid.physiogestion.vista.RutinaPantalla
  * Cada pantalla recibe funciones (alRegresar, alAbrir…), nunca el
  * controlador: así no depende de la biblioteca de navegación.
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun NavegacionPrincipal() {
     val navegador = rememberNavController()
@@ -114,7 +142,39 @@ fun NavegacionPrincipal() {
         }
     }
 
-    NavHost(navController = navegador, startDestination = RutaLogin) {
+    // ---------------- Pestañas de cada rol y transiciones ----------------
+    val rol = sesion?.usuario?.rol
+    val pestanas = pestanasDe(rol)
+    val entradaActual by navegador.currentBackStackEntryAsState()
+    val indicePestana = pestanas.indexOfFirst { p -> entradaActual?.destination?.hasRoute(p.ruta::class) == true }
+    val resumen by Dependencias.avisos.resumen.collectAsStateWithLifecycle()
+    val transiciones = remember(rol) {
+        TransicionesNavegacion(
+            esPestana = { e -> pestanasDe(rol).any { p -> e.destination.hasRoute(p.ruta::class) } },
+            esRaiz = { e -> e.destination.hasRoute(RutaLogin::class) },
+        )
+    }
+    fun irAPestana(i: Int) {
+        val raiz = rol?.let(::rutaInicialPara) ?: return
+        val destino = pestanas[i].ruta
+        navegador.navigate(destino) {
+            popUpTo(raiz) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    SharedTransitionLayout(Modifier.fillMaxSize().background(ColoresPhysio.Fondo)) {
+    CompositionLocalProvider(LocalTransicionCompartida provides this) {
+    Box(Modifier.fillMaxSize()) {
+    NavHost(
+        navController = navegador,
+        startDestination = RutaLogin,
+        enterTransition = transiciones.entrar,
+        exitTransition = transiciones.salir,
+        popEnterTransition = transiciones.volver,
+        popExitTransition = transiciones.cerrar,
+    ) {
         composable<RutaLogin> {
             LoginPantalla(
                 viewModel { LoginViewModel(Dependencias.autenticacion, Dependencias.preferencias) },
@@ -175,19 +235,19 @@ fun NavegacionPrincipal() {
         }
         composable<RutaFisioterapeuta> {
             val usuario = sesion?.usuario ?: return@composable
-            FisioterapeutaPantalla(
+            ConBarra { FisioterapeutaPantalla(
                 usuario = usuario,
                 viewModel = viewModel { AgendaViewModel(Dependencias.clinica, conSeguimiento = true) },
                 alCerrarSesion = sesionVm::cerrarSesion,
                 alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
-                alAbrirPacientes = { navegador.navigate(RutaPacientes) },
+                alAbrirPacientes = { irAPestana(1) },
                 avisos = resumenAvisos(),
-                alAbrirAvisos = { navegador.navigate(RutaAvisos) },
-            )
+                alAbrirAvisos = { irAPestana(2) },
+            ) }
         }
         composable<RutaRecepcion> {
             val usuario = sesion?.usuario ?: return@composable
-            RecepcionPantalla(
+            ConBarra { RecepcionPantalla(
                 usuario = usuario,
                 viewModel = viewModel { AgendaViewModel(Dependencias.clinica) },
                 alCerrarSesion = sesionVm::cerrarSesion,
@@ -195,10 +255,10 @@ fun NavegacionPrincipal() {
                 alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
                 alAgendar = { navegador.navigate(RutaAgendarCita) },
                 alReprogramar = { cita -> navegador.navigate(cita.aRutaReprogramar()) },
-                alAbrirPacientes = { navegador.navigate(RutaPacientes) },
+                alAbrirPacientes = { irAPestana(1) },
                 avisos = resumenAvisos(),
-                alAbrirAvisos = { navegador.navigate(RutaAvisos) },
-            )
+                alAbrirAvisos = { irAPestana(2) },
+            ) }
         }
 
         // ---------------- Avisos (NOT-01..04) ----------------
@@ -206,7 +266,7 @@ fun NavegacionPrincipal() {
         composable<RutaAvisos> {
             val usuario = sesion?.usuario ?: return@composable
             val esPaciente = usuario.rol == Rol.PACIENTE
-            AvisosPantalla(
+            ConBarra(!esPaciente) { AvisosPantalla(
                 viewModel = viewModel { AvisosViewModel(Dependencias.avisos, { Dependencias.notificador }, Dependencias.permisos) },
                 motivoNotificaciones = when (usuario.rol) {
                     Rol.FISIOTERAPEUTA -> "Te avisamos en cuanto un paciente termine su sesión con dolor alto, aunque tengas la app cerrada."
@@ -228,7 +288,7 @@ fun NavegacionPrincipal() {
                         else -> navegador.popBackStack() // las citas se ven en el inicio del paciente
                     }
                 },
-            )
+            ) }
         }
 
         // ---------------- Operación clínica (CIT-05..08, PAC-02..04, RUT-08) ----------------
@@ -257,12 +317,12 @@ fun NavegacionPrincipal() {
             )
         }
         composable<RutaPacientes> {
-            PacientesPantalla(
+            ConBarra(rol != Rol.ADMINISTRADOR) { PacientesPantalla(
                 viewModel = viewModel { PacientesViewModel(Dependencias.clinica) },
                 hoy = claveDelDia(ahoraEnMilisegundos()),
                 alRegresar = { navegador.popBackStack() },
                 alAbrir = { id -> navegador.navigate(RutaFichaPaciente(id)) },
-            )
+            ) }
         }
         composable<RutaFichaPaciente> { entrada ->
             val usuario = sesion?.usuario ?: return@composable
@@ -319,24 +379,40 @@ fun NavegacionPrincipal() {
                         escaleras = Dependencias.escaleras,
                     )
                 },
-                alAbrirRutina = { navegador.navigate(RutaRutina) },
+                alAbrirRutina = { irAPestana(1) },
                 alAbrirEscaleras = { navegador.navigate(RutaEscaleras) },
                 alAbrirHistorial = { navegador.navigate(RutaHistorial) },
-                alAbrirPerfil = { navegador.navigate(RutaPerfil) },
+                alAbrirPerfil = { irAPestana(3) },
                 alCerrarSesion = sesionVm::cerrarSesion,
+                alMedirEjercicio = { id -> navegador.navigate(RutaEjercicio(id)) },
             )
+        }
+
+        composable<RutaProgreso> {
+            val usuario = sesion?.usuario ?: return@composable
+            ConBarra {
+                ProgresoPantalla(
+                    viewModel = viewModel {
+                        ProgresoViewModel(usuario.pacienteId ?: 0, Dependencias.rutinas, Dependencias.sesiones, Dependencias.escaleras) {
+                            claveDelDia(ahoraEnMilisegundos())
+                        }
+                    },
+                    alAbrirHistorial = { navegador.navigate(RutaHistorial) },
+                    alAbrirEscaleras = { navegador.navigate(RutaEscaleras) },
+                )
+            }
         }
 
         composable<RutaRutina> { entrada ->
             val usuario = sesion?.usuario ?: return@composable
-            RutinaPantalla(
+            ConBarra { RutinaPantalla(
                 usuario = usuario,
                 viewModel = viewModel(entrada) { crearRutinaViewModel(usuario) },
-                alRegresar = { navegador.popBackStack() },
+                alRegresar = { irAPestana(0) },
                 // El argumento viaja dentro de la ruta tipada: RutaEjercicio(idEjercicio = 3).
                 alMedirEjercicio = { id -> navegador.navigate(RutaEjercicio(id)) },
                 alVerHistorial = { navegador.navigate(RutaHistorial) },
-            )
+            ) }
         }
 
         composable<RutaEjercicio> { entrada ->
@@ -401,7 +477,7 @@ fun NavegacionPrincipal() {
 
         composable<RutaPerfil> {
             val usuario = sesion?.usuario ?: return@composable
-            PerfilPantalla(
+            ConBarra { PerfilPantalla(
                 usuario = usuario,
                 viewModel = viewModel {
                     PerfilViewModel(
@@ -413,12 +489,60 @@ fun NavegacionPrincipal() {
                         notificador = { Dependencias.notificador },
                     )
                 },
-                alRegresar = { navegador.popBackStack() },
+                alRegresar = { irAPestana(0) },
                 alCerrarSesion = sesionVm::cerrarSesion,
                 alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
-            )
+            ) }
         }
     }
+
+    // La barra de pestañas flota sobre las pantallas de cada rol; al entrar a una
+    // pantalla interna (ejercicio, ficha, historial…) se esconde deslizándose hacia abajo.
+    AnimatedVisibility(
+        visible = indicePestana >= 0,
+        modifier = Modifier.align(Alignment.BottomCenter),
+        enter = slideInVertically(spring(dampingRatio = 0.85f, stiffness = 420f)) { it } + fadeIn(),
+        exit = slideOutVertically(spring(dampingRatio = 1f, stiffness = 700f)) { it } + fadeOut(),
+    ) {
+        BarraPestanas(
+            pestanas.map { Pestana(it.etiqueta, it.icono, if (it.ruta == RutaAvisos) resumen.sinLeer else 0) },
+            indicePestana,
+            ::irAPestana,
+            Modifier.navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 14.dp),
+        )
+    }
+    }
+    }
+    }
+}
+
+/** Una pestaña de la barra inferior y la ruta que abre. */
+private data class PestanaRuta(val etiqueta: String, val icono: androidx.compose.ui.graphics.vector.ImageVector, val ruta: Any)
+
+private fun pestanasDe(rol: Rol?): List<PestanaRuta> = when (rol) {
+    Rol.PACIENTE -> listOf(
+        PestanaRuta("Inicio", Iconos.Inicio, RutaPaciente),
+        PestanaRuta("Rutina", Iconos.Rutina, RutaRutina),
+        PestanaRuta("Progreso", Iconos.Progreso, RutaProgreso),
+        PestanaRuta("Perfil", Iconos.Perfil, RutaPerfil),
+    )
+    Rol.FISIOTERAPEUTA -> listOf(
+        PestanaRuta("Agenda", Iconos.Agenda, RutaFisioterapeuta),
+        PestanaRuta("Pacientes", Iconos.Pacientes, RutaPacientes),
+        PestanaRuta("Avisos", Iconos.Campana, RutaAvisos),
+    )
+    Rol.RECEPCIONISTA -> listOf(
+        PestanaRuta("Agenda", Iconos.Agenda, RutaRecepcion),
+        PestanaRuta("Pacientes", Iconos.Pacientes, RutaPacientes),
+        PestanaRuta("Avisos", Iconos.Campana, RutaAvisos),
+    )
+    else -> emptyList()
+}
+
+/** Deja libre abajo el espacio de la barra de pestañas flotante. */
+@Composable
+private fun ConBarra(conBarra: Boolean = true, contenido: @Composable () -> Unit) {
+    Box(Modifier.fillMaxSize().padding(bottom = if (conBarra) 82.dp else 0.dp)) { contenido() }
 }
 
 private fun crearRutinaViewModel(usuario: Usuario) = RutinaViewModel(

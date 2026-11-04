@@ -81,7 +81,7 @@ fun HistorialPantalla(
                     }
                 }
             }
-            estado.aviso?.let { item { Text(it, color = ColoresPhysio.Turquesa, style = MaterialTheme.typography.bodyMedium) } }
+            estado.aviso?.let { item { Text(it, color = ColoresPhysio.Lila, style = MaterialTheme.typography.bodyMedium) } }
 
             when {
                 estado.cargando -> item { Cargando("Cargando tu historial…") }
@@ -144,7 +144,7 @@ private fun FilaSesion(sesion: SesionTerapia, alTocar: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text("Ver ›", color = ColoresPhysio.Turquesa, fontWeight = FontWeight.Bold)
+            Text("Ver ›", color = ColoresPhysio.Lila, fontWeight = FontWeight.Bold)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Etiqueta(sesion.semaforo.etiqueta, sesion.semaforo.color)

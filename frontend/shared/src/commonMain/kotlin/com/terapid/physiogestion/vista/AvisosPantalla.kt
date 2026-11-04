@@ -104,7 +104,7 @@ private fun TarjetaAviso(aviso: Aviso, destino: String?, alPulsar: () -> Unit) {
     val borde = when {
         aviso.leido -> MaterialTheme.colorScheme.outline
         aviso.tipo == TipoAviso.DOLOR_ALTO -> ColoresPhysio.Alerta
-        else -> ColoresPhysio.Turquesa
+        else -> ColoresPhysio.Lila
     }
     TarjetaPhysio(
         modifier = Modifier.clickable(role = Role.Button, onClickLabel = destino ?: "Marcar como leído", onClick = alPulsar),
@@ -112,7 +112,7 @@ private fun TarjetaAviso(aviso: Aviso, destino: String?, alPulsar: () -> Unit) {
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             Etiqueta(aviso.tipo.etiqueta, aviso.tipo.color)
-            if (!aviso.leido) Etiqueta("Nuevo", ColoresPhysio.Turquesa)
+            if (!aviso.leido) Etiqueta("Nuevo", ColoresPhysio.Lila)
         }
         Text(
             aviso.titulo,
@@ -127,7 +127,7 @@ private fun TarjetaAviso(aviso: Aviso, destino: String?, alPulsar: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
-            destino?.let { Text("$it ›", style = MaterialTheme.typography.labelLarge, color = ColoresPhysio.Turquesa) }
+            destino?.let { Text("$it ›", style = MaterialTheme.typography.labelLarge, color = ColoresPhysio.Lila) }
         }
     }
 }

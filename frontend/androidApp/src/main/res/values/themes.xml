@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fondo de la ventana con el mismo color oscuro de la app (ColoresPhysio.Fondo):
+         así no se ve un destello gris al abrirla ni entre pantallas. -->
+    <style name="Theme.PhysioGestion" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF0E0C17</item>
+        <item name="android:colorBackground">#FF0E0C17</item>
+    </style>
+</resources>

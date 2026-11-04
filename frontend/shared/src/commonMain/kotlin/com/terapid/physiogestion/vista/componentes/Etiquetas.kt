@@ -19,8 +19,8 @@ val Rol.etiqueta: String
 
 val Rol.color: Color
     get() = when (this) {
-        Rol.ADMINISTRADOR -> ColoresPhysio.Violeta
-        Rol.FISIOTERAPEUTA -> ColoresPhysio.Turquesa
+        Rol.ADMINISTRADOR -> ColoresPhysio.Lavanda
+        Rol.FISIOTERAPEUTA -> ColoresPhysio.Lila
         Rol.RECEPCIONISTA -> ColoresPhysio.Pendiente
         Rol.PACIENTE -> ColoresPhysio.AzulClaro
     }
@@ -51,7 +51,7 @@ val EstadoCita.color: Color
         EstadoCita.CONFIRMADA -> ColoresPhysio.AzulClaro
         EstadoCita.ATENDIDA -> ColoresPhysio.Exito
         EstadoCita.CANCELADA -> ColoresPhysio.Alerta
-        EstadoCita.NO_ASISTIO -> ColoresPhysio.Violeta
+        EstadoCita.NO_ASISTIO -> ColoresPhysio.Lavanda
     }
 
 /** Semáforo con texto: el color nunca va solo (RC-25). */
@@ -74,7 +74,7 @@ val RangoArticular.color: Color
         RangoArticular.INSUFICIENTE -> ColoresPhysio.Alerta
         RangoArticular.ACEPTABLE -> ColoresPhysio.Pendiente
         RangoArticular.OBJETIVO_ALCANZADO -> ColoresPhysio.Exito
-        RangoArticular.EXCEDIDO -> ColoresPhysio.Violeta
+        RangoArticular.EXCEDIDO -> ColoresPhysio.Lavanda
     }
 
 /** Tipo de aviso con texto y color (RC-25). */
@@ -91,9 +91,9 @@ val TipoAviso.etiqueta: String
 val TipoAviso.color: Color
     get() = when (this) {
         TipoAviso.DOLOR_ALTO -> ColoresPhysio.Alerta
-        TipoAviso.CITA_NUEVA -> ColoresPhysio.Turquesa
+        TipoAviso.CITA_NUEVA -> ColoresPhysio.Lila
         TipoAviso.CITA_REPROGRAMADA -> ColoresPhysio.Pendiente
         TipoAviso.CITA_CANCELADA -> ColoresPhysio.TextoSecundario
         TipoAviso.RUTINA_ACTUALIZADA -> ColoresPhysio.AzulClaro
-        TipoAviso.PACIENTE_ASIGNADO -> ColoresPhysio.Violeta
+        TipoAviso.PACIENTE_ASIGNADO -> ColoresPhysio.Lavanda
     }

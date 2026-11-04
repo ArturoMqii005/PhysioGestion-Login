@@ -60,7 +60,7 @@ fun EscalerasPantalla(viewModel: EscalerasViewModel, alRegresar: () -> Unit) {
                 FaseEscaleras.PREPARADO -> BloqueInstrucciones(estado, viewModel::comenzar)
                 FaseEscaleras.CALIBRANDO -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        CircularProgressIndicator(color = ColoresPhysio.Turquesa)
+                        CircularProgressIndicator(color = ColoresPhysio.Lila)
                         Text("Calibrando: quédate quieto al pie de la escalera", style = MaterialTheme.typography.titleMedium)
                     }
                 }
@@ -103,7 +103,7 @@ private fun BloqueInstrucciones(estado: EscalerasUiState, alComenzar: () -> Unit
         onClick = alComenzar,
         enabled = estado.hayBarometro,
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Turquesa),
+        colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Violeta),
     ) {
         Text("Comenzar", fontWeight = FontWeight.Bold)
     }
@@ -112,9 +112,9 @@ private fun BloqueInstrucciones(estado: EscalerasUiState, alComenzar: () -> Unit
 
 @Composable
 private fun BloqueSubiendo(estado: EscalerasUiState, alTerminar: () -> Unit) {
-    TarjetaPhysio(borde = ColoresPhysio.Turquesa) {
+    TarjetaPhysio(borde = ColoresPhysio.Lila) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(metros(estado.subida), fontSize = 56.sp, fontWeight = FontWeight.Bold, color = ColoresPhysio.Turquesa)
+            Text(metros(estado.subida), fontSize = 56.sp, fontWeight = FontWeight.Bold, color = ColoresPhysio.Lila)
             Text("m subidos", style = MaterialTheme.typography.titleMedium)
         }
         Text("Tiempo: ${reloj(estado.segundos)}", style = MaterialTheme.typography.bodyMedium)
@@ -126,13 +126,13 @@ private fun BloqueSubiendo(estado: EscalerasUiState, alTerminar: () -> Unit) {
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         TarjetaDato("${estado.pisos}", if (estado.pisos == 1) "piso" else "pisos", ColoresPhysio.AzulClaro, Modifier.weight(1f))
-        TarjetaDato("${estado.escalones}", "escalones aprox.", ColoresPhysio.Violeta, Modifier.weight(1f))
+        TarjetaDato("${estado.escalones}", "escalones aprox.", ColoresPhysio.Lavanda, Modifier.weight(1f))
         TarjetaDato(estado.pasos?.toString() ?: "—", "pasos", ColoresPhysio.Exito, Modifier.weight(1f))
     }
     Button(
         onClick = alTerminar,
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Turquesa),
+        colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Violeta),
     ) {
         Text("Terminar", fontWeight = FontWeight.Bold)
     }
@@ -142,7 +142,7 @@ private fun BloqueSubiendo(estado: EscalerasUiState, alTerminar: () -> Unit) {
 private fun BloqueResumen(estado: EscalerasUiState, alRepetir: () -> Unit, alRegresar: () -> Unit) {
     if (estado.guardando) {
         Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = ColoresPhysio.Turquesa)
+            CircularProgressIndicator(color = ColoresPhysio.Lila)
         }
         return
     }
@@ -173,7 +173,7 @@ private fun BloqueResumen(estado: EscalerasUiState, alRepetir: () -> Unit, alReg
         Button(
             onClick = alRegresar,
             modifier = Modifier.weight(1f).heightIn(min = 52.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Turquesa),
+            colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Violeta),
         ) {
             Text("Listo", fontWeight = FontWeight.Bold)
         }
@@ -192,7 +192,7 @@ private fun Historial(pruebas: List<PruebaEscaleras>) {
                 Text(
                     "${metros(p.metrosSubidos)} m en ${reloj(p.duracionSegundos)} · ${metros(p.metrosPorMinuto)} m/min",
                     style = MaterialTheme.typography.bodySmall,
-                    color = ColoresPhysio.Turquesa,
+                    color = ColoresPhysio.Lila,
                 )
             }
         }

@@ -35,8 +35,8 @@ private fun Opcion(
         modifier = modifier
             .height(48.dp)
             .clip(forma)
-            .background(if (seleccionada) ColoresPhysio.Turquesa else MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, if (seleccionada) ColoresPhysio.Turquesa else MaterialTheme.colorScheme.outline, forma)
+            .background(if (seleccionada) ColoresPhysio.Lila else MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, if (seleccionada) ColoresPhysio.Lila else MaterialTheme.colorScheme.outline, forma)
             .selectable(selected = seleccionada, role = Role.RadioButton, onClick = alElegir),
         contentAlignment = Alignment.Center,
     ) {

@@ -41,6 +41,10 @@ data class RutaEjercicio(val idEjercicio: Int)
 @Serializable
 data object RutaEscaleras
 
+/** «Tu progreso»: dolor, ritmo en escaleras y constancia (pestaña del paciente). */
+@Serializable
+data object RutaProgreso
+
 /** Historial de sesiones (RFN-31). */
 @Serializable
 data object RutaHistorial

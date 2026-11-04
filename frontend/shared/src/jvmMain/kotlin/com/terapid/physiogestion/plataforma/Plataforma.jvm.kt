@@ -12,5 +12,5 @@ actual object Plataforma {
         get() = "Escritorio · ${System.getProperty("os.name")} · Java ${System.getProperty("java.version")}"
 
     actual val versionApp: String
-        get() = "1.1.0"
+        get() = "1.5.0"
 }

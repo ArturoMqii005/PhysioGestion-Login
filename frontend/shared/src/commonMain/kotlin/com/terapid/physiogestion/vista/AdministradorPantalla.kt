@@ -171,7 +171,7 @@ private fun FormularioAlta(viewModel: AdministradorViewModel) {
             Text("Cuenta creada para ${creada.usuario.nombre}", fontWeight = FontWeight.SemiBold)
             Text("Usuario: ${creada.usuario.usuario}")
             Text("Contraseña temporal:", style = MaterialTheme.typography.bodySmall)
-            Text(creada.contrasenaTemporal, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = ColoresPhysio.Turquesa)
+            Text(creada.contrasenaTemporal, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = ColoresPhysio.Lila)
             Text(
                 "Entrégala en persona. Solo se muestra esta vez; al entrar, la app le pedirá crear su propia contraseña.",
                 style = MaterialTheme.typography.bodySmall,

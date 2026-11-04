@@ -66,7 +66,7 @@ fun PantallaFormulario(
                 if (alRegresar != null) {
                     EncabezadoSecundario(titulo, alRegresar, subtitulo)
                 } else {
-                    Text("PhysioGestion", color = ColoresPhysio.Turquesa, style = MaterialTheme.typography.labelLarge)
+                    Text("PhysioGestion", color = ColoresPhysio.Lila, style = MaterialTheme.typography.labelLarge)
                     Text(titulo, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     subtitulo?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
@@ -169,7 +169,7 @@ fun BotonPrincipal(texto: String, cargando: Boolean, alPulsar: () -> Unit, habil
         onClick = alPulsar,
         enabled = !cargando && habilitado,
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Turquesa),
+        colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Violeta),
     ) {
         if (cargando) {
             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
@@ -189,7 +189,7 @@ fun MensajeError(texto: String?) {
 @Composable
 fun MensajeInfo(texto: String?) {
     if (texto == null) return
-    TarjetaPhysio(borde = ColoresPhysio.Turquesa) {
+    TarjetaPhysio(borde = ColoresPhysio.Lila) {
         Text(texto, style = MaterialTheme.typography.bodyMedium)
     }
 }
@@ -198,6 +198,6 @@ fun MensajeInfo(texto: String?) {
 @Composable
 fun BotonEnlace(texto: String, alPulsar: () -> Unit, habilitado: Boolean = true, modifier: Modifier = Modifier) {
     TextButton(onClick = alPulsar, enabled = habilitado, modifier = modifier.heightIn(min = 48.dp)) {
-        Text(texto, color = if (habilitado) ColoresPhysio.Turquesa else MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(texto, color = if (habilitado) ColoresPhysio.Lila else MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

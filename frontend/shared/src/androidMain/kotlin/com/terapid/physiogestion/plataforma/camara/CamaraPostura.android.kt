@@ -238,14 +238,14 @@ private fun DrawScope.dibujarEsqueleto(postura: Postura, espejo: Boolean, resalt
         val pa = postura.puntos[a] ?: continue
         val pb = postura.puntos[b] ?: continue
         if (pa.confianza < CONFIANZA_DIBUJO || pb.confianza < CONFIANZA_DIBUJO) continue
-        val color = if (a in resaltados && b in resaltados) ColoresPhysio.Turquesa else Color.White.copy(alpha = 0.75f)
+        val color = if (a in resaltados && b in resaltados) ColoresPhysio.Lila else Color.White.copy(alpha = 0.75f)
         drawLine(color, enPantalla(pa), enPantalla(pb), strokeWidth = grosor, cap = StrokeCap.Round)
     }
     for ((punto, p) in postura.puntos) {
         if (p.confianza < CONFIANZA_DIBUJO) continue
         val resaltado = punto in resaltados
         drawCircle(
-            color = if (resaltado) ColoresPhysio.Turquesa else Color.White,
+            color = if (resaltado) ColoresPhysio.Lila else Color.White,
             radius = (if (resaltado) 8.dp else 5.dp).toPx(),
             center = enPantalla(p),
         )

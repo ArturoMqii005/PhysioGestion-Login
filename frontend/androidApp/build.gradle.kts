@@ -41,8 +41,8 @@ android {
         applicationId = "com.terapid.physiogestion"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.5"
 
         // Llegan al código como BuildConfig.SERVIDOR_URL (nunca escritas en un .kt).
         buildConfigField("String", "SERVIDOR_URL", "\"${variable("SERVIDOR_URL")}\"")
@@ -54,6 +54,11 @@ android {
     }
     buildTypes {
         release {
+            // La versión release es la que se siente fluida: sin el modo de depuración,
+            // Android compila la app y Compose usa sus perfiles de arranque.
+            // Se firma con la llave de depuración para instalarla en la demo sin
+            // crear un almacén de llaves; para publicarla en Play se cambia aquí.
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

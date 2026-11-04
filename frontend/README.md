@@ -27,9 +27,10 @@ frontend/
     │       ├── App.kt                Punto de entrada común: tema + navegación
     │       ├── navegacion/           Rutas.kt (rutas tipadas) y NavegacionPrincipal.kt (NavHost)
     │       ├── vista/                VISTA: Login, Administrador, Fisioterapeuta, Recepción y, del paciente,
-    │       │   │                     InicioPaciente, Rutina, Ejercicio (sensores), Historial, DetalleSesion, Perfil
-    │       │   ├── componentes/      Piezas reutilizables: encabezados, tarjetas, etiquetas, selectores
-    │       │   └── tema/             Colores de PhysioGestion
+    │       │   │                     InicioPaciente, Rutina, Ejercicio (sensores), Progreso, Historial, DetalleSesion, Perfil
+    │       │   ├── componentes/      Piezas reutilizables: Diseno.kt (portada, píldoras, tarjetas, anillo),
+    │       │   │                     BarraPestanas.kt, Iconos.kt (íconos propios), encabezados, etiquetas
+    │       │   └── tema/             TemaPhysioGestion.kt (colores oscuros, letras, formas) y Movimiento.kt (animaciones)
     │       ├── viewmodel/            VIEW MODEL de cada pantalla
     │       ├── modelo/               MODELO: DTOs @Serializable (Usuario, Rol, Cita, Rutina, SesionTerapia…)
     │       ├── servicio/             Reglas de negocio: cumplimiento, dolor, puntos, semáforo, racha, pasos
@@ -70,6 +71,12 @@ RutaPaciente (inicio) ─┬─► RutaRutina ─► RutaEjercicio(idEjercicio) 
 ```
 
 La pantalla de ejercicio comparte el `RutinaViewModel` de la pantalla de rutina: al terminar, el ejercicio queda marcado.
+
+**Pestañas (v1.5).** Cada rol tiene una barra de pestañas flotante (`BarraPestanas`): el paciente ve Inicio, Rutina,
+Progreso y Perfil; fisioterapeuta y recepción ven Agenda, Pacientes y Avisos. Cambiar de pestaña guarda y restaura
+el estado de cada una (`saveState` / `restoreState`), así la lista no regresa arriba. Las transiciones viven en
+`vista/tema/Movimiento.kt`: una pantalla nueva entra desde la derecha mientras la anterior se recorre un tercio
+(como en iOS), las pestañas cambian con un fundido corto y el login con una escala suave.
 
 ## Métodos HTTP (recurso `/api/v1/sesiones`)
 
@@ -165,5 +172,6 @@ El fisioterapeuta ve las pruebas de sus pacientes en su agenda. En el emulador s
 
 1. Encender el backend (ver `../backend/README.md`).
 2. En Android Studio elegir **androidApp**, elegir un emulador y presionar Run.
+   Para probar la fluidez, cambiar a la variante **release** (*Build Variants*): usa Railway y va firmada con la llave de depuración.
 3. Escritorio: `gradlew.bat :desktopApp:run`.
-4. Pruebas: `gradlew.bat :shared:jvmTest` (89 pruebas).
+4. Pruebas: `gradlew.bat :shared:jvmTest` (126 pruebas).

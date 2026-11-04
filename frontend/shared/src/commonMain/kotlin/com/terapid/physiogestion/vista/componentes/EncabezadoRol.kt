@@ -32,7 +32,7 @@ fun EncabezadoRol(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("PhysioGestion", color = ColoresPhysio.Turquesa, style = MaterialTheme.typography.labelLarge)
+                Text("PhysioGestion", color = ColoresPhysio.Lila, style = MaterialTheme.typography.labelLarge)
                 Text(titulo, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             }
             OutlinedButton(onClick = alCerrarSesion, modifier = Modifier.heightIn(min = 48.dp)) {

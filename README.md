@@ -77,6 +77,22 @@ Sobre el proyecto del login se integraron las prácticas de la estructura de la 
 con rutina de la Ft. Mariana Soto). Recepción genera códigos nuevos desde su pantalla. Sin proveedor de correo configurado,
 el código de 6 dígitos aparece en el registro del servidor (`railway logs`).
 
+## Lo que se agregó en la versión 1.5 (diseño oscuro y animaciones fluidas)
+
+|Cambio|Dónde|
+|-|-|
+|Modo oscuro con violeta (#6C47FF) y lila; letras Inter (texto) y Bricolage Grotesque (títulos), con licencia OFL|`vista/tema/TemaPhysioGestion.kt`, `composeResources/font`|
+|Portada tipo cine en el inicio del paciente: rutina, próxima cita y prueba de escaleras, que avanzan solas cada 6 s|`InicioPacientePantalla` · `PortadaEscaleras`|
+|Barra de pestañas flotante: Inicio, Rutina, Progreso y Perfil (paciente); Agenda, Pacientes y Avisos (personal)|`componentes/BarraPestanas.kt`, `NavegacionPrincipal`|
+|Pantalla nueva «Tu progreso»: dolor sesión por sesión contra su límite, ritmo en escaleras y calendario de 4 semanas|`ProgresoPantalla`, `ProgresoViewModel`, `ReglasProgreso`|
+|Agenda del fisioterapeuta como línea de tiempo del día, con la marca de la hora actual|`FisioterapeutaPantalla`|
+|Movimiento con resortes y la curva de iOS: pantallas que entran desde la derecha, pestañas con fundido, botones que se encogen al tocarlos, anillos y gráficas que se dibujan|`vista/tema/Movimiento.kt`|
+|Gesto de «atrás» predictivo de Android y fondo de ventana oscuro (sin destello al abrir)|`AndroidManifest.xml`, `res/values/themes.xml`|
+
+**Para que se sienta fluida hay que instalar la versión release**: la de depuración es más lenta a propósito
+(Android no la optimiza). En Android Studio: *Build Variants* → `androidApp` → **release** y Run;
+se firma con la llave de depuración, así que se instala igual que siempre y usa el servidor de Railway.
+
 ## Lo que se agregó en la versión 1.4 (avisos y recordatorios, sin Firebase)
 
 |Función|Dónde|

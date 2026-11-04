@@ -45,6 +45,8 @@ data class InicioPacienteUiState(
     val racha: Int = 0,
     val puntos: Int = 0,
     val medidosHoy: Int = 0,
+    /** Ejercicios que ya se midieron hoy (la tarjeta del ejercicio muestra la palomita). */
+    val medidosHoyIds: Set<Int> = emptySet(),
     val pendientesEnvio: Int = 0,
     val pasos: EstadoPasos = EstadoPasos.NO_DISPONIBLE,
     val aviso: String? = null,
@@ -143,9 +145,15 @@ class InicioPacienteViewModel(
         try {
             val puntos = rutinas.puntosTotales()
             val pendientes = sesiones.pendientesDeEnvio()
-            val medidos = sensores.medicionesDeHoy().size
+            val medidos = sensores.medicionesDeHoy()
             _estado.update {
-                it.copy(racha = preferencias.racha(pacienteId), puntos = puntos, pendientesEnvio = pendientes, medidosHoy = medidos)
+                it.copy(
+                    racha = preferencias.racha(pacienteId),
+                    puntos = puntos,
+                    pendientesEnvio = pendientes,
+                    medidosHoy = medidos.size,
+                    medidosHoyIds = medidos.keys,
+                )
             }
         } catch (e: CancellationException) {
             throw e

@@ -86,8 +86,8 @@ fun TarjetaEjercicio(
     alMedir: (() -> Unit)? = null,
 ) {
     TarjetaPhysio(
-        fondo = if (realizado) ColoresPhysio.Turquesa.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surface,
-        borde = if (realizado) ColoresPhysio.Turquesa else MaterialTheme.colorScheme.outline,
+        fondo = if (realizado) ColoresPhysio.Lila.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surface,
+        borde = if (realizado) ColoresPhysio.Lila else MaterialTheme.colorScheme.outline,
     ) {
         Row(
             modifier = Modifier
@@ -105,13 +105,13 @@ fun TarjetaEjercicio(
                 Text(
                     "${ejercicio.series} series × ${ejercicio.repeticiones} repeticiones · descanso ${ejercicio.descansoSegundos} s",
                     style = MaterialTheme.typography.bodySmall,
-                    color = ColoresPhysio.Turquesa,
+                    color = ColoresPhysio.Lila,
                 )
             }
             Checkbox(
                 checked = realizado,
                 onCheckedChange = null,
-                colors = CheckboxDefaults.colors(checkedColor = ColoresPhysio.Turquesa),
+                colors = CheckboxDefaults.colors(checkedColor = ColoresPhysio.Lila),
             )
         }
         Text(
@@ -139,7 +139,7 @@ fun TarjetaEjercicio(
             OutlinedButton(onClick = alMedir, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 val angulo = ejercicio.anguloObjetivo?.let { " · objetivo $it°" } ?: ""
                 val como = if (ejercicio.admiteVerificacionPorCamara) "Medir o verificar" else "Medir con sensores"
-                Text("$como$angulo", color = ColoresPhysio.Turquesa)
+                Text("$como$angulo", color = ColoresPhysio.Lila)
             }
         }
     }

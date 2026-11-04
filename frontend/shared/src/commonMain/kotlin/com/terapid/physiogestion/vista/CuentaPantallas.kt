@@ -123,7 +123,7 @@ private fun CasillaAviso(marcada: Boolean, alCambiar: (Boolean) -> Unit, alVerAv
             Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(value = marcada, role = Role.Checkbox, onValueChange = alCambiar),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Checkbox(checked = marcada, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = ColoresPhysio.Turquesa))
+            Checkbox(checked = marcada, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = ColoresPhysio.Lila))
             Text(
                 "Leí y acepto el aviso de privacidad. Doy mi consentimiento para el uso de mis datos de salud en mi tratamiento.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -330,7 +330,7 @@ fun AvisoPrivacidadPantalla(
                 TarjetaPhysio {
                     Text(aviso.titulo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     aviso.secciones.forEach { s ->
-                        Text(s.titulo, fontWeight = FontWeight.SemiBold, color = ColoresPhysio.Turquesa)
+                        Text(s.titulo, fontWeight = FontWeight.SemiBold, color = ColoresPhysio.Lila)
                         Text(s.texto, style = MaterialTheme.typography.bodyMedium)
                     }
                     Text("Versión ${aviso.version}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -341,7 +341,7 @@ fun AvisoPrivacidadPantalla(
                             .toggleable(value = e.leido, role = Role.Checkbox, onValueChange = viewModel::cambiarLeido),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Checkbox(checked = e.leido, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = ColoresPhysio.Turquesa))
+                        Checkbox(checked = e.leido, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = ColoresPhysio.Lila))
                         Text(
                             "Leí el aviso y doy mi consentimiento expreso para el tratamiento de mis datos de salud.",
                             style = MaterialTheme.typography.bodyMedium,

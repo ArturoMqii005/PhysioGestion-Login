@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -42,6 +43,8 @@ import com.terapid.physiogestion.plataforma.Entorno
 import com.terapid.physiogestion.plataforma.Plataforma
 import com.terapid.physiogestion.viewmodel.LoginViewModel
 import com.terapid.physiogestion.vista.componentes.BotonEnlace
+import com.terapid.physiogestion.vista.componentes.PortadaEscaleras
+import com.terapid.physiogestion.vista.componentes.mezcla
 import com.terapid.physiogestion.vista.componentes.TarjetaPhysio
 import com.terapid.physiogestion.vista.tema.ColoresPhysio
 
@@ -65,6 +68,8 @@ fun LoginPantalla(
     }
 
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        // La misma portada de escaleras del paciente, detrás de la marca.
+        Box(Modifier.fillMaxSize()) { PortadaEscaleras(mezcla(ColoresPhysio.Violeta, ColoresPhysio.Fondo, 0.45f), Modifier.fillMaxWidth().height(300.dp), conPaciente = false) }
         Box(
             Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
             contentAlignment = Alignment.Center,
@@ -76,7 +81,7 @@ fun LoginPantalla(
             ) {
                 // Marca
                 Box(
-                    Modifier.size(64.dp).background(ColoresPhysio.Turquesa, RoundedCornerShape(18.dp)),
+                    Modifier.size(64.dp).background(ColoresPhysio.Lila, RoundedCornerShape(18.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text("PG", color = ColoresPhysio.Fondo, fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleLarge)
@@ -122,7 +127,7 @@ fun LoginPantalla(
                         onClick = viewModel::iniciarSesion,
                         enabled = !estado.cargando,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Turquesa),
+                        colors = ButtonDefaults.buttonColors(containerColor = ColoresPhysio.Violeta),
                     ) {
                         if (estado.cargando) {
                             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)

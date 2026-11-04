@@ -26,7 +26,7 @@ fun Cargando(texto: String) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CircularProgressIndicator(color = ColoresPhysio.Turquesa)
+        CircularProgressIndicator(color = ColoresPhysio.Lila)
         Text(texto, Modifier.padding(start = 12.dp))
     }
 }
