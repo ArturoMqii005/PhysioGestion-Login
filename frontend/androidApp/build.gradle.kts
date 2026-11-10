@@ -74,4 +74,4 @@ android {
         compose = true
         buildConfig = true // genera la clase BuildConfig
     }
-}
+}//prueba examen
