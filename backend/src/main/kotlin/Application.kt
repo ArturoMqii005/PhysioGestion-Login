@@ -26,6 +26,7 @@ import java.time.Clock
  * configuración de las variables de entorno: proveedor de correo y base de datos.
  */
 fun Application.module() {
+    println("Despliegue de prueba: PhysioGestion Backend iniciado.")
     modulo(correo = EnviadorCorreo.desdeEntorno(), almacenDocumentos = AlmacenJdbc.desdeEntorno())
 }
 

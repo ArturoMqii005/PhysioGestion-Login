@@ -180,3 +180,5 @@ en cualquier celular con Internet, sin `adb reverse` ni misma red Wi‑Fi: se es
 
 https://github.com/ArturoMqii005/PhysioGestion-Login
 
+<!-- Pruebas de despliegue automático -->
+
