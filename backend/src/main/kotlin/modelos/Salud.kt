@@ -25,3 +25,4 @@ data class EstadoServidor(
     /** true si los códigos llegan por correo (Brevo); false si solo se escriben en el registro. */
     val correoConfigurado: Boolean,
 )
+// prueba de examen
