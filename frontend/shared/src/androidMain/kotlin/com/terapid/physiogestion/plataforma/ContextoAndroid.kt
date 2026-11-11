@@ -36,3 +36,4 @@ object ContextoAndroid {
         this.servidorConfigurado = servidorConfigurado.trim()
     }
 }
+// prueba de examen frontend
