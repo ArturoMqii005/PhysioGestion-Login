@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhysioGestion · Iniciar sesión</title>
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <div class="portada" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+  <main class="contenedor">
+    <header class="marca">
+      <div class="logo" aria-hidden="true">PG</div>
+      <h1>PhysioGestion</h1>
+      <p class="subtitulo">Clínica Terapid By Farmacias · Personal de la clínica</p>
+    </header>
+
+    <form id="formulario" class="tarjeta" novalidate>
+      <h2>Inicia sesión</h2>
+
+      <div class="campo">
+        <label for="usuario">Usuario o correo</label>
+        <div class="entrada">
+          <input id="usuario" name="usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="contrasena">Contraseña</label>
+        <div class="entrada">
+          <input id="contrasena" name="contrasena" type="password" autocomplete="current-password" required>
+          <button id="verContrasena" class="boton-texto" type="button" aria-controls="contrasena" aria-pressed="false">Mostrar</button>
+        </div>
+      </div>
+
+      <p id="error" class="error" role="alert" aria-live="assertive"></p>
+
+      <button id="entrar" class="boton" type="submit">Iniciar sesión</button>
+    </form>
+
+    <section class="tarjeta">
+      <p class="nota">¿Eres paciente? Entra desde la app móvil de PhysioGestion. La versión web es para administración, recepción y fisioterapeutas.</p>
+    </section>
+
+    <p class="pie">Versión web · en construcción</p>
+  </main>
+
+  <script src="api.js"></script>
+  <script>
+    const formulario = document.getElementById("formulario");
+    const campoUsuario = document.getElementById("usuario");
+    const campoContrasena = document.getElementById("contrasena");
+    const botonEntrar = document.getElementById("entrar");
+    const botonVer = document.getElementById("verContrasena");
+    const textoError = document.getElementById("error");
+
+    // Si ya hay una sesión abierta en esta pestaña, ir directo al panel.
+    if (leerSesion()) location.replace("panel.html");
+
+    if (new URLSearchParams(location.search).get("vencida") === "1") {
+      textoError.textContent = "Tu sesión venció. Vuelve a iniciar sesión.";
+    }
+
+    botonVer.addEventListener("click", () => {
+      const visible = campoContrasena.type === "text";
+      campoContrasena.type = visible ? "password" : "text";
+      botonVer.textContent = visible ? "Mostrar" : "Ocultar";
+      botonVer.setAttribute("aria-pressed", String(!visible));
+    });
+
+    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      const usuario = campoUsuario.value.trim();
+      const contrasena = campoContrasena.value;
+      if (!usuario || !contrasena) {
+        textoError.textContent = "Escribe tu usuario y tu contraseña.";
+        (usuario ? campoContrasena : campoUsuario).focus();
+        return;
+      }
+
+      textoError.textContent = "";
+      botonEntrar.disabled = true;
+      botonEntrar.textContent = "Entrando…";
+      try {
+        const sesion = await llamarApi("/auth/login", { metodo: "POST", cuerpo: { usuario, contrasena } });
+        if (sesion.usuario.rol === "PACIENTE") {
+          // La web es solo para el personal: se cierra la sesión que se acaba de abrir.
+          llamarApi("/auth/logout", { metodo: "POST", token: sesion.token }).catch(() => {});
+          textoError.textContent = "La versión web es para el personal de la clínica. Como paciente, entra desde la app móvil.";
+          return;
+        }
+        guardarSesion({
+          token: sesion.token,
+          usuario: sesion.usuario,
+          debeCambiarContrasena: sesion.debeCambiarContrasena,
+        });
+        location.replace("panel.html");
+      } catch (e) {
+        textoError.textContent = e.message;
+        campoContrasena.select();
+      } finally {
+        botonEntrar.disabled = false;
+        botonEntrar.textContent = "Iniciar sesión";
+      }
+    });
+  </script>
+</body>
+</html>
