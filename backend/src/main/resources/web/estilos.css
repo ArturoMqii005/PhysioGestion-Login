@@ -1,0 +1,238 @@
+/* PhysioGestion web: mismos colores y tipografías que la app (TemaPhysioGestion.kt). */
+@font-face { font-family: "Inter"; src: url("fuentes/inter_regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("fuentes/inter_semibold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Bricolage"; src: url("fuentes/bricolage_extrabold.ttf") format("truetype"); font-weight: 800; font-display: swap; }
+
+:root {
+  --fondo: #0E0C17;
+  --superficie: #1A1726;
+  --superficie-alta: #2A2640;
+  --borde: #2A2640;
+  --borde-fuerte: #3A3550;
+  --violeta: #6C47FF;
+  --lila: #AA94FF;
+  --tinte-violeta: #281D58;
+  --texto: #F4F2FF;
+  --texto-secundario: #A9A4C2;
+  --texto-tenue: #8E89A8;
+  --alerta: #FF8A8F;
+  --fondo-alerta: #2A1418;
+  --pendiente: #FFCF6B;
+  --fondo-pendiente: #3A2A0C;
+  --radio: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; min-height: 100%; }
+
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Portada con escalones, como la pantalla de login de la app. */
+.portada {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 380px;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(180deg, #15122A 0%, var(--fondo) 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
+}
+.portada span {
+  position: absolute;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(108, 71, 255, 0.28) 0%, rgba(108, 71, 255, 0) 85%);
+}
+.portada span:nth-child(1) { width: 85%; top: 62%; opacity: 0.35; }
+.portada span:nth-child(2) { width: 62%; top: 46%; opacity: 0.55; }
+.portada span:nth-child(3) { width: 40%; top: 30%; opacity: 0.8; }
+.portada span:nth-child(4) { width: 22%; top: 16%; }
+
+.contenedor {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 72px 16px 40px;
+}
+
+.marca { text-align: center; margin-bottom: 24px; }
+
+.logo {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: var(--lila);
+  color: #120E24;
+  font-family: "Bricolage", "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+}
+.logo.chico { width: 40px; height: 40px; border-radius: 12px; font-size: 15px; }
+
+h1 {
+  margin: 14px 0 0;
+  font-family: "Bricolage", "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.subtitulo { margin: 4px 0 0; color: var(--texto-secundario); }
+
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 20px;
+}
+.tarjeta + .tarjeta { margin-top: 16px; }
+
+h2 { margin: 0 0 16px; font-size: 18px; font-weight: 600; }
+
+.campo { margin-bottom: 14px; }
+.campo label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--texto-secundario); }
+
+.entrada {
+  display: flex;
+  align-items: center;
+  background: var(--fondo);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 12px;
+}
+.entrada:focus-within { border-color: var(--lila); box-shadow: 0 0 0 3px rgba(170, 148, 255, 0.18); }
+.entrada input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+}
+
+.boton-texto {
+  border: 0;
+  background: transparent;
+  color: var(--lila);
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 14px;
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.boton {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--violeta);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+.boton:hover { filter: brightness(1.08); }
+.boton:active { transform: scale(0.98); }
+.boton:disabled { opacity: 0.6; cursor: progress; }
+.boton:focus-visible, .boton-texto:focus-visible, .boton-borde:focus-visible { outline: 2px solid var(--lila); outline-offset: 2px; }
+
+.boton-borde {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.boton-borde:hover { background: var(--superficie-alta); }
+
+.error {
+  min-height: 24px;
+  margin: 0 0 12px;
+  color: var(--alerta);
+  font-size: 14px;
+}
+
+.nota { margin: 0; color: var(--texto-secundario); font-size: 14px; }
+
+.pie {
+  margin-top: 24px;
+  text-align: center;
+  color: var(--texto-tenue);
+  font-size: 13px;
+}
+
+/* Panel */
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(14, 12, 23, 0.92);
+  border-bottom: 1px solid var(--borde);
+}
+.barra .nombre-app { font-family: "Bricolage", "Inter", sans-serif; font-weight: 800; font-size: 18px; }
+.barra .espacio { flex: 1; }
+
+.panel { max-width: 960px; margin: 0 auto; padding: 32px 16px 48px; }
+.panel h1 { margin-top: 0; }
+
+.chip {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--tinte-violeta);
+  color: var(--lila);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.aviso-temporal {
+  margin-top: 20px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--fondo-pendiente);
+  color: var(--pendiente);
+  font-size: 14px;
+}
+
+.modulos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 28px;
+}
+.modulos .tarjeta { margin-top: 0; }
+.modulo h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+.modulo p { margin: 0 0 12px; color: var(--texto-secundario); font-size: 14px; }
+.modulo .estado { color: var(--texto-tenue); font-size: 13px; }
+
+[hidden] { display: none !important; }
+
+@media (max-width: 480px) {
+  .contenedor { padding-top: 48px; }
+  h1 { font-size: 26px; }
+}

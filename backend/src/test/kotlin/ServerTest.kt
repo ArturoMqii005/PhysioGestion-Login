@@ -14,6 +14,7 @@ import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
@@ -41,6 +42,17 @@ class ServerTest {
     fun `la raiz del servidor responde`() = testApplication {
         configure()
         assertEquals(HttpStatusCode.OK, client.get("/").status)
+    }
+
+    @Test
+    fun `la version web entrega el login y sus archivos`() = testApplication {
+        configure()
+        val pagina = client.get("/web/")
+        assertEquals(HttpStatusCode.OK, pagina.status)
+        assertTrue(pagina.bodyAsText().contains("Inicia sesión"))
+        assertEquals(HttpStatusCode.OK, client.get("/web/api.js").status)
+        assertEquals(HttpStatusCode.OK, client.get("/web/estilos.css").status)
+        assertEquals(HttpStatusCode.OK, client.get("/web/panel.html").status)
     }
 
     @Test

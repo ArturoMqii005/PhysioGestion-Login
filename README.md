@@ -164,6 +164,15 @@ Cuando aparezca `Responding at http://0.0.0.0:8080`, abrir http://localhost:8080
 Con esa dirección la app funciona
 en cualquier celular con Internet, sin `adb reverse` ni misma red Wi‑Fi: se escribe en «Servidor · Cambiar» del login.
 
+**1c. Versión web (personal de la clínica, en construcción).** El mismo backend sirve la versión web desde
+`backend/src/main/resources/web/`. Por ahora tiene el inicio de sesión y un panel por rol:
+
+* Local: http://localhost:8080/web/
+* Railway: https://physiogestion-login-production.up.railway.app/web/
+
+Entran `admin`, `fisio` y `recepcion` (mismas contraseñas de la tabla de usuarios de prueba). Los pacientes reciben
+un mensaje para usar la app móvil. Funciona en cualquier navegador, también en Safari de iPhone.
+
 **2. Frontend.** Abrir la carpeta `frontend` en Android Studio, elegir **androidApp** y un emulador, y presionar Run.
 
 * El emulador llega a la computadora por `http://10.0.2.2:8080`. Ya viene configurado.
