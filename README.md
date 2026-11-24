@@ -164,14 +164,27 @@ Cuando aparezca `Responding at http://0.0.0.0:8080`, abrir http://localhost:8080
 Con esa dirección la app funciona
 en cualquier celular con Internet, sin `adb reverse` ni misma red Wi‑Fi: se escribe en «Servidor · Cambiar» del login.
 
-**1c. Versión web (personal de la clínica, en construcción).** El mismo backend sirve la versión web desde
-`backend/src/main/resources/web/`. Por ahora tiene el inicio de sesión y un panel por rol:
+**1c. Versión web (personal de la clínica).** El mismo backend sirve la versión web desde
+`backend/src/main/resources/web/` (HTML, CSS y JavaScript sin dependencias; usa la misma API `/api/v1`):
 
 * Local: http://localhost:8080/web/
 * Railway: https://physiogestion-login-production.up.railway.app/web/
 
-Entran `admin`, `fisio` y `recepcion` (mismas contraseñas de la tabla de usuarios de prueba). Los pacientes reciben
-un mensaje para usar la app móvil. Funciona en cualquier navegador, también en Safari de iPhone.
+Entran `admin`, `fisio`, `fisio2` y `recepcion` (contraseñas de la tabla de usuarios de prueba); a los pacientes se les
+indica usar la app móvil. Funciona en cualquier navegador, también en Safari de iPhone.
+
+|Módulo|Administración|Recepción|Fisioterapeuta|
+|-|-|-|-|
+|Inicio|Personal activo, pacientes, citas de hoy, invitaciones|Citas por confirmar, pacientes sin fisioterapeuta|Citas de hoy, pacientes con dolor alto o sin rutina|
+|Agenda|Agendar, confirmar, reprogramar (horas libres reales), cancelar, asistencia|Igual que administración|Sus citas; marca atendida o no asistió|
+|Pacientes y ficha|Lista, asignar fisioterapeuta, ficha con rutina y sesiones recientes|Lista, asignar fisioterapeuta, citas (sin datos de salud)|Sus pacientes: rutina, gráfica de dolor, sesiones, mediciones y escaleras|
+|Rutina|—|—|Crear y editar (meta, límite de dolor, 1 a 10 ejercicios del catálogo)|
+|Invitaciones|Paciente nuevo y su código|Paciente nuevo y su código|—|
+|Usuarios|Alta del personal con contraseña temporal, editar, activar o desactivar|—|—|
+|Avisos y Mi cuenta|Avisos (se revisan cada minuto) y cambio de contraseña|Igual|Igual|
+
+También tiene «¿Olvidaste tu contraseña?» (código por correo) y la página del aviso de privacidad. La sesión se guarda
+solo en la pestaña (se borra al cerrarla) y, si el token vence, regresa al inicio de sesión.
 
 **2. Frontend.** Abrir la carpeta `frontend` en Android Studio, elegir **androidApp** y un emulador, y presionar Run.
 
