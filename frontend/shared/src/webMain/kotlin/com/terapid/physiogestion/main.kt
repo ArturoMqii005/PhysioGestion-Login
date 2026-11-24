@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+
 package com.terapid.physiogestion
 
 import androidx.compose.ui.ExperimentalComposeUiApi

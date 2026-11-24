@@ -1,3 +1,7 @@
+// js(...) es la interoperabilidad de Kotlin/Wasm con JavaScript; Kotlin pide marcarla
+// porque su API todavía puede cambiar entre versiones.
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+
 package com.terapid.physiogestion.plataforma
 
 /*
