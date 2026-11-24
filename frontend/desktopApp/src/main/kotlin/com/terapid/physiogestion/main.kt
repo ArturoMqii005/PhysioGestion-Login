@@ -1,6 +1,7 @@
 package com.terapid.physiogestion
 
 import androidx.compose.ui.unit.dp
+import com.terapid.physiogestion.vista.componentes.iconoApp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -10,6 +11,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "PhysioGestion",
+        icon = iconoApp(),
         state = rememberWindowState(width = 420.dp, height = 860.dp),
     ) {
         App()

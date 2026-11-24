@@ -1,5 +1,9 @@
 package com.terapid.physiogestion.vista
 
+import com.terapid.physiogestion.vista.componentes.AvanceLeccion
+import com.terapid.physiogestion.vista.componentes.ExpresionXochi
+import com.terapid.physiogestion.vista.componentes.XochiDice
+import com.terapid.physiogestion.vista.componentes.mensajeRutina
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
@@ -150,8 +154,21 @@ private fun ContenidoRutina(
                         textAlign = TextAlign.Center,
                     )
                     Text("Asignada por ${rutina.fisioterapeuta} · desde ${rutina.vigenteDesde}", color = ColoresPhysio.TextoSecundario, fontSize = 15.sp, textAlign = TextAlign.Center)
+                    XochiDice(
+                        mensajeRutina(
+                            usuario.nombre.substringBefore(' '), estado.completados.size, estado.totalEjercicios,
+                            estado.racha, sesionGuardada = estado.resultado != null,
+                        ),
+                        Modifier.fillMaxWidth().padding(top = 4.dp),
+                        expresion = when {
+                            estado.resultado != null -> ExpresionXochi.CELEBRANDO
+                            estado.completados.isNotEmpty() -> ExpresionXochi.ANIMANDO
+                            else -> ExpresionXochi.FELIZ
+                        },
+                        tamano = 84.dp,
+                    )
+                    AvanceLeccion(estado.completados.size, estado.totalEjercicios, series = 1, porSerie = 0, etiqueta = "Ejercicios de hoy")
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Chip("${estado.completados.size} de ${estado.totalEjercicios} hechos")
                         Chip("Límite de dolor ${rutina.umbralDolor}/10")
                         Chip("Racha ${estado.racha} d · ${estado.puntosTotales} pts")
                     }

@@ -64,7 +64,7 @@ function iniciar() {
     h("a", { class: "saltar", href: "#vista", onClick: (e) => { e.preventDefault(); vista.focus(); } }, "Saltar al contenido"),
     h("div", { class: "aplicacion" },
       h("aside", { class: "lateral" },
-        h("div", { class: "lateral-marca" }, h("div", { class: "logo chico", "aria-hidden": "true" }, "PG"), h("span", { class: "nombre-app" }, "PhysioGestion")),
+        h("div", { class: "lateral-marca" }, h("img", { class: "logo chico", src: "logo.svg", alt: "", width: "36", height: "36" }), h("span", { class: "nombre-app" }, "PhysioGestion")),
         nav,
         h("div", { class: "lateral-pie" },
           h("div", { class: "lateral-usuario" }, nombre, rol),
