@@ -1,0 +1,39 @@
+# Push programada: cada mañana el servidor revisa qué pacientes llevan 3 días o más
+# sin registrar una sesión y le avisa a su fisioterapeuta (POST /tareas/revision-diaria).
+#
+# Configuración (una sola vez):
+#   1. En Railway, variable TAREA_CLAVE con una clave larga al azar.
+#   2. En GitHub › Settings › Secrets and variables › Actions, el secreto TAREA_CLAVE con la misma clave.
+#   3. (Opcional) La variable URL_SERVIDOR si el backend cambia de dirección.
+name: Revisión diaria de pacientes
+
+on:
+  schedule:
+    - cron: "0 15 * * *" # 9:00 en Ciudad de México (UTC-6)
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pedir la revisión al servidor
+        env:
+          CLAVE: ${{ secrets.TAREA_CLAVE }}
+          URL: ${{ vars.URL_SERVIDOR || 'https://physiogestion-login-production.up.railway.app' }}
+        run: |
+          if [ -z "$CLAVE" ]; then
+            echo "Falta el secreto TAREA_CLAVE; no se hace nada."
+            exit 0
+          fi
+          # Railway Serverless puede tardar en despertar: hasta 3 intentos.
+          for intento in 1 2 3; do
+            if curl -fsS --max-time 60 -X POST -H "X-Tarea-Clave: $CLAVE" "$URL/api/v1/tareas/revision-diaria"; then
+              echo
+              exit 0
+            fi
+            sleep 20
+          done
+          exit 1

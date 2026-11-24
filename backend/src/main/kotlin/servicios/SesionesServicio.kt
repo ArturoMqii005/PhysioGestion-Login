@@ -85,6 +85,9 @@ class SesionesServicio(
             .drop(pagina * tamano)
             .take(tamano)
 
+    /** Fecha y hora de inicio de la sesión más reciente del paciente (null si no tiene). */
+    fun ultimaSesion(pacienteId: Int): String? = sesiones.values.filter { it.pacienteId == pacienteId }.maxOfOrNull { it.fechaHoraInicio }
+
     fun contar(pacientes: Set<Int>): Int = sesiones.values.count { it.pacienteId in pacientes }
 
     fun obtener(id: Int): SesionTerapia? = sesiones[id]

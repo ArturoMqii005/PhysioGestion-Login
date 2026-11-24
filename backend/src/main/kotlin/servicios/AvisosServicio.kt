@@ -215,6 +215,38 @@ class AvisosServicio(
         )
     }
 
+    /** Cuenta: inicio de sesión en un teléfono nuevo o cambio de contraseña. */
+    fun seguridad(usuarioId: Int, titulo: String, mensaje: String): Aviso = crear(usuarioId, TipoAviso.SEGURIDAD, titulo, mensaje)
+
+    /** Copia en la bandeja del anuncio general de la clínica (la push sale una vez por tema). */
+    fun anuncio(usuarioId: Int, titulo: String, texto: String): Aviso = crear(usuarioId, TipoAviso.ANUNCIO, titulo, texto)
+
+    /** Revisión diaria: pacientes del fisioterapeuta que no han hecho su rutina. */
+    fun pacientesInactivos(fisioterapeutaId: Int, pacientes: List<RevisionDiariaServicio.Inactivo>) {
+        if (pacientes.isEmpty()) return
+        fun detalle(p: RevisionDiariaServicio.Inactivo) = p.nombre + when (p.dias) {
+            null -> " (todavía sin sesiones)"
+            else -> " (${p.dias} días)"
+        }
+        val uno = pacientes.singleOrNull()
+        crear(
+            usuarioId = fisioterapeutaId,
+            tipo = TipoAviso.PACIENTES_INACTIVOS,
+            titulo = if (uno != null) "${uno.nombre} no ha hecho su rutina" else "${pacientes.size} pacientes sin hacer su rutina",
+            mensaje = if (uno != null) {
+                (if (uno.dias == null) "Todavía no registra ninguna sesión de su rutina." else "Lleva ${uno.dias} días sin registrar una sesión de su rutina.") +
+                    " Quizá le ayude un mensaje o una llamada."
+            }
+            else pacientes.take(6).joinToString(", ") { detalle(it) } + (if (pacientes.size > 6) " y ${pacientes.size - 6} más" else "") +
+                ". Llevan ${RevisionDiariaServicio.DIAS_SIN_ACTIVIDAD} días o más sin registrar una sesión.",
+            pacienteId = uno?.pacienteId,
+        )
+    }
+
+    /** true si el usuario ya recibió un aviso de ese tipo desde [desdeMillis]. */
+    fun tieneDesde(usuarioId: Int, tipo: TipoAviso, desdeMillis: Long): Boolean =
+        avisos.values.any { it.usuarioId == usuarioId && it.tipo == tipo && it.creado >= desdeMillis }
+
     // ======================================================================= AUXILIARES
 
     private fun crear(
