@@ -1,7 +1,6 @@
 package com.terapid.physiogestion.navegacion
 
 import kotlinx.coroutines.CancellationException
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.spring
@@ -549,7 +548,9 @@ fun NavegacionPrincipal() {
 
     // La barra de pestañas flota sobre las pantallas de cada rol; al entrar a una
     // pantalla interna (ejercicio, ficha, historial…) se esconde deslizándose hacia abajo.
-    AnimatedVisibility(
+    // Con el nombre completo: dentro de la fila del menú lateral, Kotlin tomaría la
+    // versión de AnimatedVisibility que es para los hijos de una fila (RowScope).
+    androidx.compose.animation.AnimatedVisibility(
         visible = indicePestana >= 0 && !ancha,
         modifier = Modifier.align(Alignment.BottomCenter),
         enter = slideInVertically(spring(dampingRatio = 0.85f, stiffness = 420f)) { it } + fadeIn(),
