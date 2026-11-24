@@ -1,5 +1,9 @@
 package com.terapid.physiogestion.vista
 
+import com.terapid.physiogestion.viewmodel.ResumenAvisosViewModel
+import com.terapid.physiogestion.vista.componentes.VigilarAvisos
+import com.terapid.physiogestion.vista.componentes.resumenOVacio
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -55,7 +59,11 @@ fun AdministradorPantalla(
     viewModel: AdministradorViewModel,
     alCerrarSesion: () -> Unit,
     alCambiarContrasena: (() -> Unit)? = null,
+    avisos: ResumenAvisosViewModel? = null,
+    alAbrirAvisos: () -> Unit = {},
 ) {
+    val resumenAvisos by avisos.resumenOVacio.collectAsStateWithLifecycle()
+    if (avisos != null) VigilarAvisos(avisos)
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(
@@ -63,7 +71,12 @@ fun AdministradorPantalla(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { EncabezadoRol("Panel de administración", usuario, alCerrarSesion, alCambiarContrasena) }
+            item {
+                EncabezadoRol(
+                    "Panel de administración", usuario, alCerrarSesion, alCambiarContrasena,
+                    resumenAvisos.sinLeer, alAbrirAvisos.takeIf { avisos != null },
+                )
+            }
 
             when {
                 estado.cargando -> item { Cargando("Cargando usuarios…") }

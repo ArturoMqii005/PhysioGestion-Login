@@ -10,9 +10,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-/** Versión del esquema. Se incrementa cada vez que cambia alguna tabla. */
-const val VERSION_ESQUEMA = 4
-
 /**
  * ALMACENAMIENTO LOCAL · BASE DE DATOS SQLite dentro del teléfono (RI-06).
  *

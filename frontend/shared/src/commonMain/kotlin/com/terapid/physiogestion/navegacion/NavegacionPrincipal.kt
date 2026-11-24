@@ -11,11 +11,17 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -23,7 +29,9 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.terapid.physiogestion.viewmodel.ProgresoViewModel
 import com.terapid.physiogestion.vista.ProgresoPantalla
+import com.terapid.physiogestion.vista.componentes.ANCHO_PANTALLA_AMPLIA
 import com.terapid.physiogestion.vista.componentes.BarraPestanas
+import com.terapid.physiogestion.vista.componentes.RielPestanas
 import com.terapid.physiogestion.vista.componentes.Iconos
 import com.terapid.physiogestion.vista.componentes.Pestana
 import com.terapid.physiogestion.vista.tema.ColoresPhysio
@@ -54,6 +62,8 @@ import com.terapid.physiogestion.plataforma.claveDelDia
 import com.terapid.physiogestion.viewmodel.AdministradorViewModel
 import com.terapid.physiogestion.viewmodel.AgendaViewModel
 import com.terapid.physiogestion.viewmodel.AgendarCitaViewModel
+import com.terapid.physiogestion.viewmodel.AnunciosViewModel
+import com.terapid.physiogestion.viewmodel.SolicitudesViewModel
 import com.terapid.physiogestion.viewmodel.EditarRutinaViewModel
 import com.terapid.physiogestion.viewmodel.FichaPacienteViewModel
 import com.terapid.physiogestion.viewmodel.MisCitasViewModel
@@ -75,6 +85,8 @@ import com.terapid.physiogestion.viewmodel.RutinaViewModel
 import com.terapid.physiogestion.viewmodel.SesionViewModel
 import com.terapid.physiogestion.vista.AdministradorPantalla
 import com.terapid.physiogestion.vista.AgendarCitaPantalla
+import com.terapid.physiogestion.vista.AnunciosPantalla
+import com.terapid.physiogestion.vista.SolicitudesPantalla
 import com.terapid.physiogestion.vista.EditarRutinaPantalla
 import com.terapid.physiogestion.vista.FichaPacientePantalla
 import com.terapid.physiogestion.vista.PacientesPantalla
@@ -172,10 +184,26 @@ fun NavegacionPrincipal() {
             restoreState = true
         }
     }
+    /** Abre la pestaña de [ruta] si el rol la tiene; si no, la abre como pantalla interna. */
+    fun irA(ruta: Any) {
+        val i = pestanas.indexOfFirst { it.ruta == ruta }
+        if (i >= 0) irAPestana(i) else navegador.navigate(ruta)
+    }
 
-    SharedTransitionLayout(Modifier.fillMaxSize().background(ColoresPhysio.Fondo)) {
-    CompositionLocalProvider(LocalTransicionCompartida provides this) {
-    Box(Modifier.fillMaxSize()) {
+    val pestanasVisibles = pestanas.map { Pestana(it.etiqueta, it.icono, if (it.ruta == RutaAvisos) resumen.sinLeer else 0) }
+
+    // En pantallas anchas (la web en una computadora, una tableta) las pestañas van en un menú
+    // lateral y el contenido se centra con un ancho cómodo de leer; en el teléfono, barra abajo.
+    BoxWithConstraints(Modifier.fillMaxSize().background(ColoresPhysio.Fondo)) {
+    val ancha = maxWidth >= ANCHO_PANTALLA_AMPLIA
+    Row(Modifier.fillMaxSize()) {
+    if (ancha && pestanasVisibles.isNotEmpty()) {
+        RielPestanas(pestanasVisibles, indicePestana, ::irAPestana, Modifier.fillMaxHeight())
+    }
+    SharedTransitionLayout(Modifier.weight(1f).fillMaxHeight()) {
+    CompositionLocalProvider(LocalTransicionCompartida provides this, LocalBarraInferior provides !ancha) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+    Box(Modifier.fillMaxHeight().widthIn(max = ANCHO_MAXIMO_CONTENIDO).fillMaxWidth()) {
     NavHost(
         navController = navegador,
         startDestination = RutaLogin,
@@ -235,12 +263,14 @@ fun NavegacionPrincipal() {
         }
         composable<RutaAdministrador> {
             val usuario = sesion?.usuario ?: return@composable
-            AdministradorPantalla(
+            ConBarra { AdministradorPantalla(
                 usuario = usuario,
                 viewModel = viewModel { AdministradorViewModel(Dependencias.clinica, Dependencias.cuentas, usuario.id) },
                 alCerrarSesion = sesionVm::cerrarSesion,
                 alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
-            )
+                avisos = resumenAvisos(),
+                alAbrirAvisos = { irA(RutaAvisos) },
+            ) }
         }
         composable<RutaFisioterapeuta> {
             val usuario = sesion?.usuario ?: return@composable
@@ -249,9 +279,9 @@ fun NavegacionPrincipal() {
                 viewModel = viewModel { AgendaViewModel(Dependencias.clinica, conSeguimiento = true) },
                 alCerrarSesion = sesionVm::cerrarSesion,
                 alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
-                alAbrirPacientes = { irAPestana(1) },
+                alAbrirPacientes = { irA(RutaPacientes) },
                 avisos = resumenAvisos(),
-                alAbrirAvisos = { irAPestana(2) },
+                alAbrirAvisos = { irA(RutaAvisos) },
             ) }
         }
         composable<RutaRecepcion> {
@@ -264,10 +294,22 @@ fun NavegacionPrincipal() {
                 alCambiarContrasena = { navegador.navigate(RutaCambiarContrasena(obligatorio = false)) },
                 alAgendar = { navegador.navigate(RutaAgendarCita) },
                 alReprogramar = { cita -> navegador.navigate(cita.aRutaReprogramar()) },
-                alAbrirPacientes = { irAPestana(1) },
+                alAbrirPacientes = { irA(RutaPacientes) },
                 avisos = resumenAvisos(),
-                alAbrirAvisos = { irAPestana(2) },
+                alAbrirAvisos = { irA(RutaAvisos) },
             ) }
+        }
+
+        // ---------------- Recepción y administración: solicitudes y anuncios ----------------
+
+        composable<RutaSolicitudes> {
+            ConBarra { SolicitudesPantalla(
+                viewModel = viewModel { SolicitudesViewModel(Dependencias.clinica) },
+                alAbrirFicha = { id -> navegador.navigate(RutaFichaPaciente(id)) },
+            ) }
+        }
+        composable<RutaAnuncios> {
+            ConBarra { AnunciosPantalla(viewModel = viewModel { AnunciosViewModel(Dependencias.clinica) }) }
         }
 
         // ---------------- Avisos (NOT-01..04) ----------------
@@ -326,7 +368,7 @@ fun NavegacionPrincipal() {
             )
         }
         composable<RutaPacientes> {
-            ConBarra(rol != Rol.ADMINISTRADOR) { PacientesPantalla(
+            ConBarra { PacientesPantalla(
                 viewModel = viewModel { PacientesViewModel(Dependencias.clinica) },
                 hoy = claveDelDia(ahoraEnMilisegundos()),
                 alRegresar = { navegador.popBackStack() },
@@ -508,13 +550,13 @@ fun NavegacionPrincipal() {
     // La barra de pestañas flota sobre las pantallas de cada rol; al entrar a una
     // pantalla interna (ejercicio, ficha, historial…) se esconde deslizándose hacia abajo.
     AnimatedVisibility(
-        visible = indicePestana >= 0,
+        visible = indicePestana >= 0 && !ancha,
         modifier = Modifier.align(Alignment.BottomCenter),
         enter = slideInVertically(spring(dampingRatio = 0.85f, stiffness = 420f)) { it } + fadeIn(),
         exit = slideOutVertically(spring(dampingRatio = 1f, stiffness = 700f)) { it } + fadeOut(),
     ) {
         BarraPestanas(
-            pestanas.map { Pestana(it.etiqueta, it.icono, if (it.ruta == RutaAvisos) resumen.sinLeer else 0) },
+            pestanasVisibles,
             indicePestana,
             ::irAPestana,
             Modifier.navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 14.dp),
@@ -523,7 +565,16 @@ fun NavegacionPrincipal() {
     }
     }
     }
+    }
+    }
+    }
 }
+
+/** Ancho máximo del contenido en pantallas anchas: las tarjetas no se estiran de lado a lado. */
+private val ANCHO_MAXIMO_CONTENIDO = 760.dp
+
+/** false cuando las pestañas van en el menú lateral: las pantallas ya no dejan espacio abajo para la barra. */
+private val LocalBarraInferior = staticCompositionLocalOf { true }
 
 /** Una pestaña de la barra inferior y la ruta que abre. */
 private data class PestanaRuta(val etiqueta: String, val icono: androidx.compose.ui.graphics.vector.ImageVector, val ruta: Any)
@@ -543,7 +594,17 @@ private fun pestanasDe(rol: Rol?): List<PestanaRuta> = when (rol) {
     Rol.RECEPCIONISTA -> listOf(
         PestanaRuta("Agenda", Iconos.Agenda, RutaRecepcion),
         PestanaRuta("Pacientes", Iconos.Pacientes, RutaPacientes),
+        PestanaRuta("Solicitudes", Iconos.Solicitudes, RutaSolicitudes),
+        PestanaRuta("Anuncios", Iconos.Anuncios, RutaAnuncios),
         PestanaRuta("Avisos", Iconos.Campana, RutaAvisos),
+    )
+    // Administración ve todo lo de recepción más las cuentas; sus avisos se abren desde el encabezado.
+    Rol.ADMINISTRADOR -> listOf(
+        PestanaRuta("Usuarios", Iconos.Usuarios, RutaAdministrador),
+        PestanaRuta("Agenda", Iconos.Agenda, RutaRecepcion),
+        PestanaRuta("Pacientes", Iconos.Pacientes, RutaPacientes),
+        PestanaRuta("Solicitudes", Iconos.Solicitudes, RutaSolicitudes),
+        PestanaRuta("Anuncios", Iconos.Anuncios, RutaAnuncios),
     )
     else -> emptyList()
 }
@@ -551,7 +612,8 @@ private fun pestanasDe(rol: Rol?): List<PestanaRuta> = when (rol) {
 /** Deja libre abajo el espacio de la barra de pestañas flotante. */
 @Composable
 private fun ConBarra(conBarra: Boolean = true, contenido: @Composable () -> Unit) {
-    Box(Modifier.fillMaxSize().padding(bottom = if (conBarra) 82.dp else 0.dp)) { contenido() }
+    val abajo = conBarra && LocalBarraInferior.current
+    Box(Modifier.fillMaxSize().padding(bottom = if (abajo) 82.dp else 0.dp)) { contenido() }
 }
 
 private fun crearRutinaViewModel(usuario: Usuario) = RutinaViewModel(

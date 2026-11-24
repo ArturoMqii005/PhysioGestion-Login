@@ -10,7 +10,21 @@ El proyecto está dividido en dos partes que se ejecutan por separado y se comun
 |Parte|Carpeta|Tecnología|Qué hace|
 |-|-|-|-|
 |**Backend**|[`backend/`](backend)|Ktor Server 3.6 (generado con el asistente start.ktor.io), Netty, Docker|API REST en el puerto 8080 (o el de `PORT`), local o desplegada en Railway. Valida las credenciales del archivo JSON y entrega los datos de cada rol|
-|**Frontend**|[`frontend/`](frontend)|Kotlin Multiplatform + Compose Multiplatform, Ktor Client|App para Android (Android Studio), escritorio e iOS. Login, navegación por rol, sensores, almacenamiento local y los cinco métodos HTTP|
+|**Frontend**|[`frontend/`](frontend)|Kotlin Multiplatform + Compose Multiplatform, Ktor Client|App para Android (Android Studio), escritorio, iOS y **web** (WebAssembly). Login, navegación por rol, sensores, almacenamiento local y los cinco métodos HTTP|
+
+### Carpetas del código compartido (`frontend/shared/src`)
+
+Toda la lógica (pantallas, ViewModels, repositorios, consumo de la API, reglas) está en `commonMain` y se escribe
+una sola vez. Cada plataforma solo aporta lo que depende de ella con `expect`/`actual`:
+
+|Carpeta|Para qué plataforma|Qué tiene|
+|-|-|-|
+|`commonMain`|Todas|La app completa: navegación, pantallas de los cuatro roles, ViewModels, repositorios y API|
+|`androidMain`|Android|Sensores, cámara (CameraX + ML Kit), notificaciones, Firebase, permisos|
+|`iosMain`|iOS|Preferencias y token (NSUserDefaults), sensores de Core Motion, permisos de cámara|
+|`jvmMain`|Escritorio|Preferencias de Java y motor HTTP de Java|
+|`webMain`|Navegador|`main.kt` (arranca la app en la página), `index.html`, localStorage, sessionStorage y fetch|
+|`sqliteMain`|Android, iOS y escritorio|Base de datos local SQLite (el navegador no tiene SQLite: su historial va en memoria)|
 
 ## Arquitectura local
 
@@ -76,6 +90,18 @@ Sobre el proyecto del login se integraron las prácticas de la estructura de la 
 **Paciente nuevo:** en el login, «Crear mi cuenta» con el código de invitación `DEMO-2026` (María López Hernández, paciente 2,
 con rutina de la Ft. Mariana Soto). Recepción genera códigos nuevos desde su pantalla. Sin proveedor de correo configurado,
 el código de 6 dígitos aparece en el registro del servidor (`railway logs`).
+
+## Lo que se agregó en la versión 1.7 (web con Compose)
+
+|Cambio|Dónde|
+|-|-|
+|La web es la app de Compose compilada a WebAssembly; se quitó la web de HTML y JavaScript|`shared/src/webMain`, tarea `:shared:publicarWeb`|
+|Recepción y administración: **Solicitudes** de cambio de cita (aprobar eligiendo día, hora libre y fisioterapeuta, o rechazar con motivo)|`SolicitudesPantalla` · `SolicitudesViewModel`|
+|Recepción y administración: **Anuncios** de la clínica (máximo 3 en 24 h)|`AnunciosPantalla` · `AnunciosViewModel`|
+|Administración con pestañas: Usuarios, Agenda, Pacientes, Solicitudes y Anuncios|`NavegacionPrincipal`|
+|Menú lateral y contenido centrado en pantallas anchas (web, tabletas)|`RielPestanas` · `NavegacionPrincipal`|
+|El historial local se separó en una interfaz común: SQLite en Android, iOS y escritorio; memoria en el navegador|`AlmacenamientoLocal` · `sqliteMain` · `AlmacenamientoEnMemoria`|
+|El backend comprime las respuestas con gzip (el WebAssembly baja mucho más rápido)|`backend/.../plugins/Http.kt`|
 
 ## Lo que se agregó en la versión 1.6 (reagendar, notificaciones push y Xochi)
 
@@ -201,27 +227,26 @@ Cuando aparezca `Responding at http://0.0.0.0:8080`, abrir http://localhost:8080
 Con esa dirección la app funciona
 en cualquier celular con Internet, sin `adb reverse` ni misma red Wi‑Fi: se escribe en «Servidor · Cambiar» del login.
 
-**1c. Versión web (personal de la clínica).** El mismo backend sirve la versión web desde
-`backend/src/main/resources/web/` (HTML, CSS y JavaScript sin dependencias; usa la misma API `/api/v1`):
+**1c. Versión web.** Desde la versión 1.7 la web es la misma app de Compose compilada a WebAssembly
+(`frontend/shared/src/webMain`), ya no páginas de HTML y JavaScript aparte. El backend la sirve en `/web/`:
 
-* Local: http://localhost:8080/web/
 * Railway: https://physiogestion-login-production.up.railway.app/web/
+* Local: http://localhost:8080/web/ (después de `publicarWeb`, ver abajo)
 
-Entran `admin`, `fisio`, `fisio2` y `recepcion` (contraseñas de la tabla de usuarios de prueba); a los pacientes se les
-indica usar la app móvil. Funciona en cualquier navegador, también en Safari de iPhone.
+En una pantalla ancha las pestañas de cada rol pasan a un menú lateral y el contenido se centra. Administración
+tiene Usuarios, Agenda, Pacientes, Solicitudes y Anuncios; recepción, Agenda, Pacientes, Solicitudes, Anuncios y
+Avisos; el fisioterapeuta, Agenda, Pacientes y Avisos. El token se guarda en `sessionStorage`, así que cerrar la
+pestaña cierra la sesión. Necesita un navegador con WebAssembly GC: Chrome y Edge 119+, Firefox 120+ y Safari 18.2+.
 
-|Módulo|Administración|Recepción|Fisioterapeuta|
-|-|-|-|-|
-|Inicio|Personal activo, pacientes, citas de hoy, invitaciones|Citas por confirmar, pacientes sin fisioterapeuta|Citas de hoy, pacientes con dolor alto o sin rutina|
-|Agenda|Agendar, confirmar, reprogramar (horas libres reales), cancelar, asistencia|Igual que administración|Sus citas; marca atendida o no asistió|
-|Pacientes y ficha|Lista, asignar fisioterapeuta, ficha con rutina y sesiones recientes|Lista, asignar fisioterapeuta, citas (sin datos de salud)|Sus pacientes: rutina, gráfica de dolor, sesiones, mediciones y escaleras|
-|Rutina|—|—|Crear y editar (meta, límite de dolor, 1 a 10 ejercicios del catálogo)|
-|Invitaciones|Paciente nuevo y su código|Paciente nuevo y su código|—|
-|Usuarios|Alta del personal con contraseña temporal, editar, activar o desactivar|—|—|
-|Avisos y Mi cuenta|Avisos (se revisan cada minuto) y cambio de contraseña|Igual|Igual|
+Desde la carpeta `frontend`:
 
-También tiene «¿Olvidaste tu contraseña?» (código por correo) y la página del aviso de privacidad. La sesión se guarda
-solo en la pestaña (se borra al cerrarla) y, si el token vence, regresa al inicio de sesión.
+```
+gradlew.bat :shared:wasmJsBrowserDevelopmentRun   (web en desarrollo: http://localhost:8081, usa el backend local)
+gradlew.bat :shared:publicarWeb                   (compila la web optimizada y la copia a backend/src/main/resources/web)
+```
+
+Después de `publicarWeb` se hace commit de `backend/src/main/resources/web` (y de `frontend/kotlin-js-store` la
+primera vez) y Railway publica la web nueva al desplegar.
 
 **2. Frontend.** Abrir la carpeta `frontend` en Android Studio, elegir **androidApp** y un emulador, y presionar Run.
 
@@ -229,6 +254,7 @@ solo en la pestaña (se borra al cerrarla) y, si el token vence, regresa al inic
 * En un celular físico conectado a la misma red Wi‑Fi, tocar «Servidor · Cambiar» en el login y escribir la IP de la computadora, por ejemplo `http://192.168.1.70:8080`. La app la recuerda para la próxima vez.
 * También se puede fijar en `frontend/local.properties` con `SERVIDOR_URL=...` (ver `frontend/local.properties.ejemplo`).
 * Versión de escritorio: `gradlew.bat :desktopApp:run` dentro de `frontend`.
+* Versión web: `gradlew.bat :shared:wasmJsBrowserDevelopmentRun` dentro de `frontend` (ver 1c).
 
 **3. Pruebas**
 

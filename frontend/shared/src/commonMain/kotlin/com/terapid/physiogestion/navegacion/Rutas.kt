@@ -133,6 +133,14 @@ data object RutaAvisos
 @Serializable
 data class RutaEditarRutina(val pacienteId: Int)
 
+/** Recepción y administración: solicitudes de cambio de cita de los pacientes. */
+@Serializable
+data object RutaSolicitudes
+
+/** Recepción y administración: anuncios de la clínica. */
+@Serializable
+data object RutaAnuncios
+
 fun Cita.aRutaReprogramar() = RutaReprogramarCita(id, paciente, pacienteId ?: 0, fisioterapeutaId, fisioterapeuta, fecha, hora, duracionMinutos, motivo)
 
 fun RutaReprogramarCita.aCita() = Cita(
