@@ -1,5 +1,7 @@
 package com.terapid.physiogestion.vista.componentes
 
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.painter.Painter
 import org.jetbrains.compose.resources.painterResource
 import physiogestion.shared.generated.resources.Res
@@ -58,8 +60,9 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /*
- * XOCHI, el ajolote de PhysioGestion. Acompaña al paciente en su rutina como la
- * mascota de una app para aprender idiomas: explica, anima, celebra y descansa con él.
+ * XOCHI, el ajolote de PhysioGestion, vestido de fisioterapeuta (filipina violeta con
+ * gafete). Acompaña al paciente en su rutina como la mascota de una app para aprender
+ * idiomas: explica, anima, celebra y descansa con él.
  * Se dibuja con figuras (sin imágenes), así pesa nada y se ve nítido en cualquier
  * pantalla. Los colores son los de la marca: piel lila, branquias rosas, fondo violeta.
  * La cara es la misma del logo (marca.py genera el SVG y el icono de Android).
@@ -97,6 +100,12 @@ private object PaletaXochi {
     val Lengua = Color(0xFFFF6FAE)
     val FondoA = Color(0xFF7A57FF)
     val FondoB = Color(0xFF4A2BD0)
+
+    // Filipina de fisioterapeuta en el violeta de la app.
+    val Filipina = Color(0xFF6C47FF)
+    val FilipinaClara = Color(0xFF9A80FF)
+    val FilipinaOscura = Color(0xFF4F30D6)
+    val Gafete = Color(0xFFFFFFFF)
 }
 
 /**
@@ -211,6 +220,7 @@ private fun DrawScope.cuerpoCompleto(expresion: ExpresionXochi, ojos: Float, fas
         // Cuerpo y panza.
         drawOval(PaletaXochi.Piel, Offset(56f, 140f), Size(88f, 80f))
         drawOval(PaletaXochi.Hocico, Offset(74f, 160f), Size(52f, 54f), alpha = 0.9f)
+        filipina()
         // Bracitos (0° = colgando; positivo gira hacia afuera en el izquierdo y hacia adentro en el derecho).
         val arriba = expresion == ExpresionXochi.ANIMANDO || celebra
         val izquierdo = Offset(62f, 166f)
@@ -237,7 +247,39 @@ private fun DrawScope.brazo(hombro: Offset, grados: Float) {
     rotate(grados, pivot = hombro) {
         drawRoundRect(PaletaXochi.PielOscura, Offset(hombro.x - 8f, hombro.y), Size(16f, 34f), CornerRadius(8f))
         drawCircle(PaletaXochi.Piel, 9f, Offset(hombro.x, hombro.y + 32f))
+        // Manga corta de la filipina.
+        drawRoundRect(PaletaXochi.Filipina, Offset(hombro.x - 10f, hombro.y - 6f), Size(20f, 20f), CornerRadius(7f))
+        drawLine(PaletaXochi.FilipinaClara, Offset(hombro.x - 9f, hombro.y + 12f), Offset(hombro.x + 9f, hombro.y + 12f), 2.5f, StrokeCap.Round)
     }
+}
+
+/**
+ * Uniforme de fisioterapeuta: filipina con cuello en V, bolsillo con pluma y gafete
+ * con la cruz de salud. Se recorta a la forma del cuerpo; abajo asoma la pancita.
+ */
+private fun DrawScope.filipina() {
+    val cuerpo = Path().apply { addOval(Rect(56f, 140f, 144f, 220f)) }
+    clipPath(cuerpo) {
+        drawRect(PaletaXochi.Filipina, Offset(50f, 136f), Size(100f, 68f))
+        // Dobladillo.
+        drawRect(PaletaXochi.FilipinaOscura, Offset(50f, 200f), Size(100f, 5f))
+        // Costura central bajo el cuello.
+        drawLine(PaletaXochi.FilipinaOscura, Offset(100f, 172f), Offset(100f, 200f), 1.5f)
+    }
+    // Cuello en V: se ve la piel y lo rodea un ribete claro.
+    val cuello = Path().apply { moveTo(84f, 145f); lineTo(100f, 172f); lineTo(116f, 145f); close() }
+    drawPath(cuello, PaletaXochi.Piel)
+    val ribete = Path().apply { moveTo(82f, 145f); lineTo(100f, 174f); lineTo(118f, 145f) }
+    drawPath(ribete, PaletaXochi.FilipinaClara, style = Stroke(4f, cap = StrokeCap.Round))
+    // Bolsillo con pluma (lado izquierdo de quien mira).
+    drawLine(Color.White, Offset(73f, 172f), Offset(73f, 182f), 3f, StrokeCap.Round)
+    drawCircle(PaletaXochi.Branquia, 2.2f, Offset(73f, 171f))
+    drawRoundRect(PaletaXochi.FilipinaOscura, Offset(66f, 178f), Size(17f, 15f), CornerRadius(4f))
+    drawLine(PaletaXochi.FilipinaClara, Offset(67f, 181f), Offset(82f, 181f), 1.5f)
+    // Gafete con la cruz.
+    drawRoundRect(PaletaXochi.Gafete, Offset(113f, 176f), Size(19f, 15f), CornerRadius(3.5f))
+    drawRect(PaletaXochi.Filipina, Offset(120.5f, 179f), Size(4f, 9f))
+    drawRect(PaletaXochi.Filipina, Offset(118f, 181.5f), Size(9f, 4f))
 }
 
 private fun DrawScope.burbujas(fase: Float) {
