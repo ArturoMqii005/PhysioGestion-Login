@@ -77,6 +77,43 @@ Sobre el proyecto del login se integraron las prácticas de la estructura de la 
 con rutina de la Ft. Mariana Soto). Recepción genera códigos nuevos desde su pantalla. Sin proveedor de correo configurado,
 el código de 6 dígitos aparece en el registro del servidor (`railway logs`).
 
+## Lo que se agregó en la versión 1.6 (reagendar, notificaciones push y Xochi)
+
+<img src="docs/marca/logo-512.png" alt="Logo de PhysioGestion: Xochi, el ajolote" width="96">
+
+|Cambio|Dónde|
+|---|---|
+|**Reagendar (paciente):** «Cambiar fecha u hora» en sus citas. Más de 24 h antes y hasta 2 veces elige otra hora libre; si no, manda una solicitud que recepción aprueba o rechaza|App · `POST /citas/{id}/reagendar` · `POST /citas/{id}/solicitudes` · Web «Solicitudes»|
+|**Reagendar (fisioterapeuta):** «No puedo atender» mueve la cita a otra hora libre o se la pasa a otro fisioterapeuta libre a la misma hora; el motivo le llega al paciente|App y web · `PATCH /citas/{id}` con `nota`|
+|**Push con Firebase Cloud Messaging:** cada aviso del servidor (citas, dolor alto, solicitudes, seguridad, pacientes sin actividad) llega al teléfono aunque la app esté cerrada|`PushServicio` · `ServicioMensajes` (Android)|
+|**Anuncios de la clínica** por tema de Firebase (pacientes, personal o todos), máximo 3 en 24 h|Web «Anuncios» · `POST /anuncios`|
+|**Revisión diaria (push programada):** a las 9:00 GitHub Actions pide al servidor avisar a cada fisioterapeuta qué pacientes llevan 3 días sin hacer su rutina|`.github/workflows/revision-diaria.yml` · `POST /tareas/revision-diaria`|
+|**Seguridad:** aviso al entrar desde un teléfono nuevo y al cambiar o restablecer la contraseña|`AvisosServicio.seguridad`|
+|**Locales nuevas:** agenda del día (personal, 7:30), racha en riesgo (20:00), resumen semanal (domingo 19:00), prueba de escaleras (lunes, con barómetro), sesiones sin enviar cada 2 h sin red y fin del descanso entre series|`ReglasLocales` (común, con pruebas) · `TrabajosLocales.kt` (WorkManager y AlarmManager)|
+|**Xochi, el ajolote:** mascota que explica, anima, descansa y celebra en cada ejercicio, como en una app de idiomas; barra de avance por series, descanso con cuenta regresiva y confeti al terminar|`vista/componentes/Xochi.kt` · `Leccion.kt`|
+|**Logo nuevo** con la cara de Xochi en los tonos de la app: icono de Android, ventana de escritorio, favicon y web|`docs/marca/marca.py` genera todos|
+
+**La push no lleva datos de salud:** el mensaje de Firebase solo trae el tipo y el número del aviso. La app lo pide
+al servidor con su sesión y entonces muestra el texto. Los avisos de seguridad y los anuncios sí traen su texto
+(no tienen información clínica) para mostrarse aunque la sesión ya se haya cerrado.
+
+### Cómo activar Firebase (una sola vez)
+
+Sin estos pasos todo funciona igual, solo que los avisos llegan con la revisión de WorkManager (cada 15 min) en lugar de al instante.
+
+1. En https://console.firebase.google.com crea un proyecto (por ejemplo `physiogestion`) y agrégale una app **Android**
+   con el paquete `com.terapid.physiogestion`.
+2. Descarga **`google-services.json`** y ponlo en `frontend/androidApp/`. Está en `.gitignore`: **no se sube a GitHub**.
+   Con el archivo ahí, Gradle aplica el plugin de Google Services y la app queda conectada.
+3. En la consola: ⚙ Configuración del proyecto › **Cuentas de servicio** › «Generar nueva clave privada». Se descarga un JSON
+   con una **llave privada**: no lo subas al repositorio ni lo compartas.
+4. En Railway (servicio del backend) › Variables, agrega:
+   * `FIREBASE_CREDENCIALES` = el contenido completo de ese JSON (o en Base64).
+   * `TAREA_CLAVE` = una clave larga al azar (por ejemplo, la salida de `openssl rand -hex 24`).
+   * (opcional) `PREFIJO_TEMAS` = `prod`. Sin ella, Railway usa `prod` y la computadora `dev`, así las pruebas locales no le llegan a la clínica.
+5. En GitHub › Settings › Secrets and variables › Actions › New repository secret: `TAREA_CLAVE` con la misma clave del paso 4.
+6. Revisa `https://…railway.app/api/v1/salud`: debe decir `"pushConfigurado": true`. Borra el JSON de tu computadora cuando ya esté en Railway.
+
 ## Lo que se agregó en la versión 1.5 (diseño oscuro y animaciones fluidas)
 
 |Cambio|Dónde|
@@ -93,7 +130,7 @@ el código de 6 dígitos aparece en el registro del servidor (`railway logs`).
 (Android no la optimiza). En Android Studio: *Build Variants* → `androidApp` → **release** y Run;
 se firma con la llave de depuración, así que se instala igual que siempre y usa el servidor de Railway.
 
-## Lo que se agregó en la versión 1.4 (avisos y recordatorios, sin Firebase)
+## Lo que se agregó en la versión 1.4 (avisos y recordatorios, antes de Firebase)
 
 |Función|Dónde|
 |-|-|
