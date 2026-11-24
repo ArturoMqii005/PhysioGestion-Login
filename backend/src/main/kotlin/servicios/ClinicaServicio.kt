@@ -9,7 +9,12 @@ import com.terapid.physiogestion.modelos.CitaSolicitud
 import com.terapid.physiogestion.modelos.Ejercicio
 import com.terapid.physiogestion.modelos.EstadoCita
 import com.terapid.physiogestion.modelos.FisioterapeutaResumen
+import com.terapid.physiogestion.modelos.EstadoSolicitud
+import com.terapid.physiogestion.modelos.NuevaSolicitudReagenda
+import com.terapid.physiogestion.modelos.ReagendarSolicitud
 import com.terapid.physiogestion.modelos.ReprogramarCitaSolicitud
+import com.terapid.physiogestion.modelos.ResolverSolicitud
+import com.terapid.physiogestion.modelos.SolicitudReagenda
 import com.terapid.physiogestion.modelos.Rol
 import com.terapid.physiogestion.modelos.Rutina
 import com.terapid.physiogestion.modelos.RutinaSolicitud
@@ -21,6 +26,7 @@ import io.ktor.server.plugins.NotFoundException
 import kotlinx.serialization.json.Json
 import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -62,15 +68,23 @@ class ClinicaServicio(
         private val FORMATO_HORA = DateTimeFormatter.ofPattern("HH:mm")
         private val FORMATO_MX = DateTimeFormatter.ofPattern("dd/MM/yyyy")
         private val TERMINADAS = setOf(EstadoCita.ATENDIDA, EstadoCita.CANCELADA, EstadoCita.NO_ASISTIO)
+
+        /** El paciente mueve su cita él mismo solo si faltan más de 24 h; si no, manda una solicitud. */
+        const val HORAS_ANTICIPACION_REAGENDA = 24L
+
+        /** Veces que el paciente puede mover una misma cita desde la app. */
+        const val MAXIMO_REAGENDAS_PACIENTE = 2
     }
 
     private val colRutinas = Coleccion(almacen, "rutinas", Rutina.serializer(), json) { it.pacienteId.toString() }
     private val colCitas = Coleccion(almacen, "citas", Cita.serializer(), json) { it.id.toString() }
     private val colAsignaciones = Coleccion(almacen, "asignaciones", Asignacion.serializer(), json) { it.pacienteId.toString() }
+    private val colSolicitudes = Coleccion(almacen, "solicitudes_reagenda", SolicitudReagenda.serializer(), json) { it.id.toString() }
 
     private val rutinas = ConcurrentHashMap<Int, Rutina>()
     private val citas = ConcurrentHashMap<Int, Cita>()
     private val asignaciones = ConcurrentHashMap<Int, Asignacion>()
+    private val solicitudes = ConcurrentHashMap<Int, SolicitudReagenda>()
 
     init {
         colRutinas.cargar(rutinasIniciales).forEach { rutinas[it.pacienteId] = it }
@@ -79,6 +93,7 @@ class ClinicaServicio(
         colCitas.cargar(citasIniciales.map { if (it.fecha.isBlank()) it.copy(fecha = hoy) else it }).forEach { citas[it.id] = it }
         val semilla = rutinas.values.mapNotNull { r -> fisioPorNombre(r.fisioterapeuta)?.let { Asignacion(r.pacienteId, it.id) } }
         colAsignaciones.cargar(semilla).forEach { asignaciones[it.pacienteId] = it }
+        colSolicitudes.cargar().forEach { solicitudes[it.id] = it }
     }
 
     fun hoy(): LocalDate = LocalDate.now(reloj.withZone(ZONA))
@@ -234,16 +249,34 @@ class ClinicaServicio(
         }.also { avisar { citaNueva(it) } }
     }
 
-    /** Reprograma (CIT-06). Una cita terminada (atendida, cancelada o no asistió) ya no se mueve. */
-    fun reprogramar(id: Int, s: ReprogramarCitaSolicitud): Cita = synchronized(this) {
+    /**
+     * Reprograma (CIT-06). Una cita terminada (atendida, cancelada o no asistió) ya no se mueve.
+     *
+     * Recepción y administración mueven cualquier cita. El fisioterapeuta solo las suyas, cuando
+     * no puede atender: la pasa a otro día u hora, o a otro fisioterapeuta, y debe decir por qué.
+     */
+    fun reprogramar(id: Int, s: ReprogramarCitaSolicitud, porQuien: UsuarioPublico? = null): Cita = synchronized(this) {
         val actual = cita(id)
         if (actual.estado in TERMINADAS) throw Conflicto("La cita ya está ${actual.estado.texto()}; agenda una nueva.")
+        val razon = s.nota?.trim()?.take(200)?.ifBlank { null }
+        if (porQuien?.rol == Rol.FISIOTERAPEUTA) {
+            if (actual.fisioterapeutaId != porQuien.id) throw AccesoDenegado("Esa cita es de otro fisioterapeuta.")
+            if (razon == null || razon.length < 3) throw DatosNoProcesables("Escribe por qué no puedes atender la cita; se le avisa al paciente.")
+        }
         val f = s.fisioterapeutaId?.let(::fisio) ?: FisioterapeutaResumen(actual.fisioterapeutaId, actual.fisioterapeuta)
         val duracion = s.duracionMinutos ?: actual.duracionMinutos
         val (fecha, hora) = validarHorario(s.fecha ?: actual.fecha, s.hora ?: actual.hora, duracion)
         verificarChoques(actual.id, f.id, actual.pacienteId, fecha, hora, duracion)
         val motivo = s.motivo?.trim()?.takeIf { it.length in 3..120 } ?: actual.motivo
         val cambio = fecha.toString() != actual.fecha || hora.format(FORMATO_HORA) != actual.hora
+        val otroFisio = f.id != actual.fisioterapeutaId
+        val notaNueva = when {
+            !cambio && !otroFisio -> actual.nota
+            porQuien?.rol == Rol.FISIOTERAPEUTA && !cambio -> "La pasó ${actual.fisioterapeuta}: $razon"
+            porQuien?.rol == Rol.FISIOTERAPEUTA -> "Reprogramada por ${actual.fisioterapeuta}: $razon (antes ${fechaMx(actual.fecha)} ${actual.hora})"
+            !cambio -> "Ahora la atiende ${f.nombre}" + (razon?.let { ": $it" } ?: "")
+            else -> "Reprogramada (antes ${fechaMx(actual.fecha)} ${actual.hora})" + (razon?.let { ": $it" } ?: "")
+        }
         val nueva = guardarCita(
             actual.copy(
                 fecha = fecha.toString(),
@@ -254,11 +287,152 @@ class ClinicaServicio(
                 motivo = motivo,
                 // Al moverla vuelve a quedar pendiente de confirmar.
                 estado = if (cambio) EstadoCita.PENDIENTE else actual.estado,
-                nota = if (cambio) "Reprogramada (antes ${fechaMx(actual.fecha)} ${actual.hora})" else actual.nota,
+                nota = notaNueva,
             )
         )
-        if (cambio || nueva.fisioterapeutaId != actual.fisioterapeutaId) avisar { citaReprogramada(actual, nueva) }
+        if (cambio || otroFisio) avisar { citaReprogramada(actual, nueva, razon, porQuien) }
         nueva
+    }
+
+    // ======================================================================= REAGENDA DEL PACIENTE
+
+    /**
+     * El paciente mueve su cita a otra hora libre de su mismo fisioterapeuta. Solo si faltan
+     * más de 24 h y no la ha movido ya 2 veces; si no, debe mandar una solicitud a recepción.
+     */
+    fun reagendarPorPaciente(id: Int, s: ReagendarSolicitud, usuario: UsuarioPublico): Cita = synchronized(this) {
+        val actual = citaDelPaciente(id, usuario)
+        if (!faltanMasDe(actual, HORAS_ANTICIPACION_REAGENDA)) {
+            throw DatosNoProcesables("Faltan menos de 24 horas para tu cita. Pide el cambio a recepción con una solicitud.", "REQUIERE_SOLICITUD")
+        }
+        if (actual.reagendasPaciente >= MAXIMO_REAGENDAS_PACIENTE) {
+            throw DatosNoProcesables("Ya cambiaste esta cita $MAXIMO_REAGENDAS_PACIENTE veces. Pide el cambio a recepción con una solicitud.", "REQUIERE_SOLICITUD")
+        }
+        val (fecha, hora) = validarHorario(s.fecha, s.hora, actual.duracionMinutos)
+        if (fecha.toString() == actual.fecha && hora.format(FORMATO_HORA) == actual.hora) throw DatosNoProcesables("Elige un día u hora distintos a los de tu cita.")
+        verificarChoques(actual.id, actual.fisioterapeutaId, actual.pacienteId, fecha, hora, actual.duracionMinutos)
+        val nueva = guardarCita(
+            actual.copy(
+                fecha = fecha.toString(),
+                hora = hora.format(FORMATO_HORA),
+                estado = EstadoCita.PENDIENTE,
+                nota = "Reagendada por el paciente (antes ${fechaMx(actual.fecha)} ${actual.hora})",
+                reagendasPaciente = actual.reagendasPaciente + 1,
+            )
+        )
+        // Si tenía una solicitud pendiente para esta cita, ya no hace falta.
+        solicitudes.values.filter { it.citaId == id && it.estado == EstadoSolicitud.PENDIENTE }.forEach {
+            guardarSolicitud(it.copy(estado = EstadoSolicitud.RECHAZADA, respuesta = "El paciente movió la cita él mismo."))
+        }
+        avisar { citaReprogramada(actual, nueva, null, usuario) }
+        nueva
+    }
+
+    /** Horas libres para mover una cita: siempre con el mismo fisioterapeuta, salvo que se pida otro. */
+    fun horasLibresParaCita(id: Int, fecha: LocalDate, usuario: UsuarioPublico, fisioterapeutaId: Int? = null): List<String> {
+        val c = when (usuario.rol) {
+            Rol.PACIENTE -> citaDelPaciente(id, usuario)
+            Rol.FISIOTERAPEUTA -> cita(id).also { if (it.fisioterapeutaId != usuario.id) throw AccesoDenegado("Esa cita es de otro fisioterapeuta.") }
+            else -> cita(id)
+        }
+        val fisioId = if (usuario.rol == Rol.PACIENTE) c.fisioterapeutaId else fisioterapeutaId ?: c.fisioterapeutaId
+        return horasLibres(fisioId, fecha, c.duracionMinutos, excepto = c.id)
+    }
+
+    /** Fisioterapeutas libres a la misma hora de la cita (para pasarla cuando el suyo no puede). */
+    fun fisiosDisponibles(id: Int, usuario: UsuarioPublico): List<FisioterapeutaResumen> {
+        val c = cita(id)
+        if (usuario.rol == Rol.FISIOTERAPEUTA && c.fisioterapeutaId != usuario.id) throw AccesoDenegado("Esa cita es de otro fisioterapeuta.")
+        val fecha = LocalDate.parse(c.fecha)
+        val hora = LocalTime.parse(c.hora, FORMATO_HORA)
+        return fisioterapeutas().filter { f ->
+            f.id != c.fisioterapeutaId && citasQueOcupan(f.id, fecha, c.id).none { traslapa(hora, c.duracionMinutos, it) }
+        }
+    }
+
+    // ======================================================================= SOLICITUDES DE REAGENDA
+
+    /** Solicitudes visibles: recepción y administración, todas; el fisioterapeuta, las de sus citas; el paciente, las suyas. */
+    fun solicitudes(usuario: UsuarioPublico, estado: EstadoSolicitud? = null): List<SolicitudReagenda> = solicitudes.values
+        .filter { estado == null || it.estado == estado }
+        .filter {
+            when (usuario.rol) {
+                Rol.ADMINISTRADOR, Rol.RECEPCIONISTA -> true
+                Rol.FISIOTERAPEUTA -> it.fisioterapeutaId == usuario.id
+                Rol.PACIENTE -> it.pacienteId == usuario.pacienteId
+            }
+        }
+        .sortedByDescending { it.id }
+
+    /** El paciente pide cambiar su cita; recepción decide. Una sola solicitud pendiente por cita. */
+    fun solicitarReagenda(citaId: Int, s: NuevaSolicitudReagenda, usuario: UsuarioPublico): SolicitudReagenda = synchronized(this) {
+        val c = citaDelPaciente(citaId, usuario)
+        if (solicitudes.values.any { it.citaId == citaId && it.estado == EstadoSolicitud.PENDIENTE }) {
+            throw Conflicto("Ya enviaste una solicitud para esta cita; recepción te responderá pronto.")
+        }
+        val mensaje = s.mensaje.trim().replace(Regex("\\s+"), " ")
+        if (mensaje.length !in 3..200) throw DatosNoProcesables("Cuéntale a recepción qué día u horario te acomoda (de 3 a 200 caracteres).")
+        val fechaP = s.fechaPropuesta?.trim()?.ifBlank { null }
+        val horaP = s.horaPropuesta?.trim()?.ifBlank { null }
+        if (fechaP != null || horaP != null) {
+            if (fechaP == null || horaP == null) throw DatosNoProcesables("Si propones un horario, indica la fecha y la hora.")
+            validarHorario(fechaP, horaP, c.duracionMinutos)
+        }
+        val nueva = SolicitudReagenda(
+            id = (solicitudes.keys.maxOrNull() ?: 0) + 1,
+            citaId = c.id,
+            pacienteId = c.pacienteId!!,
+            paciente = c.paciente,
+            fisioterapeutaId = c.fisioterapeutaId,
+            fisioterapeuta = c.fisioterapeuta,
+            fechaActual = c.fecha,
+            horaActual = c.hora,
+            fechaPropuesta = fechaP,
+            horaPropuesta = horaP,
+            mensaje = mensaje,
+            creada = LocalDateTime.now(reloj.withZone(ZONA)).withNano(0).toString(),
+        )
+        guardarSolicitud(nueva)
+        avisar { solicitudReagenda(nueva) }
+        nueva
+    }
+
+    /** Recepción aprueba (mueve la cita) o rechaza (con motivo) la solicitud del paciente. */
+    fun resolverSolicitud(id: Int, s: ResolverSolicitud, usuario: UsuarioPublico): SolicitudReagenda = synchronized(this) {
+        val sol = solicitudes[id] ?: throw NotFoundException("Esa solicitud no existe.")
+        if (sol.estado != EstadoSolicitud.PENDIENTE) throw Conflicto("Esa solicitud ya se resolvió.")
+        val nota = s.nota?.trim()?.take(200)?.ifBlank { null }
+        val resuelta = if (s.aprobar) {
+            val fecha = s.fecha ?: sol.fechaPropuesta
+            val hora = s.hora ?: sol.horaPropuesta
+            if (fecha == null || hora == null) throw DatosNoProcesables("Elige la fecha y la hora nuevas de la cita.")
+            reprogramar(sol.citaId, ReprogramarCitaSolicitud(fecha = fecha, hora = hora, fisioterapeutaId = s.fisioterapeutaId, nota = "Solicitud del paciente"), usuario)
+            sol.copy(estado = EstadoSolicitud.APROBADA, respuesta = nota, atendidaPor = usuario.nombre)
+        } else {
+            if (nota == null || nota.length < 3) throw DatosNoProcesables("Escribe por qué no se puede hacer el cambio; se le avisa al paciente.")
+            sol.copy(estado = EstadoSolicitud.RECHAZADA, respuesta = nota, atendidaPor = usuario.nombre)
+        }
+        guardarSolicitud(resuelta)
+        avisar { solicitudResuelta(resuelta) }
+        resuelta
+    }
+
+    private fun citaDelPaciente(id: Int, usuario: UsuarioPublico): Cita {
+        val c = cita(id)
+        if (c.pacienteId == null || c.pacienteId != usuario.pacienteId) throw AccesoDenegado("Esa cita no es tuya.")
+        if (c.estado in TERMINADAS) throw Conflicto("La cita ya está ${c.estado.texto()}.")
+        if (LocalDate.parse(c.fecha).isBefore(hoy())) throw DatosNoProcesables("Esa cita ya pasó.")
+        return c
+    }
+
+    private fun faltanMasDe(c: Cita, horas: Long): Boolean {
+        val inicio = LocalDateTime.of(LocalDate.parse(c.fecha), LocalTime.parse(c.hora, FORMATO_HORA))
+        return inicio.isAfter(LocalDateTime.now(reloj.withZone(ZONA)).plusHours(horas))
+    }
+
+    private fun guardarSolicitud(s: SolicitudReagenda) {
+        solicitudes[s.id] = s
+        colSolicitudes.guardar(s)
     }
 
     /**

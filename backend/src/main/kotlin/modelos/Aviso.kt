@@ -31,6 +31,21 @@ enum class TipoAviso {
 
     /** Se le asignó un paciente nuevo al fisioterapeuta. */
     PACIENTE_ASIGNADO,
+
+    /** Un paciente pidió cambiar su cita (a recepción y a su fisioterapeuta). */
+    SOLICITUD_REAGENDA,
+
+    /** Recepción aprobó o rechazó la solicitud de cambio del paciente. */
+    SOLICITUD_RESUELTA,
+
+    /** Inicio de sesión en un dispositivo nuevo o cambio de contraseña. */
+    SEGURIDAD,
+
+    /** Anuncio general de la clínica (también llega por tema de Firebase). */
+    ANUNCIO,
+
+    /** Revisión diaria: pacientes del fisioterapeuta sin sesiones en 3 días o más. */
+    PACIENTES_INACTIVOS,
 }
 
 @Serializable

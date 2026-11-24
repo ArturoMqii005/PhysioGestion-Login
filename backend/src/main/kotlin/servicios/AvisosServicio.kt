@@ -6,9 +6,12 @@ import com.terapid.physiogestion.datos.Coleccion
 import com.terapid.physiogestion.modelos.Aviso
 import com.terapid.physiogestion.modelos.BandejaAvisos
 import com.terapid.physiogestion.modelos.Cita
+import com.terapid.physiogestion.modelos.EstadoSolicitud
 import com.terapid.physiogestion.modelos.Rol
 import com.terapid.physiogestion.modelos.Rutina
 import com.terapid.physiogestion.modelos.SesionTerapia
+import com.terapid.physiogestion.modelos.SolicitudReagenda
+import com.terapid.physiogestion.modelos.UsuarioPublico
 import com.terapid.physiogestion.modelos.TipoAviso
 import kotlinx.serialization.json.Json
 import java.time.Clock
@@ -22,9 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * AVISOS: el servidor decide a quién avisar y guarda el aviso (colección «avisos»).
  *
- * La entrega no depende de Firebase: la app pide sus avisos con GET /avisos
- * (con la pantalla abierta cada 30 s; en Android, también en segundo plano con
- * WorkManager) y ella misma muestra la notificación del sistema.
+ * Entrega: cada aviso nuevo se manda también como notificación push con Firebase
+ * ([alCrear], que conecta Application con PushServicio). Si Firebase no está
+ * configurado o el teléfono no tiene red, la app los encuentra igual con GET /avisos
+ * (con la pantalla abierta cada 30 s; en Android, también en segundo plano con WorkManager).
  */
 class AvisosServicio(
     private val cuentas: AutenticacionServicio,
@@ -32,6 +36,9 @@ class AvisosServicio(
     almacen: AlmacenDocumentos = AlmacenEnMemoria(),
     json: Json = Json { ignoreUnknownKeys = true },
 ) {
+    /** Se llama con cada aviso recién creado (Application lo usa para mandar la push). */
+    var alCrear: (Aviso) -> Unit = {}
+
     companion object {
         /** Se guardan los últimos 100 avisos de cada usuario; los más viejos se borran. */
         const val MAXIMO_POR_USUARIO = 100
@@ -100,13 +107,66 @@ class AvisosServicio(
         )
     }
 
-    /** La cita cambió de día u hora: se avisa al paciente y al fisioterapeuta (al nuevo, si cambió). */
-    fun citaReprogramada(antes: Cita, ahora: Cita) {
-        val texto = "${dia(antes.fecha).mayuscula()} ${antes.hora} → ${dia(ahora.fecha)} a las ${ahora.hora}."
-        cuentaDelPaciente(ahora.pacienteId)?.let {
-            crear(it, TipoAviso.CITA_REPROGRAMADA, "Tu cita cambió de horario", "$texto Con ${ahora.fisioterapeuta}.", ahora.pacienteId, citaId = ahora.id)
+    /**
+     * La cita cambió de día, de hora o de fisioterapeuta. Se avisa a quien no hizo el cambio:
+     * al paciente, al fisioterapeuta (al anterior y al nuevo, si cambió) y, si la movió el
+     * paciente o el fisioterapeuta, a recepción.
+     */
+    fun citaReprogramada(antes: Cita, ahora: Cita, razon: String? = null, porQuien: UsuarioPublico? = null) {
+        val mismaHora = antes.fecha == ahora.fecha && antes.hora == ahora.hora
+        val otroFisio = antes.fisioterapeutaId != ahora.fisioterapeutaId
+        val horario = if (mismaHora) "${dia(ahora.fecha).mayuscula()} a las ${ahora.hora}"
+        else "${dia(antes.fecha).mayuscula()} ${antes.hora} → ${dia(ahora.fecha)} a las ${ahora.hora}"
+        val porque = razon?.let { " Motivo: $it." } ?: ""
+        val actor = porQuien?.id
+
+        cuentaDelPaciente(ahora.pacienteId)?.takeIf { it != actor }?.let {
+            val (titulo, texto) = when {
+                mismaHora && otroFisio -> "Cambió tu fisioterapeuta" to "$horario te atiende ${ahora.fisioterapeuta}.$porque"
+                else -> "Tu cita cambió de horario" to "$horario. Con ${ahora.fisioterapeuta}.$porque"
+            }
+            crear(it, TipoAviso.CITA_REPROGRAMADA, titulo, texto, ahora.pacienteId, citaId = ahora.id)
         }
-        crear(ahora.fisioterapeutaId, TipoAviso.CITA_REPROGRAMADA, "Cita reprogramada: ${ahora.paciente}", texto, ahora.pacienteId, citaId = ahora.id)
+        val quien = when (porQuien?.rol) {
+            Rol.PACIENTE -> "El paciente la reagendó"
+            Rol.FISIOTERAPEUTA -> "${porQuien.nombre} no puede atenderla$porque".trimEnd('.')
+            else -> null
+        }
+        val textoPersonal = horario + "." + (quien?.let { " $it." } ?: porque)
+        if (ahora.fisioterapeutaId != actor) {
+            val titulo = if (otroFisio) "Te pasaron una cita: ${ahora.paciente}" else "Cita reprogramada: ${ahora.paciente}"
+            crear(ahora.fisioterapeutaId, TipoAviso.CITA_REPROGRAMADA, titulo, textoPersonal, ahora.pacienteId, citaId = ahora.id)
+        }
+        if (otroFisio && antes.fisioterapeutaId != actor) {
+            crear(antes.fisioterapeutaId, TipoAviso.CITA_REPROGRAMADA, "Ya no atiendes a ${ahora.paciente}",
+                "Su cita de ${dia(antes.fecha)} a las ${antes.hora} pasó con ${ahora.fisioterapeuta}.", ahora.pacienteId, citaId = ahora.id)
+        }
+        if (porQuien?.rol == Rol.PACIENTE || porQuien?.rol == Rol.FISIOTERAPEUTA) {
+            personal(Rol.RECEPCIONISTA).forEach {
+                crear(it.id, TipoAviso.CITA_REPROGRAMADA, "Cita movida: ${ahora.paciente}", "$textoPersonal Con ${ahora.fisioterapeuta}.", ahora.pacienteId, citaId = ahora.id)
+            }
+        }
+    }
+
+    /** El paciente pidió cambiar su cita: a recepción (decide) y a su fisioterapeuta (para que lo sepa). */
+    fun solicitudReagenda(s: SolicitudReagenda) {
+        val propuesta = if (s.fechaPropuesta != null && s.horaPropuesta != null) " Propone ${dia(s.fechaPropuesta)} a las ${s.horaPropuesta}." else ""
+        val texto = "Su cita de ${dia(s.fechaActual)} a las ${s.horaActual}.$propuesta «${s.mensaje}»"
+        (personal(Rol.RECEPCIONISTA).map { it.id } + s.fisioterapeutaId).distinct().forEach {
+            crear(it, TipoAviso.SOLICITUD_REAGENDA, "Quiere cambiar su cita: ${s.paciente}", texto, s.pacienteId, citaId = s.citaId)
+        }
+    }
+
+    /** Recepción respondió la solicitud del paciente. Si la aprobó, el aviso del cambio de horario ya salió aparte. */
+    fun solicitudResuelta(s: SolicitudReagenda) {
+        val paciente = cuentaDelPaciente(s.pacienteId) ?: return
+        if (s.estado == EstadoSolicitud.APROBADA) {
+            crear(paciente, TipoAviso.SOLICITUD_RESUELTA, "Aceptamos tu cambio de cita",
+                "Recepción movió tu cita." + (s.respuesta?.let { " $it" } ?: ""), s.pacienteId, citaId = s.citaId)
+        } else {
+            crear(paciente, TipoAviso.SOLICITUD_RESUELTA, "No se pudo cambiar tu cita",
+                "Tu cita sigue el ${dia(s.fechaActual)} a las ${s.horaActual}. ${s.respuesta ?: ""}".trim(), s.pacienteId, citaId = s.citaId)
+        }
     }
 
     /**
@@ -179,6 +239,7 @@ class AvisosServicio(
         )
         guardar(aviso)
         recortar(usuarioId)
+        runCatching { alCrear(aviso) }
         return aviso
     }
 
