@@ -1,5 +1,6 @@
 package com.terapid.physiogestion.navegacion
 
+import kotlinx.coroutines.CancellationException
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -136,6 +137,14 @@ fun NavegacionPrincipal() {
             return@LaunchedEffect
         }
         notificador.iniciarRevision(usuarioActivo.rol)
+        // Push: el servidor guarda el token de Firebase de este teléfono para esta cuenta.
+        try {
+            notificador.tokenPush()?.let { Dependencias.avisos.registrarDispositivo(it) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Sin red: se registra la próxima vez que se abra la app (o cuando Firebase renueve el token).
+        }
         val pacienteId = usuarioActivo.pacienteId
         if (usuarioActivo.rol == Rol.PACIENTE && pacienteId != null) {
             notificador.programarRecordatorioRutina(Dependencias.preferencias.recordatorioRutina(pacienteId))

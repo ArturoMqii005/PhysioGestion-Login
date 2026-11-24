@@ -21,6 +21,8 @@ camerax = "1.6.2"
 mlkit-pose = "18.0.0-beta5"
 material3 = "1.12.0-alpha03"
 androidx-work = "2.11.2"
+firebase-bom = "35.1.0"
+googleServices = "4.5.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -67,6 +69,9 @@ camerax-view = { module = "androidx.camera:camera-view", version.ref = "camerax"
 mlkit-pose = { module = "com.google.mlkit:pose-detection", version.ref = "mlkit-pose" }
 # Avisos y recordatorios sin Firebase: trabajos en segundo plano (solo Android)
 androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "androidx-work" }
+# Notificaciones push: Firebase Cloud Messaging (la versión la fija el BoM)
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -76,3 +81,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+googleServices = { id = "com.google.gms.google-services", version.ref = "googleServices" }

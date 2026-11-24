@@ -86,6 +86,12 @@ val TipoAviso.etiqueta: String
         TipoAviso.CITA_CANCELADA -> "Cita cancelada"
         TipoAviso.RUTINA_ACTUALIZADA -> "Rutina"
         TipoAviso.PACIENTE_ASIGNADO -> "Paciente nuevo"
+        TipoAviso.SOLICITUD_REAGENDA -> "Pide cambio de cita"
+        TipoAviso.SOLICITUD_RESUELTA -> "Cambio de cita"
+        TipoAviso.SEGURIDAD -> "Seguridad"
+        TipoAviso.ANUNCIO -> "Anuncio"
+        TipoAviso.PACIENTES_INACTIVOS -> "Sin actividad"
+        TipoAviso.OTRO -> "Aviso"
     }
 
 val TipoAviso.color: Color
@@ -96,4 +102,10 @@ val TipoAviso.color: Color
         TipoAviso.CITA_CANCELADA -> ColoresPhysio.TextoSecundario
         TipoAviso.RUTINA_ACTUALIZADA -> ColoresPhysio.AzulClaro
         TipoAviso.PACIENTE_ASIGNADO -> ColoresPhysio.Lavanda
+        TipoAviso.SOLICITUD_REAGENDA -> ColoresPhysio.Pendiente
+        TipoAviso.SOLICITUD_RESUELTA -> ColoresPhysio.Lila
+        TipoAviso.SEGURIDAD -> ColoresPhysio.Alerta
+        TipoAviso.ANUNCIO -> ColoresPhysio.AzulClaro
+        TipoAviso.PACIENTES_INACTIVOS -> ColoresPhysio.Pendiente
+        TipoAviso.OTRO -> ColoresPhysio.TextoSecundario
     }

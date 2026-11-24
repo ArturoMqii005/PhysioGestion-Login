@@ -20,7 +20,7 @@ class PhysioGestionApp : Application() {
             versionApp = BuildConfig.VERSION_NAME,
             servidorConfigurado = BuildConfig.SERVIDOR_URL,
         )
-        // Avisos y recordatorios sin Firebase (NOT-01..04).
+        // Notificaciones push (Firebase) y locales: canales y notificador de Android.
         Dependencias.notificador = NotificadorAndroid(this).also { it.crearCanales() }
     }
 }

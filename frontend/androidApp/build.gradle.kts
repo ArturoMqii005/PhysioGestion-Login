@@ -4,6 +4,15 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.googleServices) apply false
+}
+
+// ---- FIREBASE (notificaciones push) ----
+// google-services.json se descarga de la consola de Firebase y se pone en esta carpeta
+// (androidApp/). NO se sube a GitHub (.gitignore). Sin el archivo la app compila igual:
+// los avisos llegan con la revisión en segundo plano de WorkManager.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 kotlin {
@@ -41,8 +50,8 @@ android {
         applicationId = "com.terapid.physiogestion"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 3
-        versionName = "1.5"
+        versionCode = 4
+        versionName = "1.6"
 
         // Llegan al código como BuildConfig.SERVIDOR_URL (nunca escritas en un .kt).
         buildConfigField("String", "SERVIDOR_URL", "\"${variable("SERVIDOR_URL")}\"")

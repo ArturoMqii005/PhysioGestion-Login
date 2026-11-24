@@ -5,11 +5,11 @@ import com.terapid.physiogestion.modelo.Rol
 import com.terapid.physiogestion.servicio.RecordatorioCita
 
 /**
- * NOTIFICACIONES DEL SISTEMA (NOT-01..04), sin Firebase.
+ * NOTIFICACIONES DEL SISTEMA: push (Firebase Cloud Messaging) y locales.
  *
  * El código común decide QUÉ notificar; cada plataforma decide CÓMO. En
- * Android lo implementa NotificadorAndroid (canales de notificación y
- * WorkManager) y lo registra la clase Application al arrancar. En escritorio e
+ * Android lo implementa NotificadorAndroid (canales, Firebase, WorkManager y
+ * AlarmManager) y lo registra la clase Application al arrancar. En escritorio e
  * iOS se usa [SinNotificaciones]: los avisos se ven igual dentro de la app.
  */
 interface Notificador {
@@ -31,8 +31,20 @@ interface Notificador {
     /** NOT-01: recordatorio diario de la rutina a [minutosDelDia] (18:30 = 1110); null lo apaga. */
     fun programarRecordatorioRutina(minutosDelDia: Int?)
 
-    /** Al abrir sesión: revisa avisos en segundo plano aunque la app esté cerrada. */
+    /**
+     * Al abrir sesión: revisa avisos en segundo plano aunque la app esté cerrada y
+     * programa los avisos locales del rol (agenda del día, racha, resumen semanal…).
+     */
     fun iniciarRevision(rol: Rol)
+
+    /** Token de Firebase Cloud Messaging de este teléfono; null si no hay Firebase. */
+    suspend fun tokenPush(): String? = null
+
+    /** El paciente salió de la app mientras descansa entre series: avisa cuando termine. */
+    fun programarFinDescanso(segundos: Int, siguiente: String) = Unit
+
+    /** Volvió a la app o terminó el descanso. */
+    fun cancelarFinDescanso() = Unit
 
     /** Al cerrar sesión: cancela la revisión, los recordatorios y las notificaciones visibles. */
     fun detenerTodo()
