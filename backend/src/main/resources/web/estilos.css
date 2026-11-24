@@ -93,20 +93,17 @@ a { color: inherit; }
 .marca { text-align: center; margin-bottom: 24px; }
 .marca h1 { margin-top: 14px; }
 
+/* Logo: Xochi, el ajolote de PhysioGestion (logo.svg, generado con docs/marca/marca.py). */
 .logo {
-  display: inline-grid;
-  place-items: center;
+  display: inline-block;
+  vertical-align: middle;
   flex: none;
+  padding: 0;
   width: 64px;
   height: 64px;
-  border-radius: 18px;
-  background: var(--lila);
-  color: #120E24;
-  font-family: "Bricolage", "Inter", sans-serif;
-  font-weight: 800;
-  font-size: 22px;
+  border-radius: 15px;
 }
-.logo.chico { width: 36px; height: 36px; border-radius: 11px; font-size: 14px; }
+.logo.logo-chico { width: 36px; height: 36px; border-radius: 9px; }
 
 .pie { margin-top: 24px; text-align: center; color: var(--texto-tenue); font-size: 13px; }
 .texto-largo section + section { margin-top: 20px; }

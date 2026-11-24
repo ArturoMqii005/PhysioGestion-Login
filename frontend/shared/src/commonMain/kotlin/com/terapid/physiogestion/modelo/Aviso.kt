@@ -16,13 +16,26 @@ enum class TipoAviso {
     CITA_CANCELADA,
     RUTINA_ACTUALIZADA,
     PACIENTE_ASIGNADO,
+    /** Un paciente pidió cambiar su cita (al fisioterapeuta). */
+    SOLICITUD_REAGENDA,
+    /** Recepción aprobó o rechazó el cambio de cita que pidió el paciente. */
+    SOLICITUD_RESUELTA,
+    /** Entraron a la cuenta desde otro teléfono o cambió la contraseña. */
+    SEGURIDAD,
+    /** Anuncio general de la clínica. */
+    ANUNCIO,
+    /** Revisión diaria: pacientes del fisioterapeuta sin hacer su rutina. */
+    PACIENTES_INACTIVOS,
+    /** Un tipo que agregó el servidor después de esta versión de la app. */
+    OTRO,
 }
 
 @Serializable
 data class Aviso(
     val id: Int,
     val usuarioId: Int,
-    val tipo: TipoAviso,
+    /** Si el servidor manda un tipo que esta versión no conoce, queda como OTRO (coerceInputValues). */
+    val tipo: TipoAviso = TipoAviso.OTRO,
     val titulo: String,
     val mensaje: String,
     /** Milisegundos desde 1970; se muestra con la hora del teléfono. */
@@ -33,8 +46,16 @@ data class Aviso(
     val citaId: Int? = null,
 ) {
     /** true si es de los que no pueden esperar (se notifican en el canal urgente). */
-    val urgente: Boolean get() = tipo == TipoAviso.DOLOR_ALTO
+    val urgente: Boolean get() = tipo == TipoAviso.DOLOR_ALTO || tipo == TipoAviso.SEGURIDAD
 }
+
+/** POST /api/v1/dispositivos: el token de Firebase de este teléfono. */
+@Serializable
+data class DispositivoSolicitud(val token: String, val plataforma: String = "ANDROID")
+
+/** Temas de Firebase a los que el servidor suscribió el teléfono (anuncios por rol). */
+@Serializable
+data class DispositivoRegistrado(val temas: List<String> = emptyList(), val nuevo: Boolean = false)
 
 @Serializable
 data class BandejaAvisos(

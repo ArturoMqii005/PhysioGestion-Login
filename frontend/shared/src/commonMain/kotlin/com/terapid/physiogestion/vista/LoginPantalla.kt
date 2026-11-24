@@ -1,5 +1,6 @@
 package com.terapid.physiogestion.vista
 
+import com.terapid.physiogestion.vista.componentes.LogoXochi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -79,13 +80,8 @@ fun LoginPantalla(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                // Marca
-                Box(
-                    Modifier.size(64.dp).background(ColoresPhysio.Lila, RoundedCornerShape(18.dp)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("PG", color = ColoresPhysio.Fondo, fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleLarge)
-                }
+                // Marca: la cara de Xochi, el ajolote de PhysioGestion.
+                LogoXochi(tamano = 88.dp, animado = true)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("PhysioGestion", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                     Text(

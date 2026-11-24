@@ -5,6 +5,8 @@ import com.terapid.physiogestion.datos.remoto.ErrorApi
 import com.terapid.physiogestion.datos.remoto.SesionVencida
 import com.terapid.physiogestion.modelo.Aviso
 import com.terapid.physiogestion.modelo.BandejaAvisos
+import com.terapid.physiogestion.modelo.DispositivoRegistrado
+import com.terapid.physiogestion.modelo.DispositivoSolicitud
 import com.terapid.physiogestion.modelo.MarcarLeidosSolicitud
 import com.terapid.physiogestion.modelo.Rol
 import com.terapid.physiogestion.plataforma.Notificador
@@ -59,6 +61,13 @@ class AvisosRepositorio(
 
     suspend fun marcarTodos(): BandejaAvisos =
         conSesion { api.marcarLeidos(it, MarcarLeidosSolicitud(todos = true)) }.also(::actualizarResumen)
+
+    /** Push: el servidor guarda el token de Firebase de este teléfono para la cuenta abierta. */
+    suspend fun registrarDispositivo(tokenPush: String, plataforma: String = "ANDROID"): DispositivoRegistrado =
+        conSesion { api.registrarDispositivo(it, DispositivoSolicitud(tokenPush, plataforma)) }
+
+    /** Al cerrar sesión (con el token de la sesión que se cierra). */
+    suspend fun quitarDispositivo(tokenSesion: String, tokenPush: String) = api.quitarDispositivo(tokenSesion, tokenPush)
 
     /** Al cerrar sesión: el siguiente usuario no debe ver el contador del anterior. */
     fun limpiar() {

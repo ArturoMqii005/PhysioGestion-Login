@@ -6,9 +6,9 @@
     <!-- Android 17+: conectarse a la red local (10.0.2.2 del emulador o la IP de la computadora) -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
-    <!-- AVISOS Y RECORDATORIOS (sin Firebase): mostrar notificaciones (Android 13+ lo pregunta al usuario).
-         WorkManager añade por su cuenta los permisos para saber si hay red y para
-         volver a programar los trabajos después de reiniciar el teléfono. -->
+    <!-- NOTIFICACIONES: mostrarlas (Android 13+ lo pregunta al usuario). Firebase Cloud
+         Messaging y WorkManager añaden por su cuenta los permisos que necesitan (recibir
+         push, saber si hay red y volver a programar los trabajos al reiniciar el teléfono). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- HABILITACIÓN DE SENSORES -->
@@ -45,6 +45,28 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- PUSH: Firebase Cloud Messaging despierta este servicio cuando el servidor crea un aviso. -->
+        <service
+            android:name="com.terapid.physiogestion.plataforma.notificaciones.ServicioMensajes"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- LOCAL: alarma de fin del descanso entre series (AlarmManager). -->
+        <receiver
+            android:name="com.terapid.physiogestion.plataforma.notificaciones.FinDescansoReceptor"
+            android:exported="false" />
+
+        <!-- Icono y color de las push que muestre Firebase directamente. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notificacion" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="avisos_clinica" />
     </application>
 
 </manifest>

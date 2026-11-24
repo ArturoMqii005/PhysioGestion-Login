@@ -54,6 +54,12 @@ class AutenticacionServicio(
     almacen: AlmacenDocumentos = AlmacenEnMemoria(),
     json: Json = Json { ignoreUnknownKeys = true },
 ) {
+    /**
+     * Se llama después de cambiar la contraseña ([porRecuperacion]: con el código del correo).
+     * Application lo conecta con el aviso de seguridad que llega como push.
+     */
+    var alCambiarContrasena: (usuarioId: Int, porRecuperacion: Boolean) -> Unit = { _, _ -> }
+
     companion object {
         const val VERSION_AVISO = "2026-11"
         const val DIAS_SESION = 30L
@@ -295,6 +301,7 @@ class AutenticacionServicio(
         fallos.remove(u.usuario.lowercase())
         fallos.remove(correoLimpio)
         correo.enviar(PlantillasCorreo.contrasenaCambiada(u.nombre).copy(para = correoLimpio))
+        runCatching { alCambiarContrasena(u.id, true) }
         return "Tu contraseña se cambió. Inicia sesión con la nueva."
     }
 
@@ -307,6 +314,7 @@ class AutenticacionServicio(
         guardarUsuario(u.copy(contrasenaHash = Contrasenas.hash(nueva), debeCambiarContrasena = false))
         cerrarSesionesDe(u.id, excepto = tokenActual)
         u.correo?.let { correo.enviar(PlantillasCorreo.contrasenaCambiada(u.nombre).copy(para = it)) }
+        runCatching { alCambiarContrasena(u.id, false) }
         return "Tu contraseña se cambió. Cerramos tus sesiones en otros dispositivos."
     }
 

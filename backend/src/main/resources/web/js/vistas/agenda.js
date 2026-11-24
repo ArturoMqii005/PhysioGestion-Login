@@ -95,7 +95,11 @@ export async function mostrar(vista, ctx) {
       acciones.push(boton("Reprogramar", () => reprogramar(c), { chico: true }));
       if (c.fecha >= hoy) acciones.push(boton("Cancelar", () => cancelar(c), { chico: true, tipo: "peligro" }));
     }
-    const puedeMarcar = abierta && c.fecha <= hoy && (gestiona || c.fisioterapeutaId === ctx.usuario.id);
+    const esMia = c.fisioterapeutaId === ctx.usuario.id;
+    if (abierta && !gestiona && esMia && c.fecha >= hoy) {
+      acciones.push(boton("No puedo atender", () => noPuedoAtender(c), { chico: true, tipo: "peligro" }));
+    }
+    const puedeMarcar = abierta && c.fecha <= hoy && (gestiona || esMia);
     if (puedeMarcar) {
       acciones.push(boton("Atendida", () => cambiarEstado(c, "ATENDIDA", "Cita marcada como atendida"), { chico: true }));
       acciones.push(boton("No asistió", () => marcarFalta(c), { chico: true }));
@@ -133,6 +137,14 @@ export async function mostrar(vista, ctx) {
       alConfirmar: () => api.post(`/citas/${c.id}/estado`, { estado: "NO_ASISTIO" }),
     });
     if (ok) { notificar("Falta registrada"); cargar(); }
+  }
+
+  async function noPuedoAtender(c) {
+    const guardada = await formularioNoPuedo(c);
+    if (guardada) {
+      notificar(guardada.fisioterapeutaId !== c.fisioterapeutaId ? `Cita pasada a ${guardada.fisioterapeuta}` : "Cita movida; se le avisó al paciente");
+      cargar();
+    }
   }
 
   async function cancelar(c) {
@@ -273,6 +285,71 @@ async function formularioCita({ cita, fecha, fisioterapeutas, pacienteId }) {
       }
       const p = pacientes.find((x) => String(x.pacienteId) === elegido);
       return api.post("/citas", { ...base, paciente: p.nombre, pacienteId: p.pacienteId });
+    },
+  });
+}
+
+/**
+ * El fisioterapeuta no puede atender: mueve la cita a otra hora suya o la pasa a un
+ * fisioterapeuta libre a la misma hora. Siempre explica el motivo (se le avisa al paciente).
+ */
+async function formularioNoPuedo(c) {
+  const disponibles = await api.get(`/citas/${c.id}/disponibles`);
+  const opcion = selector([["mover", "Cambiar el día o la hora"], ["pasar", "Pasarla a otro fisioterapeuta, misma hora"]], { name: "opcion" });
+  const fecha = entrada({ name: "fecha", type: "date", min: hoyISO(), max: sumarDias(hoyISO(), 120), value: c.fecha });
+  const hora = h("select", { class: "control", name: "hora" });
+  const estadoHoras = h("p", { class: "ayuda" });
+  const otro = disponibles.length
+    ? selector(disponibles.map((f) => [f.id, f.nombre]), { name: "otro" })
+    : h("p", { class: "nota" }, "Nadie más está libre a esa hora. Cambia el horario o pide ayuda a recepción.");
+  const nota = h("textarea", { class: "control", name: "nota", rows: "2", maxlength: "200", required: true,
+    placeholder: "Por ejemplo: tengo una capacitación; se le avisa al paciente." });
+
+  const bloqueMover = h("div", null, h("div", { class: "rejilla-2" }, campo("Fecha nueva", fecha), campo("Hora", hora)), estadoHoras);
+  const bloquePasar = h("div", { hidden: true }, disponibles.length ? campo("Fisioterapeuta", otro) : otro);
+
+  let pedido = 0;
+  async function cargarHoras() {
+    const mio = ++pedido;
+    hora.replaceChildren(h("option", { value: "" }, "Buscando horas libres…"));
+    hora.disabled = true;
+    try {
+      const horas = await api.get(`/citas/${c.id}/libres?fecha=${fecha.value}`);
+      if (mio !== pedido) return;
+      hora.replaceChildren(...(horas.length ? horas.map((x) => h("option", { value: x }, x)) : [h("option", { value: "" }, "Sin horas libres")]));
+      hora.disabled = !horas.length;
+      estadoHoras.textContent = horas.length ? "" : "Ese día no tienes horas libres. Prueba otro día.";
+    } catch (e) {
+      if (mio === pedido) { hora.replaceChildren(h("option", { value: "" }, "Sin horas")); estadoHoras.textContent = e.message; }
+    }
+  }
+  fecha.addEventListener("change", cargarHoras);
+  opcion.addEventListener("change", () => {
+    bloqueMover.hidden = opcion.value !== "mover";
+    bloquePasar.hidden = opcion.value !== "pasar";
+  });
+  cargarHoras();
+
+  return modalFormulario({
+    titulo: "No puedo atender esta cita",
+    ancho: true,
+    contenido: [
+      h("p", { class: "nota" }, `${c.paciente} · ${fechaLarga(c.fecha)} a las ${c.hora}. El paciente y recepción reciben un aviso.`),
+      campo("¿Qué quieres hacer?", opcion),
+      bloqueMover,
+      bloquePasar,
+      campo("Motivo", nota),
+    ],
+    textoEnviar: "Guardar cambio",
+    alEnviar: (f) => {
+      const motivo = valor(f, "nota");
+      if (motivo.length < 3) throw new Error("Escribe el motivo; se le avisa al paciente.");
+      if (valor(f, "opcion") === "pasar") {
+        if (!disponibles.length) throw new Error("No hay otro fisioterapeuta libre a esa hora.");
+        return api.patch("/citas/" + c.id, { fisioterapeutaId: Number(valor(f, "otro")), nota: motivo });
+      }
+      if (!valor(f, "hora")) throw new Error("Elige una hora libre.");
+      return api.patch("/citas/" + c.id, { fecha: valor(f, "fecha"), hora: valor(f, "hora"), nota: motivo });
     },
   });
 }

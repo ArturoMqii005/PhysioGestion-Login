@@ -3,12 +3,16 @@ package com.terapid.physiogestion.datos
 import com.terapid.physiogestion.datos.remoto.AutenticacionApi
 import com.terapid.physiogestion.modelo.Sesion
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.StateFlow
 
 /** Inicio y cierre de sesión: une la API con el [GestorSesion]. */
 class AutenticacionRepositorio(
     private val api: AutenticacionApi,
     private val gestor: GestorSesion,
+    /** Antes de invalidar el token en el servidor (la app da de baja el teléfono para push). */
+    private val antesDeCerrar: suspend (token: String) -> Unit = {},
 ) {
     val sesion: StateFlow<Sesion?> = gestor.sesion
 
@@ -34,6 +38,13 @@ class AutenticacionRepositorio(
         gestor.cerrar()
         if (token != null) {
             try {
+                try {
+                    withTimeout(4_000) { antesDeCerrar(token) }
+                } catch (e: CancellationException) {
+                    if (e !is TimeoutCancellationException) throw e
+                } catch (_: Exception) {
+                    // Sin red: el servidor lo dará de baja cuando Firebase reporte el token.
+                }
                 api.cerrarSesion(token)
             } catch (e: CancellationException) {
                 throw e

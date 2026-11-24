@@ -26,7 +26,7 @@ class SinPermiso : ErrorApi("Tu perfil no tiene acceso a esta información.")
 class NoEncontrado(mensaje: String) : ErrorApi(mensaje)
 
 /** 400 y 422: lo que se envió no cumple las validaciones. */
-class DatosInvalidos(mensaje: String) : ErrorApi(mensaje)
+class DatosInvalidos(mensaje: String, val codigo: String? = null) : ErrorApi(mensaje)
 
 /** 409: choca con otro registro (por ejemplo, dos sesiones con la misma hora de inicio). */
 class Conflicto(mensaje: String) : ErrorApi(mensaje)
@@ -81,7 +81,7 @@ suspend fun <T> llamarApi(esLogin: Boolean = false, llamada: suspend () -> T): T
             codigo == 403 -> SinPermiso()
             codigo == 404 -> NoEncontrado(error?.mensaje ?: "No se encontró la información.")
             codigo == 400 || codigo == 422 ->
-                DatosInvalidos(error?.mensaje ?: "Los datos enviados no son válidos.")
+                DatosInvalidos(error?.mensaje ?: "Los datos enviados no son válidos.", error?.codigo)
             codigo == 409 -> Conflicto(error?.mensaje ?: "La operación choca con otro registro.")
             codigo == 429 -> error?.mensaje?.let(::DemasiadasSolicitudes) ?: DemasiadasSolicitudes()
             codigo in 500..599 -> ErrorDelServidor(e)

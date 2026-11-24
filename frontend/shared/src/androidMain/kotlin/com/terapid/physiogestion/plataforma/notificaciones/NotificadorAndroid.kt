@@ -27,19 +27,24 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /**
- * Notificaciones de Android SIN Firebase Cloud Messaging.
+ * Notificaciones de Android: PUSH con Firebase Cloud Messaging y LOCALES.
  *
- * Firebase empuja el aviso desde el servidor al teléfono. Aquí es al revés: el
- * teléfono pregunta. Con la app abierta pregunta cada 30 s (la vista del rol);
- * cerrada, WorkManager ejecuta [RevisarAvisosTrabajo] cada 15 min (el mínimo que
- * permite Android) cuando hay internet, y Android decide el momento exacto para
- * cuidar la batería. Los recordatorios de cita y de rutina no necesitan al
- * servidor: se programan en el teléfono con trabajos de una sola vez.
+ * Push: cuando el servidor crea un aviso, Firebase despierta a la app
+ * ([ServicioMensajes]), que pide el aviso al servidor y lo muestra. Si Firebase no
+ * está configurado (falta google-services.json) o la push no llega, WorkManager
+ * ejecuta [RevisarAvisosTrabajo] cada 15 min con internet y lo encuentra igual.
+ *
+ * Locales: los decide el teléfono sin el servidor (recordatorios de cita y de rutina,
+ * agenda del día, racha en riesgo, resumen semanal, escaleras, sesiones sin enviar y
+ * fin del descanso). Se programan con WorkManager y, el descanso, con AlarmManager.
  *
  * Canales (el usuario puede silenciar cada uno en Ajustes):
- *  - «Avisos urgentes»: dolor alto de un paciente (importancia alta, sale encima de la pantalla).
- *  - «Avisos de la clínica»: citas, rutina y pacientes nuevos.
+ *  - «Avisos urgentes»: dolor alto de un paciente y seguridad de la cuenta.
+ *  - «Avisos de la clínica»: citas, solicitudes de cambio, rutina, anuncios y pacientes.
  *  - «Recordatorios»: citas, rutina diaria y sesiones sin enviar.
+ *  - «Agenda del día»: resumen de las citas de hoy para el personal.
+ *  - «Tu progreso»: racha, resumen semanal y prueba de escaleras.
+ *  - «Durante el ejercicio»: fin del descanso entre series.
  */
 class NotificadorAndroid(private val context: Context) : Notificador {
 
@@ -47,6 +52,9 @@ class NotificadorAndroid(private val context: Context) : Notificador {
         const val CANAL_URGENTE = "avisos_urgentes"
         const val CANAL_AVISOS = "avisos_clinica"
         const val CANAL_RECORDATORIOS = "recordatorios"
+        const val CANAL_AGENDA = "agenda"
+        const val CANAL_PROGRESO = "progreso"
+        const val CANAL_EJERCICIO = "ejercicio"
 
         const val TRABAJO_REVISION = "revisar-avisos"
         const val TRABAJO_RUTINA = "recordatorio-rutina"
@@ -60,12 +68,19 @@ class NotificadorAndroid(private val context: Context) : Notificador {
         /** Ids de notificación: fijos para los que se reemplazan, y por rango para avisos y citas. */
         const val ID_PENDIENTES = 2
         const val ID_RUTINA = 3
+        const val ID_AGENDA = 4
+        const val ID_RACHA = 5
+        const val ID_RESUMEN = 6
+        const val ID_ESCALERAS = 7
+        const val ID_DESCANSO = 8
+        private const val BASE_ANUNCIOS = 500
         private const val BASE_AVISOS = 1_000
         private const val BASE_CITAS = 1_000_000
 
         /** Máximo de avisos sueltos de una vez; si llegan más, uno de resumen. */
         private const val MAXIMO_SUELTOS = 4
-        private const val COLOR = 0xFF14B8A6.toInt()
+        /** Violeta de la app (#6C47FF). */
+        private const val COLOR = 0xFF6C47FF.toInt()
     }
 
     private val sistema = NotificationManagerCompat.from(context)
@@ -88,6 +103,18 @@ class NotificadorAndroid(private val context: Context) : Notificador {
                 .setName("Recordatorios")
                 .setDescription("Tus citas, tu rutina del día y las sesiones que faltan por enviar.")
                 .build(),
+            NotificationChannelCompat.Builder(CANAL_AGENDA, NotificationManagerCompat.IMPORTANCE_LOW)
+                .setName("Agenda del día")
+                .setDescription("Cada mañana, cuántas citas hay hoy y a qué hora es la primera.")
+                .build(),
+            NotificationChannelCompat.Builder(CANAL_PROGRESO, NotificationManagerCompat.IMPORTANCE_DEFAULT)
+                .setName("Tu progreso")
+                .setDescription("Tu racha, el resumen de la semana y la prueba de escaleras.")
+                .build(),
+            NotificationChannelCompat.Builder(CANAL_EJERCICIO, NotificationManagerCompat.IMPORTANCE_HIGH)
+                .setName("Durante el ejercicio")
+                .setDescription("Te avisa cuando termina el descanso entre series si saliste de la app.")
+                .build(),
         ).forEach(sistema::createNotificationChannel)
     }
 
@@ -104,6 +131,17 @@ class NotificadorAndroid(private val context: Context) : Notificador {
         if (avisos.size > MAXIMO_SUELTOS) {
             val resto = avisos.size - sueltos.size
             mostrar(BASE_AVISOS, CANAL_AVISOS, "Tienes $resto avisos más", "Ábrelos en PhysioGestion > Avisos.")
+        }
+    }
+
+    /**
+     * Push que no se pudo completar con el servidor (sin red o sesión cerrada): los
+     * avisos de seguridad y los anuncios traen su propio texto y se muestran así.
+     */
+    fun mostrarDesdePush(tipo: String?, id: Int, titulo: String, texto: String) {
+        when (tipo) {
+            "SEGURIDAD" -> mostrar(BASE_AVISOS + id, CANAL_URGENTE, titulo, texto, urgente = true)
+            else -> mostrar(BASE_ANUNCIOS + id % 400, CANAL_AVISOS, titulo, texto)
         }
     }
 
@@ -191,13 +229,27 @@ class NotificadorAndroid(private val context: Context) : Notificador {
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .build()
         trabajos.enqueueUniquePeriodicWork(TRABAJO_REVISION, ExistingPeriodicWorkPolicy.KEEP, trabajo)
+        ProgramadorLocales.programar(context, rol)
     }
 
     override fun detenerTodo() {
         trabajos.cancelUniqueWork(TRABAJO_REVISION)
         trabajos.cancelUniqueWork(TRABAJO_RUTINA)
         trabajos.cancelAllWorkByTag(ETIQUETA_CITAS)
+        ProgramadorLocales.cancelar(context)
+        cancelarFinDescanso()
         sistema.cancelAll()
+    }
+
+    // ======================================================================= PUSH Y DESCANSO
+
+    override suspend fun tokenPush(): String? = ServicioMensajes.token(context)
+
+    override fun programarFinDescanso(segundos: Int, siguiente: String) = AlarmaDescanso.programar(context, segundos, siguiente)
+
+    override fun cancelarFinDescanso() {
+        AlarmaDescanso.cancelar(context)
+        sistema.cancel(ID_DESCANSO)
     }
 
     // ======================================================================= HORAS

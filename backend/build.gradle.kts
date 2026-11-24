@@ -29,6 +29,8 @@ dependencies {
     implementation(libs.logback.classic)
     implementation(libs.bcrypt)
     implementation(libs.postgresql)
+    // Notificaciones push con Firebase Cloud Messaging (servicios/Push.kt).
+    implementation(libs.firebase.admin)
 
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)

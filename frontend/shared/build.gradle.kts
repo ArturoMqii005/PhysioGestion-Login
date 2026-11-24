@@ -63,6 +63,9 @@ kotlin {
             // plano y NotificationCompat muestra la notificación del sistema.
             implementation(libs.androidx.work.runtime)
             implementation(libs.androidx.core.ktx)
+            // Push: Firebase Cloud Messaging despierta a la app cuando el servidor crea un aviso.
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.messaging)
         }
         jvmMain.dependencies {
             // Motor HTTP especifico de escritorio (JVM)

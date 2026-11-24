@@ -12,3 +12,8 @@ captures/
 .externalNativeBuild/
 .cxx/
 xcuserdata/
+
+# Firebase: configuración del proyecto y llave de la cuenta de servicio (NUNCA al repositorio)
+google-services.json
+GoogleService-Info.plist
+*firebase-adminsdk*.json

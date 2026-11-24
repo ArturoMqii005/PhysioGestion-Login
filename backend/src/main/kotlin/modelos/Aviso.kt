@@ -5,10 +5,10 @@ import kotlinx.serialization.Serializable
 /*
  * AVISOS (fase «Avisos» del inventario: NOT-01..04).
  *
- * El servidor guarda cada aviso para quien debe recibirlo. La app los consulta
- * con GET /avisos: en pantalla cada 30 s y, en Android, en segundo plano cada
- * 15 min con WorkManager, que muestra la notificación del sistema. No se usa
- * Firebase Cloud Messaging.
+ * El servidor guarda cada aviso para quien debe recibirlo y lo manda como push
+ * con Firebase Cloud Messaging (PushServicio). La app también los consulta con
+ * GET /avisos: en pantalla cada 30 s y, en Android, en segundo plano con
+ * WorkManager, por si la push no llegó.
  */
 
 /** Por qué se generó el aviso. Mismos nombres que en la app. */
@@ -31,6 +31,21 @@ enum class TipoAviso {
 
     /** Se le asignó un paciente nuevo al fisioterapeuta. */
     PACIENTE_ASIGNADO,
+
+    /** Un paciente pidió cambiar su cita (a recepción y a su fisioterapeuta). */
+    SOLICITUD_REAGENDA,
+
+    /** Recepción aprobó o rechazó la solicitud de cambio del paciente. */
+    SOLICITUD_RESUELTA,
+
+    /** Inicio de sesión en un dispositivo nuevo o cambio de contraseña. */
+    SEGURIDAD,
+
+    /** Anuncio general de la clínica (también llega por tema de Firebase). */
+    ANUNCIO,
+
+    /** Revisión diaria: pacientes del fisioterapeuta sin sesiones en 3 días o más. */
+    PACIENTES_INACTIVOS,
 }
 
 @Serializable

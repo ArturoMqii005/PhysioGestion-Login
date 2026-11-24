@@ -36,6 +36,7 @@ import com.terapid.physiogestion.plataforma.SinNotificaciones
 import com.terapid.physiogestion.plataforma.ahoraEnMilisegundos
 import com.terapid.physiogestion.plataforma.claveDelDia
 import com.terapid.physiogestion.plataforma.rutaBaseDatos
+import com.terapid.physiogestion.servicio.AvisosLocales
 import com.terapid.physiogestion.servicio.SeguimientoServicio
 import kotlinx.serialization.json.Json
 
@@ -45,7 +46,11 @@ import kotlinx.serialization.json.Json
  */
 object Dependencias {
     /** Configuración del serializador, compartida por el cliente HTTP y la copia local. */
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        // Un valor de enum que esta versión no conoce (un tipo de aviso nuevo) toma el valor por defecto.
+        coerceInputValues = true
+    }
 
     private val clienteHttp by lazy { crearClienteHttp(json) }
 
@@ -67,7 +72,9 @@ object Dependencias {
 
     // ---- Repositorios ----
     val autenticacion: AutenticacionRepositorio by lazy {
-        AutenticacionRepositorio(AutenticacionApi(clienteHttp), gestorSesion)
+        AutenticacionRepositorio(AutenticacionApi(clienteHttp), gestorSesion) { tokenSesion ->
+            notificador.tokenPush()?.let { avisosApi.quitarDispositivo(tokenSesion, it) }
+        }
     }
 
     val clinica: ClinicaRepositorio by lazy { ClinicaRepositorio(ClinicaApi(clienteHttp), gestorSesion) }
@@ -84,7 +91,9 @@ object Dependencias {
 
     val escaleras: EscalerasRepositorio by lazy { EscalerasRepositorio(EscalerasApi(clienteHttp), almacenamiento, gestorSesion) }
 
-    val avisos: AvisosRepositorio by lazy { AvisosRepositorio(AvisosApi(clienteHttp), gestorSesion, preferencias) }
+    private val avisosApi by lazy { AvisosApi(clienteHttp) }
+
+    val avisos: AvisosRepositorio by lazy { AvisosRepositorio(avisosApi, gestorSesion, preferencias) }
 
     // ---- Notificaciones (NOT-01..04) ----
 
@@ -93,6 +102,11 @@ object Dependencias {
      * NotificadorAndroid). Mientras tanto, y en escritorio e iOS, no hace nada.
      */
     var notificador: Notificador = SinNotificaciones
+
+    /** Avisos locales (agenda, racha, resumen semanal, escaleras): el texto se arma en código común. */
+    val locales: AvisosLocales by lazy {
+        AvisosLocales(gestorSesion, clinica, sesiones, preferencias, { claveDelDia(ahoraEnMilisegundos()) })
+    }
 
     /** Lo que corre en segundo plano: avisos nuevos, sesiones sin enviar y recordatorios de cita. */
     val revisor: RevisorSegundoPlano by lazy {

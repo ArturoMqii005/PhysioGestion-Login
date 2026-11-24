@@ -78,6 +78,21 @@ import com.terapid.physiogestion.vista.componentes.TarjetaSuave
 import com.terapid.physiogestion.vista.componentes.coloresDeZona
 import com.terapid.physiogestion.vista.tema.ColoresPhysio
 import com.terapid.physiogestion.vista.tema.Movimiento
+import com.terapid.physiogestion.vista.componentes.AvanceLeccion
+import com.terapid.physiogestion.vista.componentes.CelebracionEjercicio
+import com.terapid.physiogestion.vista.componentes.Confeti
+import com.terapid.physiogestion.vista.componentes.DescansoEntreSeries
+import com.terapid.physiogestion.vista.componentes.ExpresionXochi
+import com.terapid.physiogestion.vista.componentes.Xochi
+import com.terapid.physiogestion.vista.componentes.XochiDice
+import com.terapid.physiogestion.vista.componentes.animoPara
+import com.terapid.physiogestion.dependencias.Dependencias
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import kotlinx.coroutines.delay
 
 /**
  * VISTA de la medición con sensores (RFN-26, RFN-27). No lee sensores ni
@@ -98,6 +113,7 @@ fun EjercicioPantalla(
 
     var verIndicaciones by rememberSaveable { mutableStateOf(false) }
     Surface(Modifier.fillMaxSize(), color = ColoresPhysio.Fondo) {
+      Box(Modifier.fillMaxSize()) {
         Column(
             Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -123,10 +139,14 @@ fun EjercicioPantalla(
                 BotonRedondo(Iconos.Info, if (verIndicaciones) "Ocultar indicaciones" else "Ver indicaciones", { verIndicaciones = !verIndicaciones }, tamano = 48.dp)
             }
             ejercicio?.let { e ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
-                    Chip("${e.series} × ${e.repeticiones}")
-                    e.anguloObjetivo?.let { Chip("Meta $it°") }
-                    if (e.descansoSegundos > 0) Chip("Descanso ${e.descansoSegundos} s")
+                if (estado.fase == FaseMedicion.MIDIENDO || estado.fase == FaseMedicion.TERMINADO) {
+                    AvanceLeccion(estado.repeticiones, estado.objetivo, e.series, e.repeticiones)
+                } else {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
+                        Chip("${e.series} × ${e.repeticiones}")
+                        e.anguloObjetivo?.let { Chip("Meta $it°") }
+                        if (e.descansoSegundos > 0) Chip("Descanso ${e.descansoSegundos} s")
+                    }
                 }
                 AnimatedVisibility(verIndicaciones, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                     TarjetaSuave { Text(e.indicaciones, color = ColoresPhysio.Texto, style = MaterialTheme.typography.bodyMedium) }
@@ -145,12 +165,26 @@ fun EjercicioPantalla(
             }
             DetalleTecnico(estado.detalleTecnico)
         }
+        // Al cumplir el objetivo, confeti como al terminar una lección.
+        if (estado.fase == FaseMedicion.TERMINADO && estado.objetivoCumplido && !estado.guardando) {
+            Confeti(Modifier.fillMaxSize())
+        }
+      }
     }
 }
 
 @Composable
 private fun BloquePreparado(estado: EjercicioUiState, viewModel: EjercicioViewModel) {
     val alComenzar = viewModel::comenzar
+    estado.ejercicio?.let { e ->
+        XochiDice(
+            when {
+                estado.usaCamara -> "¡Vamos con ${e.nombre.lowercase()}! Apoya el teléfono y yo cuento tus repeticiones."
+                estado.modoManual -> "¡Vamos con ${e.nombre.lowercase()}! Toca + cada vez que hagas una repetición."
+                else -> "¡Vamos con ${e.nombre.lowercase()}! Sujeta el teléfono como dice abajo y toca Comenzar."
+            },
+        )
+    }
     if (estado.camaraDisponible) {
         Text("¿Cómo quieres medirlo?", style = MaterialTheme.typography.titleSmall)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -171,7 +205,7 @@ private fun BloquePreparado(estado: EjercicioUiState, viewModel: EjercicioViewMo
         }
     }
     TarjetaPhysio {
-        Text("Antes de empezar", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text("Así se hace", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         if (estado.usaCamara) {
             val partes = estado.ejercicio?.let { ArticulacionMedida.deZona(it.zonaCorporal)?.partesVisibles } ?: "articulación"
             Text("1. Apoya el teléfono en vertical, a unos 2 metros y a la altura de tu cadera, con la pantalla hacia ti.")
@@ -206,9 +240,9 @@ private fun BloquePreparado(estado: EjercicioUiState, viewModel: EjercicioViewMo
     }
     BotonPildora(
         when {
-            estado.usaCamara -> "Comenzar con cámara"
-            estado.modoManual -> "Comenzar conteo manual"
-            else -> "Comenzar"
+            estado.usaCamara -> "¡Comenzar con cámara!"
+            estado.modoManual -> "¡Comenzar conteo!"
+            else -> "¡Comenzar!"
         },
         alComenzar,
         Modifier.fillMaxWidth(),
@@ -330,18 +364,52 @@ private fun BloqueCalibrando() {
     Column(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Box(Modifier.size(260.dp), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(Modifier.fillMaxSize(), color = ColoresPhysio.Violeta, trackColor = ColoresPhysio.SuperficieAlta, strokeWidth = 22.dp)
-            Text("Quieto…", style = MaterialTheme.typography.headlineMedium, color = ColoresPhysio.Texto)
+            Xochi(expresion = ExpresionXochi.PENSANDO, tamano = 150.dp)
         }
-        Text("Calibrando: mantén el teléfono quieto unos segundos", style = MaterialTheme.typography.titleMedium, color = ColoresPhysio.Texto, textAlign = TextAlign.Center)
+        Text("Quieto… estoy calibrando el sensor", style = MaterialTheme.typography.titleMedium, color = ColoresPhysio.Texto, textAlign = TextAlign.Center)
     }
 }
 
 @Composable
 private fun ColumnScope.BloqueMidiendo(estado: EjercicioUiState, viewModel: EjercicioViewModel) {
     val e = estado.ejercicio
+
+    // ---- Descanso entre series (como la pausa entre preguntas de una lección) ----
+    val porSerie = e?.repeticiones ?: 0
+    val seriesHechas = if (porSerie > 0) estado.repeticiones / porSerie else 0
+    val descansoTotal = e?.descansoSegundos ?: 0
+    var ultimaConDescanso by remember { mutableStateOf(0) }
+    var restantes by remember { mutableStateOf(0) }
+    LaunchedEffect(seriesHechas) {
+        if (e != null && descansoTotal > 0 && seriesHechas in 1 until e.series && seriesHechas > ultimaConDescanso) {
+            ultimaConDescanso = seriesHechas
+            restantes = descansoTotal
+        }
+    }
+    LaunchedEffect(restantes > 0) {
+        while (restantes > 0) {
+            delay(1_000)
+            restantes--
+        }
+    }
+    // Si sale de la app mientras descansa, una alarma le avisa cuando termine el descanso.
+    val siguiente = "la serie ${seriesHechas + 1} de ${e?.nombre?.lowercase() ?: "tu ejercicio"}"
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        if (restantes > 0) Dependencias.notificador.programarFinDescanso(restantes, siguiente)
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { Dependencias.notificador.cancelarFinDescanso() }
+    if (restantes > 0 && e != null) {
+        DescansoEntreSeries(restantes, descansoTotal, seriesHechas + 1, e.series, alSeguir = { restantes = 0 })
+        BotonPildora("Terminar ejercicio", viewModel::terminar, Modifier.fillMaxWidth(), icono = Iconos.Check, violeta = true)
+        return
+    }
+
+    if (!estado.usaCamara) {
+        XochiDice(animoPara(estado.progreso, (estado.objetivo - estado.repeticiones).coerceAtLeast(0)), expresion = ExpresionXochi.ANIMANDO, tamano = 76.dp)
+    }
     // Con cámara el contador grande ya está sobre la imagen; sin cámara, va dentro del anillo.
     if (!estado.usaCamara) {
-        AnilloAvance(estado.progreso, Modifier.size(280.dp).align(Alignment.CenterHorizontally)) {
+        AnilloAvance(estado.progreso, Modifier.size(250.dp).align(Alignment.CenterHorizontally)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 AnimatedContent(
                     targetState = estado.repeticiones,
@@ -411,22 +479,19 @@ private fun ColumnScope.BloqueTerminado(estado: EjercicioUiState, alRepetir: () 
         }
         return
     }
-    AnilloAvance(
-        estado.progreso,
-        Modifier.size(200.dp).align(Alignment.CenterHorizontally),
-        grosor = 18.dp,
-        color = if (estado.objetivoCumplido) ColoresPhysio.Exito else ColoresPhysio.Pendiente,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (estado.objetivoCumplido) Icono(Iconos.Check, null, tamano = 40.dp, color = ColoresPhysio.Exito)
-            Text("${estado.repeticiones}/${estado.objetivo}", style = MaterialTheme.typography.headlineMedium, color = ColoresPhysio.Texto)
-        }
+    CelebracionEjercicio(
+        cumplido = estado.objetivoCumplido,
+        repeticiones = estado.repeticiones,
+        objetivo = estado.objetivo,
+        anguloMaximo = if (estado.modoManual) null else estado.anguloMaximo.toInt(),
+        duracion = formatoReloj(estado.segundos),
+    )
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        BotonPildora("Repetir", alRepetir, Modifier.weight(1f), icono = null)
+        BotonPildora("Continuar", alContinuar, Modifier.weight(1.4f), icono = Iconos.Adelante, violeta = true)
     }
     TarjetaPhysio(borde = if (estado.objetivoCumplido) ColoresPhysio.Exito else ColoresPhysio.Pendiente) {
-        Text("Resumen del ejercicio", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Text("Repeticiones: ${estado.repeticiones} de ${estado.objetivo}")
-        if (!estado.modoManual) Text("Ángulo máximo: ${estado.anguloMaximo.toInt()}°")
-        Text("Duración: ${formatoReloj(estado.segundos)}")
+        Text("Detalle", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         estado.verificacion?.let { v ->
             Etiqueta("Verificado con cámara", ColoresPhysio.Exito)
             Text("Repeticiones completas (90 % del ángulo o más): ${v.repeticionesCompletas} de ${v.repeticiones}")
@@ -439,10 +504,6 @@ private fun ColumnScope.BloqueTerminado(estado: EjercicioUiState, alRepetir: () 
                 )
             }
         }
-        Etiqueta(
-            if (estado.objetivoCumplido) "Completaste el objetivo" else "No alcanzaste el objetivo",
-            if (estado.objetivoCumplido) ColoresPhysio.Exito else ColoresPhysio.Pendiente,
-        )
         Text(
             when (estado.enviado) {
                 true -> "El resumen se envió a tu fisioterapeuta."
@@ -452,10 +513,6 @@ private fun ColumnScope.BloqueTerminado(estado: EjercicioUiState, alRepetir: () 
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-    }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        BotonPildora("Repetir", alRepetir, Modifier.weight(1f), icono = null)
-        BotonPildora("Continuar", alContinuar, Modifier.weight(1f), icono = Iconos.Adelante, violeta = true)
     }
 }
 

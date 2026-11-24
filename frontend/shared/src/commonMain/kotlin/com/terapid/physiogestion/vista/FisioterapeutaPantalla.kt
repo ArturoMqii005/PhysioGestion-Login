@@ -1,5 +1,9 @@
 package com.terapid.physiogestion.vista
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.terapid.physiogestion.dependencias.Dependencias
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -81,6 +85,10 @@ fun FisioterapeutaPantalla(
     alAbrirAvisos: () -> Unit = {},
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
+    var noPuedo by remember { mutableStateOf<Cita?>(null) }
+    noPuedo?.let { c ->
+        DialogoReagendar(Dependencias.clinica, c, esFisioterapeuta = true, hoy = estado.hoy, alCerrar = { noPuedo = null }, alCambiar = viewModel::cargar)
+    }
     val resumenAvisos by avisos.resumenOVacio.collectAsStateWithLifecycle()
     val notificaciones by avisos.notificacionesOVacio.collectAsStateWithLifecycle()
     if (avisos != null) VigilarAvisos(avisos)
@@ -140,6 +148,7 @@ fun FisioterapeutaPantalla(
                                 procesando = estado.procesando == cita.id,
                                 alAtendida = { viewModel.marcarAsistencia(cita, llego = true) },
                                 alNoAsistio = { viewModel.marcarAsistencia(cita, llego = false) },
+                                alNoPuedo = { noPuedo = cita },
                             )
                         }
                     }
@@ -210,6 +219,7 @@ private fun FilaLineaDeTiempo(
     procesando: Boolean,
     alAtendida: () -> Unit,
     alNoAsistio: () -> Unit,
+    alNoPuedo: () -> Unit,
 ) {
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -251,6 +261,8 @@ private fun FilaLineaDeTiempo(
                         BotonEnlace("No asistió", alNoAsistio, habilitado = !procesando)
                     }
                 }
+                // Si el fisioterapeuta no puede atender: la mueve o se la pasa a otro (se le avisa al paciente).
+                if (cita.abierta) BotonEnlace("No puedo atender", alNoPuedo, habilitado = !procesando)
             }
         }
     }

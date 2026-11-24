@@ -26,6 +26,15 @@ fun TarjetaResultado(resultado: EvaluacionSesion, enviada: Boolean?, alCerrar: (
         fondo = if (alerta != null) ColoresPhysio.FondoAlerta else MaterialTheme.colorScheme.surface,
         borde = if (alerta != null) ColoresPhysio.Alerta else ColoresPhysio.Exito,
     ) {
+        XochiDice(
+            when {
+                alerta != null -> "Tu dolor subió. Hoy toca cuidarte; tu fisioterapeuta ya lo sabe."
+                resultado.cumplimiento >= 100 -> "¡Rutina completa! Ganaste ${resultado.puntos} puntos."
+                else -> "¡Bien hecho! Ganaste ${resultado.puntos} puntos. Mañana vamos por el 100 %."
+            },
+            expresion = if (alerta != null) ExpresionXochi.PREOCUPADO else ExpresionXochi.CELEBRANDO,
+            tamano = 80.dp,
+        )
         if (alerta != null) {
             Etiqueta("Atención: dolor alto", ColoresPhysio.Alerta)
             Text(alerta.recomendacion, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)

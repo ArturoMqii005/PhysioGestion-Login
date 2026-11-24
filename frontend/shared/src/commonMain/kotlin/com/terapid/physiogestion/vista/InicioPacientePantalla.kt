@@ -1,5 +1,8 @@
 package com.terapid.physiogestion.vista
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.terapid.physiogestion.dependencias.Dependencias
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -433,10 +436,11 @@ private fun iniciales(nombre: String): String =
 @Composable
 private fun SeccionCitas(viewModel: MisCitasViewModel) {
     val e by viewModel.estado.collectAsStateWithLifecycle()
+    var reagendando by remember { mutableStateOf<Cita?>(null) }
     Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         TituloSeccion("Tus citas")
         if (e.proximas.isEmpty()) {
-            Text("No tienes citas agendadas. Para agendar, llama a la clínica.", style = MaterialTheme.typography.bodySmall, color = ColoresPhysio.TextoSecundario)
+            Text("No tienes citas agendadas. Para agendar, llama a la clínica. Si ya tienes una, aquí puedes cambiarla de hora.", style = MaterialTheme.typography.bodySmall, color = ColoresPhysio.TextoSecundario)
         }
         e.proximas.forEach { c ->
             TarjetaSuave {
@@ -455,12 +459,18 @@ private fun SeccionCitas(viewModel: MisCitasViewModel) {
                         Etiqueta(c.estado.etiqueta, c.estado.color)
                     }
                 }
-                BotonEnlace("Cancelar esta cita", { viewModel.pedirCancelar(c) }, habilitado = !e.procesando)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    BotonEnlace("Cambiar fecha u hora", { reagendando = c }, habilitado = !e.procesando)
+                    BotonEnlace("Cancelar", { viewModel.pedirCancelar(c) }, habilitado = !e.procesando)
+                }
             }
         }
         e.aviso?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = ColoresPhysio.Lila) }
     }
     e.cancelando?.let { c -> DialogoCancelarCita(c, null, null, viewModel::confirmarCancelacion, viewModel::cerrarCancelacion) }
+    reagendando?.let { c ->
+        DialogoReagendar(Dependencias.clinica, c, esFisioterapeuta = false, hoy = e.hoy, alCerrar = { reagendando = null }, alCambiar = viewModel::cargar)
+    }
 }
 
 private val DIAS_CORTOS = listOf("LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM")

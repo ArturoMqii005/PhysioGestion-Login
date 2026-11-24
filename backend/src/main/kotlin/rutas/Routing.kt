@@ -3,8 +3,11 @@ package com.terapid.physiogestion.rutas
 import com.terapid.physiogestion.datos.AlmacenJson
 import com.terapid.physiogestion.plugins.AUTH_SESION
 import com.terapid.physiogestion.servicios.AutenticacionServicio
+import com.terapid.physiogestion.servicios.AnunciosServicio
 import com.terapid.physiogestion.servicios.AvisosServicio
 import com.terapid.physiogestion.servicios.ClinicaServicio
+import com.terapid.physiogestion.servicios.PushServicio
+import com.terapid.physiogestion.servicios.RevisionDiariaServicio
 import com.terapid.physiogestion.servicios.SesionesServicio
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
@@ -34,6 +37,9 @@ import io.ktor.server.routing.routing
  *  GET  /api/v1/pacientes/{id}/rutina      PACIENTE (solo la suya), FISIOTERAPEUTA (también PUT para modificarla)
  *  GET  /api/v1/ejercicios                 catálogo · GET /api/v1/fisioterapeutas
  *  GET  /api/v1/avisos?desde=              con token: avisos del usuario (POST /avisos/leidos los marca)
+ *  POST /api/v1/dispositivos               con token: registra el teléfono para push (DELETE /{token} al salir)
+ *  POST /api/v1/anuncios                   ADMINISTRADOR, RECEPCIONISTA: anuncio por tema de Firebase (GET los lista)
+ *  POST /api/v1/tareas/revision-diaria     GitHub Actions con X-Tarea-Clave: pacientes sin actividad
  *
  *  GET    /api/v1/sesiones?idPaciente=     PACIENTE (las suyas), FISIOTERAPEUTA (sus pacientes)
  *  GET    /api/v1/sesiones/{id}            PACIENTE, FISIOTERAPEUTA
@@ -52,6 +58,10 @@ fun Application.configureRouting(
     sesiones: SesionesServicio,
     clinica: ClinicaServicio,
     avisos: AvisosServicio,
+    push: PushServicio,
+    anuncios: AnunciosServicio,
+    revision: RevisionDiariaServicio,
+    claveTareas: String?,
     baseDatos: String = "memoria",
 ) {
     routing {
@@ -66,14 +76,16 @@ fun Application.configureRouting(
             cacheControl { listOf(CacheControl.NoCache(null)) }
         }
         route("/api/v1") {
-            rutasSalud(baseDatos)
+            rutasSalud(baseDatos, push.configurado)
             rutasAutenticacion(autenticacion)
+            rutasTareas(revision, claveTareas)
             authenticate(AUTH_SESION) {
                 rutasUsuarios(autenticacion, clinica)
                 rutasCitas(clinica)
                 rutasRutinas(clinica, sesiones)
                 rutasSesiones(sesiones, clinica)
                 rutasAvisos(avisos)
+                rutasNotificaciones(push, anuncios)
             }
         }
     }
