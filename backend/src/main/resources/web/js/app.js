@@ -11,6 +11,7 @@ const MENU = [
   { ruta: "inicio", titulo: "Inicio", roles: PERSONAL },
   { ruta: "agenda", titulo: "Agenda", roles: PERSONAL },
   { ruta: "pacientes", titulo: "Pacientes", roles: PERSONAL },
+  { ruta: "solicitudes", titulo: "Solicitudes", roles: [ADMIN, RECEPCION] },
   { ruta: "invitaciones", titulo: "Invitaciones", roles: [ADMIN, RECEPCION] },
   { ruta: "usuarios", titulo: "Usuarios", roles: [ADMIN] },
   { ruta: "avisos", titulo: "Avisos", roles: PERSONAL },
@@ -24,6 +25,7 @@ const RUTAS = [
   { patron: /^pacientes$/, menu: "pacientes", cargar: () => import("./vistas/pacientes.js"), roles: PERSONAL },
   { patron: /^pacientes\/(\d+)$/, menu: "pacientes", cargar: () => import("./vistas/ficha.js"), roles: PERSONAL },
   { patron: /^pacientes\/(\d+)\/rutina$/, menu: "pacientes", cargar: () => import("./vistas/rutina.js"), roles: [FISIO] },
+  { patron: /^solicitudes$/, menu: "solicitudes", cargar: () => import("./vistas/solicitudes.js"), roles: [ADMIN, RECEPCION] },
   { patron: /^invitaciones$/, menu: "invitaciones", cargar: () => import("./vistas/invitaciones.js"), roles: [ADMIN, RECEPCION] },
   { patron: /^usuarios$/, menu: "usuarios", cargar: () => import("./vistas/usuarios.js"), roles: [ADMIN] },
   { patron: /^avisos$/, menu: "avisos", cargar: () => import("./vistas/avisos.js"), roles: PERSONAL },
@@ -42,10 +44,12 @@ function iniciar() {
   const usuario = sesion.usuario;
   const enlaces = new Map();
   const contadorAvisos = h("span", { class: "contador", hidden: true, "aria-label": "avisos sin leer" });
+  const contadorSolicitudes = h("span", { class: "contador", hidden: true, "aria-label": "solicitudes pendientes" });
 
   const nav = h("nav", { class: "menu", "aria-label": "Secciones" },
     MENU.filter((m) => m.roles.includes(usuario.rol)).map((m) => {
-      const enlace = h("a", { href: "#/" + m.ruta }, h("span", null, m.titulo), m.ruta === "avisos" ? contadorAvisos : null);
+      const contador = { avisos: contadorAvisos, solicitudes: contadorSolicitudes }[m.ruta] || null;
+      const enlace = h("a", { href: "#/" + m.ruta }, h("span", null, m.titulo), contador);
       enlaces.set(m.ruta, enlace);
       return enlace;
     }));
@@ -114,6 +118,12 @@ function iniciar() {
   }
 
   async function actualizarAvisos() {
+    if (usuario.rol !== FISIO) {
+      api.get("/solicitudes-reagenda?estado=PENDIENTE").then((lista) => {
+        contadorSolicitudes.hidden = lista.length === 0;
+        contadorSolicitudes.textContent = String(lista.length);
+      }).catch(() => {});
+    }
     try {
       const bandeja = await api.get("/avisos");
       contadorAvisos.hidden = bandeja.sinLeer === 0;
