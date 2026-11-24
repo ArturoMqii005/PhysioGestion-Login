@@ -1,5 +1,8 @@
 package com.terapid.physiogestion.datos
 
+import com.terapid.physiogestion.modelo.NuevaSolicitudReagenda
+import com.terapid.physiogestion.modelo.ReagendarSolicitud
+import com.terapid.physiogestion.modelo.SolicitudReagenda
 import com.terapid.physiogestion.datos.remoto.ClinicaApi
 import com.terapid.physiogestion.datos.remoto.SesionVencida
 import com.terapid.physiogestion.modelo.Cita
@@ -34,6 +37,15 @@ class ClinicaRepositorio(
 
     suspend fun cambiarEstadoCita(id: Int, estado: EstadoCita, nota: String? = null): Cita =
         conSesion { api.cambiarEstadoCita(it, id, estado, nota) }
+
+    suspend fun horasLibresDeCita(id: Int, fecha: String, fisioterapeutaId: Int? = null): List<String> =
+        conSesion { api.horasLibresDeCita(it, id, fecha, fisioterapeutaId) }
+
+    suspend fun fisiosDisponibles(id: Int): List<FisioterapeutaResumen> = conSesion { api.fisiosDisponibles(it, id) }
+
+    suspend fun reagendar(id: Int, fecha: String, hora: String): Cita = conSesion { api.reagendar(it, id, ReagendarSolicitud(fecha, hora)) }
+
+    suspend fun solicitarCambio(id: Int, s: NuevaSolicitudReagenda): SolicitudReagenda = conSesion { api.solicitarCambio(it, id, s) }
 
     suspend fun fisioterapeutas(): List<FisioterapeutaResumen> = conSesion { api.fisioterapeutas(it) }
 

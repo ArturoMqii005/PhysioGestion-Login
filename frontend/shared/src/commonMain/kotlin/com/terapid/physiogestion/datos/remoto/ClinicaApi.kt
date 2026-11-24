@@ -9,6 +9,9 @@ import com.terapid.physiogestion.modelo.EstadoCitaSolicitud
 import com.terapid.physiogestion.modelo.FichaPaciente
 import com.terapid.physiogestion.modelo.FisioterapeutaResumen
 import com.terapid.physiogestion.modelo.PacienteResumen
+import com.terapid.physiogestion.modelo.NuevaSolicitudReagenda
+import com.terapid.physiogestion.modelo.ReagendarSolicitud
+import com.terapid.physiogestion.modelo.SolicitudReagenda
 import com.terapid.physiogestion.modelo.ReprogramarCitaSolicitud
 import com.terapid.physiogestion.modelo.Rutina
 import com.terapid.physiogestion.modelo.RutinaSolicitud
@@ -54,6 +57,38 @@ class ClinicaApi(private val cliente: HttpClient) {
                 excepto?.let { parameter("excepto", it) }
             }.body()
         }
+
+    /** GET /api/v1/citas/{id}/libres: horas libres para mover esa cita (con su fisioterapeuta u otro). */
+    suspend fun horasLibresDeCita(token: String, id: Int, fecha: String, fisioterapeutaId: Int?): List<String> = llamarApi {
+        cliente.get(ConfiguracionApi.api("citas/$id/libres")) {
+            bearerAuth(token)
+            parameter("fecha", fecha)
+            fisioterapeutaId?.let { parameter("fisioterapeutaId", it) }
+        }.body()
+    }
+
+    /** GET /api/v1/citas/{id}/disponibles: fisioterapeutas libres a la misma hora. */
+    suspend fun fisiosDisponibles(token: String, id: Int): List<FisioterapeutaResumen> = llamarApi {
+        cliente.get(ConfiguracionApi.api("citas/$id/disponibles")) { bearerAuth(token) }.body()
+    }
+
+    /** POST /api/v1/citas/{id}/reagendar (paciente). */
+    suspend fun reagendar(token: String, id: Int, s: ReagendarSolicitud): Cita = llamarApi {
+        cliente.post(ConfiguracionApi.api("citas/$id/reagendar")) {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(s)
+        }.body()
+    }
+
+    /** POST /api/v1/citas/{id}/solicitudes (paciente, cuando faltan menos de 24 h). */
+    suspend fun solicitarCambio(token: String, id: Int, s: NuevaSolicitudReagenda): SolicitudReagenda = llamarApi {
+        cliente.post(ConfiguracionApi.api("citas/$id/solicitudes")) {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(s)
+        }.body()
+    }
 
     /** POST /api/v1/citas (CIT-05). */
     suspend fun agendar(token: String, s: CitaSolicitud): Cita = llamarApi {

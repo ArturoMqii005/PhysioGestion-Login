@@ -20,6 +20,8 @@ data class Cita(
     val pacienteId: Int? = null,
     val duracionMinutos: Int = 50,
     val nota: String? = null,
+    /** Veces que el paciente la movió él mismo (máximo 2). */
+    val reagendasPaciente: Int = 0,
 ) {
     /** Todavía se puede confirmar, reprogramar, cancelar o atender. */
     val abierta: Boolean get() = estado == EstadoCita.PENDIENTE || estado == EstadoCita.CONFIRMADA
@@ -53,7 +55,20 @@ data class ReprogramarCitaSolicitud(
     val fisioterapeutaId: Int? = null,
     val duracionMinutos: Int? = null,
     val motivo: String? = null,
+    /** Por qué la mueve el fisioterapeuta («Me enfermé»); le llega al paciente. */
+    val nota: String? = null,
 )
+
+/** POST /citas/{id}/reagendar: el paciente elige otra hora libre (más de 24 h antes, máximo 2 veces). */
+@Serializable
+data class ReagendarSolicitud(val fecha: String, val hora: String)
+
+/** POST /citas/{id}/solicitudes: con menos de 24 h, el paciente pide el cambio y recepción decide. */
+@Serializable
+data class NuevaSolicitudReagenda(val fechaPropuesta: String? = null, val horaPropuesta: String? = null, val mensaje: String)
+
+@Serializable
+data class SolicitudReagenda(val id: Int, val citaId: Int, val estado: String = "PENDIENTE")
 
 @Serializable
 data class EstadoCitaSolicitud(val estado: EstadoCita, val nota: String? = null)
