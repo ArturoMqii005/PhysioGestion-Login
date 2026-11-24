@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhysioGestion · Recuperar contraseña</title>
+  <link rel="icon" href="icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <div class="portada" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+  <main class="contenedor">
+    <header class="marca">
+      <div class="logo" aria-hidden="true">PG</div>
+      <h1>Recuperar contraseña</h1>
+      <p class="subtitulo">Te enviamos un código a tu correo.</p>
+    </header>
+
+    <!-- Paso 1: correo -->
+    <form id="pasoCorreo" class="tarjeta" novalidate>
+      <h2>¿A qué correo está tu cuenta?</h2>
+      <div class="campo">
+        <label for="correo">Correo</label>
+        <div class="entrada"><input id="correo" name="correo" type="email" autocomplete="email" required></div>
+      </div>
+      <p id="errorCorreo" class="error" role="alert"></p>
+      <button id="enviarCodigo" class="boton" type="submit">Enviar código</button>
+    </form>
+
+    <!-- Paso 2: código y contraseña nueva -->
+    <form id="pasoCodigo" class="tarjeta" novalidate hidden>
+      <h2>Escribe el código</h2>
+      <p id="mensajeEnviado" class="nota"></p>
+      <div class="campo">
+        <label for="codigo">Código de 6 dígitos</label>
+        <div class="entrada"><input id="codigo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></div>
+      </div>
+      <div class="campo">
+        <label for="nueva">Contraseña nueva</label>
+        <div class="entrada"><input id="nueva" name="nueva" type="password" autocomplete="new-password" maxlength="64" required></div>
+        <p class="ayuda">De 8 a 64 caracteres, con letras y números.</p>
+      </div>
+      <div class="campo">
+        <label for="repetir">Repite la contraseña nueva</label>
+        <div class="entrada"><input id="repetir" name="repetir" type="password" autocomplete="new-password" maxlength="64" required></div>
+      </div>
+      <p id="errorCodigo" class="error" role="alert"></p>
+      <button id="restablecer" class="boton" type="submit">Guardar contraseña</button>
+      <p class="centrado"><button id="otraVez" class="boton-texto" type="button">Enviar otro código</button></p>
+    </form>
+
+    <p class="pie"><a class="enlace" href="index.html">‹ Volver a iniciar sesión</a></p>
+  </main>
+
+  <script type="module">
+    import { llamarApi } from "./js/api.js";
+
+    const pasoCorreo = document.getElementById("pasoCorreo");
+    const pasoCodigo = document.getElementById("pasoCodigo");
+    const correo = document.getElementById("correo");
+    const errorCorreo = document.getElementById("errorCorreo");
+    const errorCodigo = document.getElementById("errorCodigo");
+
+    async function enviarCodigo() {
+      const valor = correo.value.trim();
+      if (!valor.includes("@")) { errorCorreo.textContent = "Escribe un correo válido."; return; }
+      const boton = document.getElementById("enviarCodigo");
+      boton.disabled = true;
+      errorCorreo.textContent = "";
+      try {
+        const r = await llamarApi("/auth/recuperacion", { metodo: "POST", cuerpo: { correo: valor }, sinSesion: true });
+        document.getElementById("mensajeEnviado").textContent = r?.mensaje || `Si ${valor} tiene una cuenta, te llegará un código en unos minutos.`;
+        pasoCorreo.hidden = true;
+        pasoCodigo.hidden = false;
+        document.getElementById("codigo").focus();
+      } catch (e) {
+        errorCorreo.textContent = e.message;
+      } finally {
+        boton.disabled = false;
+      }
+    }
+
+    pasoCorreo.addEventListener("submit", (e) => { e.preventDefault(); enviarCodigo(); });
+    document.getElementById("otraVez").addEventListener("click", () => { pasoCodigo.hidden = true; pasoCorreo.hidden = false; correo.focus(); });
+
+    pasoCodigo.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const codigo = document.getElementById("codigo").value.trim();
+      const nueva = document.getElementById("nueva").value;
+      const repetir = document.getElementById("repetir").value;
+      errorCodigo.textContent = "";
+      if (!/^\d{6}$/.test(codigo)) { errorCodigo.textContent = "El código tiene 6 dígitos."; return; }
+      if (nueva.length < 8 || !/\p{L}/u.test(nueva) || !/\d/.test(nueva)) { errorCodigo.textContent = "La contraseña debe tener al menos 8 caracteres y combinar letras y números."; return; }
+      if (nueva !== repetir) { errorCodigo.textContent = "Las contraseñas no coinciden."; return; }
+      const boton = document.getElementById("restablecer");
+      boton.disabled = true;
+      try {
+        await llamarApi("/auth/restablecer", { metodo: "POST", cuerpo: { correo: correo.value.trim(), codigo, contrasenaNueva: nueva }, sinSesion: true });
+        location.replace("index.html?restablecida=1");
+      } catch (err) {
+        errorCodigo.textContent = err.message;
+      } finally {
+        boton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

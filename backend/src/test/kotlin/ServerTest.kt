@@ -50,7 +50,7 @@ class ServerTest {
         val pagina = client.get("/web/")
         assertEquals(HttpStatusCode.OK, pagina.status)
         assertTrue(pagina.bodyAsText().contains("Inicia sesión"))
-        assertEquals(HttpStatusCode.OK, client.get("/web/api.js").status)
+        assertEquals(HttpStatusCode.OK, client.get("/web/js/api.js").status)
         assertEquals(HttpStatusCode.OK, client.get("/web/estilos.css").status)
         assertEquals(HttpStatusCode.OK, client.get("/web/panel.html").status)
     }

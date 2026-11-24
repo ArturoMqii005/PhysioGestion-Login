@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PhysioGestion · Iniciar sesión</title>
+  <link rel="icon" href="icono.svg" type="image/svg+xml">
   <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
@@ -37,17 +38,19 @@
       <p id="error" class="error" role="alert" aria-live="assertive"></p>
 
       <button id="entrar" class="boton" type="submit">Iniciar sesión</button>
+      <p class="centrado"><a class="enlace" href="recuperar.html">¿Olvidaste tu contraseña?</a></p>
     </form>
 
     <section class="tarjeta">
       <p class="nota">¿Eres paciente? Entra desde la app móvil de PhysioGestion. La versión web es para administración, recepción y fisioterapeutas.</p>
     </section>
 
-    <p class="pie">Versión web · en construcción</p>
+    <p class="pie"><a class="enlace tenue" href="privacidad.html">Aviso de privacidad</a></p>
   </main>
 
-  <script src="api.js"></script>
-  <script>
+  <script type="module">
+    import { guardarSesion, leerSesion, llamarApi } from "./js/api.js";
+
     const formulario = document.getElementById("formulario");
     const campoUsuario = document.getElementById("usuario");
     const campoContrasena = document.getElementById("contrasena");
@@ -55,11 +58,14 @@
     const botonVer = document.getElementById("verContrasena");
     const textoError = document.getElementById("error");
 
-    // Si ya hay una sesión abierta en esta pestaña, ir directo al panel.
+    // Si ya hay una sesión abierta en esta pestaña, ir directo a la aplicación.
     if (leerSesion()) location.replace("panel.html");
 
-    if (new URLSearchParams(location.search).get("vencida") === "1") {
-      textoError.textContent = "Tu sesión venció. Vuelve a iniciar sesión.";
+    const consulta = new URLSearchParams(location.search);
+    if (consulta.get("vencida") === "1") textoError.textContent = "Tu sesión venció. Vuelve a iniciar sesión.";
+    if (consulta.get("restablecida") === "1") {
+      textoError.classList.add("exito");
+      textoError.textContent = "Listo, ya puedes entrar con tu contraseña nueva.";
     }
 
     botonVer.addEventListener("click", () => {
@@ -71,6 +77,7 @@
 
     formulario.addEventListener("submit", async (evento) => {
       evento.preventDefault();
+      textoError.classList.remove("exito");
       const usuario = campoUsuario.value.trim();
       const contrasena = campoContrasena.value;
       if (!usuario || !contrasena) {
@@ -83,19 +90,15 @@
       botonEntrar.disabled = true;
       botonEntrar.textContent = "Entrando…";
       try {
-        const sesion = await llamarApi("/auth/login", { metodo: "POST", cuerpo: { usuario, contrasena } });
+        const sesion = await llamarApi("/auth/login", { metodo: "POST", cuerpo: { usuario, contrasena }, sinSesion: true });
         if (sesion.usuario.rol === "PACIENTE") {
           // La web es solo para el personal: se cierra la sesión que se acaba de abrir.
           llamarApi("/auth/logout", { metodo: "POST", token: sesion.token }).catch(() => {});
           textoError.textContent = "La versión web es para el personal de la clínica. Como paciente, entra desde la app móvil.";
           return;
         }
-        guardarSesion({
-          token: sesion.token,
-          usuario: sesion.usuario,
-          debeCambiarContrasena: sesion.debeCambiarContrasena,
-        });
-        location.replace("panel.html");
+        guardarSesion({ token: sesion.token, usuario: sesion.usuario, debeCambiarContrasena: sesion.debeCambiarContrasena });
+        location.replace(sesion.debeCambiarContrasena ? "panel.html#/cuenta" : "panel.html");
       } catch (e) {
         textoError.textContent = e.message;
         campoContrasena.select();

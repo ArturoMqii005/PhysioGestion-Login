@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhysioGestion · Aviso de privacidad</title>
+  <link rel="icon" href="icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <main class="contenedor ancho">
+    <header class="marca">
+      <div class="logo" aria-hidden="true">PG</div>
+      <h1 id="titulo">Aviso de privacidad</h1>
+      <p id="version" class="subtitulo"></p>
+    </header>
+    <article id="contenido" class="tarjeta texto-largo"><p class="tenue">Cargando…</p></article>
+    <p class="pie"><a class="enlace" href="index.html">‹ Volver a iniciar sesión</a></p>
+  </main>
+
+  <script type="module">
+    import { llamarApi } from "./js/api.js";
+    import { h } from "./js/ui.js";
+
+    const contenido = document.getElementById("contenido");
+    try {
+      const aviso = await llamarApi("/aviso-privacidad", { sinSesion: true });
+      document.getElementById("titulo").textContent = aviso.titulo;
+      document.getElementById("version").textContent = "Versión " + aviso.version;
+      contenido.replaceChildren(...aviso.secciones.map((s) => h("section", null, h("h2", null, s.titulo), h("p", null, s.texto))));
+    } catch (e) {
+      contenido.replaceChildren(h("p", { class: "error" }, e.message));
+    }
+  </script>
+</body>
+</html>

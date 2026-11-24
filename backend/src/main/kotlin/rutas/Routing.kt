@@ -8,6 +8,7 @@ import com.terapid.physiogestion.servicios.ClinicaServicio
 import com.terapid.physiogestion.servicios.SesionesServicio
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
+import io.ktor.http.CacheControl
 import io.ktor.server.http.content.staticResources
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
@@ -60,7 +61,10 @@ fun Application.configureRouting(
         // Versión web para el personal de la clínica: páginas de resources/web.
         // Se sirve desde este mismo servidor, así que usa la API sin CORS.
         get("/web") { call.respondRedirect("/web/") }
-        staticResources("/web", "web")
+        staticResources("/web", "web") {
+            // Sin caché: después de cada despliegue el navegador toma la versión nueva.
+            cacheControl { listOf(CacheControl.NoCache(null)) }
+        }
         route("/api/v1") {
             rutasSalud(baseDatos)
             rutasAutenticacion(autenticacion)

@@ -3,101 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PhysioGestion · Panel</title>
+  <title>PhysioGestion</title>
+  <link rel="icon" href="icono.svg" type="image/svg+xml">
   <link rel="stylesheet" href="estilos.css">
+  <script type="module" src="js/app.js"></script>
 </head>
 <body>
-  <header class="barra">
-    <div class="logo chico" aria-hidden="true">PG</div>
-    <span class="nombre-app">PhysioGestion</span>
-    <span class="espacio"></span>
-    <button id="salir" class="boton-borde" type="button">Cerrar sesión</button>
-  </header>
-
-  <main class="panel">
-    <h1 id="saludo">Hola</h1>
-    <span id="rol" class="chip"></span>
-
-    <p id="avisoTemporal" class="aviso-temporal" hidden>
-      Tu cuenta tiene una contraseña temporal. Cámbiala desde la app móvil en Perfil → Cambiar contraseña.
-    </p>
-
-    <section class="modulos" id="modulos" aria-label="Módulos"></section>
-  </main>
-
-  <script src="api.js"></script>
-  <script>
-    // Módulos que tendrá la versión web según el rol. Por ahora solo se muestran.
-    const MODULOS = {
-      ADMINISTRADOR: [
-        ["Usuarios", "Altas, roles y cuentas activas del personal."],
-        ["Invitaciones", "Códigos para que los pacientes creen su cuenta."],
-        ["Agenda de la clínica", "Citas del día de todos los fisioterapeutas."],
-      ],
-      RECEPCIONISTA: [
-        ["Agenda de la clínica", "Agendar, reprogramar y cancelar citas."],
-        ["Pacientes", "Lista de pacientes y fisioterapeuta asignado."],
-        ["Invitaciones", "Códigos para que los pacientes creen su cuenta."],
-      ],
-      FISIOTERAPEUTA: [
-        ["Mi agenda", "Tus citas del día."],
-        ["Mis pacientes", "Ficha, rutina y seguimiento de cada paciente."],
-        ["Avisos", "Dolor alto, cancelaciones y pacientes nuevos."],
-      ],
-    };
-
-    const sesion = leerSesion();
-    if (!sesion) location.replace("index.html");
-
-    function pintar(usuario, debeCambiarContrasena) {
-      document.getElementById("saludo").textContent = "Hola, " + usuario.nombre;
-      document.getElementById("rol").textContent = NOMBRES_ROL[usuario.rol] || usuario.rol;
-      document.getElementById("avisoTemporal").hidden = !debeCambiarContrasena;
-
-      const contenedor = document.getElementById("modulos");
-      contenedor.replaceChildren();
-      for (const [titulo, descripcion] of MODULOS[usuario.rol] || []) {
-        const tarjeta = document.createElement("article");
-        tarjeta.className = "tarjeta modulo";
-        const h3 = document.createElement("h3");
-        h3.textContent = titulo;
-        const p = document.createElement("p");
-        p.textContent = descripcion;
-        const estado = document.createElement("span");
-        estado.className = "estado";
-        estado.textContent = "Próximamente";
-        tarjeta.append(h3, p, estado);
-        contenedor.append(tarjeta);
-      }
-    }
-
-    if (sesion) {
-      pintar(sesion.usuario, sesion.debeCambiarContrasena);
-
-      // Confirma con el servidor que el token sigue vigente y trae los datos actuales.
-      llamarApi("/usuarios/yo", { token: sesion.token })
-        .then((cuenta) => {
-          sesion.usuario = cuenta.usuario;
-          sesion.debeCambiarContrasena = cuenta.debeCambiarContrasena;
-          guardarSesion(sesion);
-          pintar(cuenta.usuario, cuenta.debeCambiarContrasena);
-        })
-        .catch((e) => {
-          if (e.estado === 401) {
-            borrarSesion();
-            location.replace("index.html?vencida=1");
-          }
-        });
-    }
-
-    document.getElementById("salir").addEventListener("click", async () => {
-      const token = sesion && sesion.token;
-      borrarSesion();
-      if (token) {
-        try { await llamarApi("/auth/logout", { metodo: "POST", token }); } catch (_) { /* ya no importa */ }
-      }
-      location.replace("index.html");
-    });
-  </script>
+  <noscript>La versión web de PhysioGestion necesita JavaScript activado.</noscript>
 </body>
 </html>
