@@ -43,6 +43,12 @@ object Iconos {
     val Agenda = linea("agenda", "M6 5h12a2.5 2.5 0 0 1 2.5 2.5v10A2.5 2.5 0 0 1 18 20H6a2.5 2.5 0 0 1-2.5-2.5v-10A2.5 2.5 0 0 1 6 5zM3.5 10h17M8 3v4M16 3v4", grosor = 2.2f)
     val Pacientes = linea("pacientes", "M12.5 8a3.5 3.5 0 1 1-7 0a3.5 3.5 0 1 1 7 0M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6", grosor = 2.2f)
     val Campana = linea("campana", "M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10.3 20a2 2 0 0 0 3.4 0")
+    /** Dos flechas que se cruzan: solicitudes de cambio de cita. */
+    val Solicitudes = linea("solicitudes", "M4 8h15M15 4l4 4-4 4M20 16H5M9 12l-4 4 4 4", grosor = 2.2f)
+    /** Megáfono: anuncios de la clínica. */
+    val Anuncios = linea("anuncios", "M4 9.5h3l7-4.5v14l-7-4.5H4zM7 14.5l1.5 5h3l-1.2-4M17.5 9a4 4 0 0 1 0 6", grosor = 2.1f)
+    /** Credencial con foto: cuentas de usuario. */
+    val Usuarios = linea("usuarios", "M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM11 10.5a2 2 0 1 1-4 0a2 2 0 1 1 4 0M6 16a3 3 0 0 1 6 0M14.5 10h4M14.5 14h4", grosor = 2.1f)
     val Lista = linea("lista", "M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01", grosor = 2.2f)
     val Reloj = linea("reloj", "M21 12a9 9 0 1 1-18 0a9 9 0 1 1 18 0M12 7v5l3 2")
     val Camara = linea("camara", "M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM15.5 12.5a3.5 3.5 0 1 1-7 0a3.5 3.5 0 1 1 7 0")

@@ -67,8 +67,43 @@ data class ReagendarSolicitud(val fecha: String, val hora: String)
 @Serializable
 data class NuevaSolicitudReagenda(val fechaPropuesta: String? = null, val horaPropuesta: String? = null, val mensaje: String)
 
+/**
+ * Solicitud de cambio de cita que manda el paciente cuando ya no puede moverla él
+ * mismo. Recepción y administración la aprueban (la cita se mueve) o la rechazan.
+ */
 @Serializable
-data class SolicitudReagenda(val id: Int, val citaId: Int, val estado: String = "PENDIENTE")
+data class SolicitudReagenda(
+    val id: Int,
+    val citaId: Int,
+    /** PENDIENTE, APROBADA o RECHAZADA. */
+    val estado: String = "PENDIENTE",
+    val pacienteId: Int = 0,
+    val paciente: String = "",
+    val fisioterapeutaId: Int = 0,
+    val fisioterapeuta: String = "",
+    val fechaActual: String = "",
+    val horaActual: String = "",
+    val fechaPropuesta: String? = null,
+    val horaPropuesta: String? = null,
+    val mensaje: String = "",
+    /** Fecha y hora ISO en que el paciente la mandó. */
+    val creada: String = "",
+    /** Nota de recepción al aprobar o rechazar, y quién la atendió. */
+    val respuesta: String? = null,
+    val atendidaPor: String? = null,
+) {
+    val pendiente: Boolean get() = estado == "PENDIENTE"
+}
+
+/** POST /solicitudes-reagenda/{id}/resolver: aprobar (con la fecha, hora y fisioterapeuta nuevos) o rechazar con motivo. */
+@Serializable
+data class ResolverSolicitud(
+    val aprobar: Boolean,
+    val fecha: String? = null,
+    val hora: String? = null,
+    val fisioterapeutaId: Int? = null,
+    val nota: String? = null,
+)
 
 @Serializable
 data class EstadoCitaSolicitud(val estado: EstadoCita, val nota: String? = null)

@@ -16,7 +16,6 @@ import com.terapid.physiogestion.plataforma.permisos.GestorPermisos
 import com.terapid.physiogestion.plataforma.permisos.Permiso
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -78,7 +77,8 @@ class PerfilViewModel(
                 val sesiones = almacenamiento.contarSesiones()
                 val pendientes = almacenamiento.sesionesPendientesDeEnvio()
                 val mediciones = almacenamiento.contarMediciones()
-                val (bytes, cantidad, carpeta) = withContext(Dispatchers.IO) {
+                // Default y no IO: Dispatchers.IO no existe en el navegador.
+                val (bytes, cantidad, carpeta) = withContext(Dispatchers.Default) {
                     Triple(archivos.tamanoOcupado(), archivos.cantidad(), archivos.directorio())
                 }
                 _estado.update {
@@ -114,7 +114,7 @@ class PerfilViewModel(
     /** Vacía la caché de videos (ALMACENAMIENTO EN ARCHIVOS). */
     fun limpiarCache() {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { archivos.limpiar() }
+            withContext(Dispatchers.Default) { archivos.limpiar() }
             _estado.update { it.copy(aviso = "Se vació la caché de videos.") }
             cargar()
         }

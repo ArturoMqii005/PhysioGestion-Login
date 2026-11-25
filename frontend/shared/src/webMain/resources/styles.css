@@ -1,0 +1,23 @@
+/* Página que contiene la app de Compose: ocupa toda la ventana con el fondo de la app. */
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #0E0C17;
+    color: #F4F2FF;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Aviso mientras el navegador descarga la app; main.kt lo quita al arrancar. */
+#cargando {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #A9A4C2;
+}

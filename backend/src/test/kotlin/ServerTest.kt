@@ -45,14 +45,14 @@ class ServerTest {
     }
 
     @Test
-    fun `la version web entrega el login y sus archivos`() = testApplication {
+    fun `la version web entrega la app de Compose`() = testApplication {
         configure()
         val pagina = client.get("/web/")
         assertEquals(HttpStatusCode.OK, pagina.status)
-        assertTrue(pagina.bodyAsText().contains("Inicia sesión"))
-        assertEquals(HttpStatusCode.OK, client.get("/web/js/api.js").status)
-        assertEquals(HttpStatusCode.OK, client.get("/web/estilos.css").status)
-        assertEquals(HttpStatusCode.OK, client.get("/web/panel.html").status)
+        // index.html de frontend/shared/src/webMain/resources (copiado con :shared:publicarWeb).
+        assertTrue(pagina.bodyAsText().contains("physiogestion.js"))
+        assertEquals(HttpStatusCode.OK, client.get("/web/physiogestion.js").status)
+        assertEquals(HttpStatusCode.OK, client.get("/web/styles.css").status)
     }
 
     @Test

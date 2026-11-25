@@ -5,6 +5,8 @@ import com.terapid.physiogestion.modelo.ReagendarSolicitud
 import com.terapid.physiogestion.modelo.SolicitudReagenda
 import com.terapid.physiogestion.datos.remoto.ClinicaApi
 import com.terapid.physiogestion.datos.remoto.SesionVencida
+import com.terapid.physiogestion.modelo.Anuncio
+import com.terapid.physiogestion.modelo.AnuncioSolicitud
 import com.terapid.physiogestion.modelo.Cita
 import com.terapid.physiogestion.modelo.CitaSolicitud
 import com.terapid.physiogestion.modelo.Ejercicio
@@ -13,6 +15,7 @@ import com.terapid.physiogestion.modelo.FichaPaciente
 import com.terapid.physiogestion.modelo.FisioterapeutaResumen
 import com.terapid.physiogestion.modelo.PacienteResumen
 import com.terapid.physiogestion.modelo.ReprogramarCitaSolicitud
+import com.terapid.physiogestion.modelo.ResolverSolicitud
 import com.terapid.physiogestion.modelo.Rutina
 import com.terapid.physiogestion.modelo.RutinaSolicitud
 import com.terapid.physiogestion.modelo.PruebaEscalerasRegistrada
@@ -64,6 +67,16 @@ class ClinicaRepositorio(
 
     /** Pruebas de escaleras de los pacientes del fisioterapeuta (la más reciente primero). */
     suspend fun pruebasEscalerasDeMisPacientes(): List<PruebaEscalerasRegistrada> = conSesion { api.pruebasEscaleras(it) }
+
+    /** Solicitudes de cambio de cita; con [soloPendientes] solo las que falta resolver. */
+    suspend fun solicitudes(soloPendientes: Boolean): List<SolicitudReagenda> =
+        conSesion { api.solicitudes(it, if (soloPendientes) "PENDIENTE" else null) }
+
+    suspend fun resolverSolicitud(id: Int, s: ResolverSolicitud): SolicitudReagenda = conSesion { api.resolverSolicitud(it, id, s) }
+
+    suspend fun anuncios(): List<Anuncio> = conSesion { api.anuncios(it) }
+
+    suspend fun publicarAnuncio(s: AnuncioSolicitud): Anuncio = conSesion { api.publicarAnuncio(it, s) }
 
     /** Si el servidor dice que el token ya no vale, cierra la sesión (la app vuelve al login). */
     private suspend fun <T> conSesion(llamada: suspend (String) -> T): T =

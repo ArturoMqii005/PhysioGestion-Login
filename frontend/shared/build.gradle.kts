@@ -1,4 +1,6 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -25,7 +27,23 @@ kotlin {
     }
     
     jvm()
-    
+
+    // WEB: la misma App() de Compose compilada a WebAssembly. Lo propio del navegador
+    // vive en src/webMain. Necesita un navegador con WebAssembly GC: Chrome y Edge 119+,
+    // Firefox 120+ y Safari 18.2+ (también en iPhone).
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        outputModuleName.set("physiogestion")
+        browser {
+            commonWebpackConfig {
+                outputFileName = "physiogestion.js"
+                // El backend local ya ocupa el 8080: la web en desarrollo se abre en el 8081.
+                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply { port = 8081 }
+            }
+        }
+        binaries.executable()
+    }
+
     android {
        namespace = "com.terapid.physiogestion.shared"
        compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -47,7 +65,29 @@ kotlin {
        }
     }
     
+    // Jerarquía de carpetas en src/: commonMain (todo lo compartido), androidMain, iosMain,
+    // jvmMain (escritorio), webMain (navegador) y sqliteMain, que agrupa a Android, iOS y
+    // escritorio porque son los que guardan el historial en SQLite. El navegador no tiene
+    // SQLite: su almacenamiento local está en webMain.
+    applyDefaultHierarchyTemplate()
+
     sourceSets {
+        val sqliteMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                // Base de datos local (SQLite multiplataforma)
+                implementation(libs.androidx.sqlite)
+                implementation(libs.androidx.sqlite.bundled)
+            }
+        }
+        androidMain.get().dependsOn(sqliteMain)
+        jvmMain.get().dependsOn(sqliteMain)
+        iosMain.get().dependsOn(sqliteMain)
+
+        webMain.dependencies {
+            // Motor HTTP del navegador (fetch)
+            implementation(libs.ktor.client.js)
+        }
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
@@ -84,7 +124,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            // Codigo compartido: navegacion, API, JSON, corrutinas y base de datos local
+            // Codigo compartido: navegacion, API, JSON y corrutinas
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.ktor.client.core)
@@ -92,8 +132,6 @@ kotlin {
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinxJson)
             implementation(libs.navigation.compose)
-            implementation(libs.androidx.sqlite)
-            implementation(libs.androidx.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -107,4 +145,16 @@ kotlin {
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
+}
+
+// PUBLICAR LA WEB: compila la versión del navegador (Wasm, optimizada) y la copia al backend,
+// que la sirve en /web/. Después se hace commit de backend/src/main/resources/web y Railway
+// la publica al desplegar. Reemplaza todo lo que haya en esa carpeta.
+//   gradlew.bat :shared:publicarWeb
+val publicarWeb by tasks.registering(Sync::class) {
+    group = "physiogestion"
+    description = "Compila la web (Wasm) y la copia a backend/src/main/resources/web."
+    dependsOn("wasmJsBrowserDistribution")
+    from(layout.buildDirectory.dir("dist/wasmJs/productionExecutable"))
+    into(rootProject.file("../backend/src/main/resources/web"))
 }

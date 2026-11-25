@@ -1,5 +1,7 @@
 package com.terapid.physiogestion.datos.remoto
 
+import com.terapid.physiogestion.modelo.Anuncio
+import com.terapid.physiogestion.modelo.AnuncioSolicitud
 import com.terapid.physiogestion.modelo.AsignacionSolicitud
 import com.terapid.physiogestion.modelo.Cita
 import com.terapid.physiogestion.modelo.CitaSolicitud
@@ -13,6 +15,7 @@ import com.terapid.physiogestion.modelo.NuevaSolicitudReagenda
 import com.terapid.physiogestion.modelo.ReagendarSolicitud
 import com.terapid.physiogestion.modelo.SolicitudReagenda
 import com.terapid.physiogestion.modelo.ReprogramarCitaSolicitud
+import com.terapid.physiogestion.modelo.ResolverSolicitud
 import com.terapid.physiogestion.modelo.Rutina
 import com.terapid.physiogestion.modelo.RutinaSolicitud
 import com.terapid.physiogestion.modelo.PruebaEscalerasRegistrada
@@ -162,4 +165,34 @@ class ClinicaApi(private val cliente: HttpClient) {
     /** GET /api/v1/pruebas-escaleras (FISIOTERAPEUTA): pruebas de escaleras de sus pacientes. */
     suspend fun pruebasEscaleras(token: String): List<PruebaEscalerasRegistrada> =
         llamarApi { cliente.get(ConfiguracionApi.api("pruebas-escaleras")) { bearerAuth(token) }.body() }
+
+    /** GET /api/v1/solicitudes-reagenda?estado= (recepción y administración ven las de toda la clínica). */
+    suspend fun solicitudes(token: String, estado: String?): List<SolicitudReagenda> = llamarApi {
+        cliente.get(ConfiguracionApi.api("solicitudes-reagenda")) {
+            bearerAuth(token)
+            estado?.let { parameter("estado", it) }
+        }.body()
+    }
+
+    /** POST /api/v1/solicitudes-reagenda/{id}/resolver: aprobar (mueve la cita) o rechazar. */
+    suspend fun resolverSolicitud(token: String, id: Int, s: ResolverSolicitud): SolicitudReagenda = llamarApi {
+        cliente.post(ConfiguracionApi.api("solicitudes-reagenda/$id/resolver")) {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(s)
+        }.body()
+    }
+
+    /** GET /api/v1/anuncios (recepción y administración): los más recientes primero. */
+    suspend fun anuncios(token: String): List<Anuncio> =
+        llamarApi { cliente.get(ConfiguracionApi.api("anuncios")) { bearerAuth(token) }.body() }
+
+    /** POST /api/v1/anuncios: se manda como push y queda en la bandeja de avisos. */
+    suspend fun publicarAnuncio(token: String, s: AnuncioSolicitud): Anuncio = llamarApi {
+        cliente.post(ConfiguracionApi.api("anuncios")) {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(s)
+        }.body()
+    }
 }

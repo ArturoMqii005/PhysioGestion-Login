@@ -4,6 +4,9 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.plugins.compression.Compression
+import io.ktor.server.plugins.compression.gzip
+import io.ktor.server.plugins.compression.minimumSize
 import io.ktor.server.plugins.cors.routing.CORS
 
 /**
@@ -14,6 +17,13 @@ import io.ktor.server.plugins.cors.routing.CORS
  * se acepta cualquier origen. La app móvil no usa CORS: solo aplica a navegadores.
  */
 fun Application.configureHttp(origenes: List<String> = origenesPermitidos()) {
+    // COMPRESIÓN: la versión web (WebAssembly) pesa varios MB; con gzip el navegador
+    // descarga alrededor de un tercio. Solo se comprime si el cliente lo pide.
+    install(Compression) {
+        gzip {
+            minimumSize(1024)
+        }
+    }
     install(CORS) {
         allowMethod(HttpMethod.Options)
         allowMethod(HttpMethod.Post)

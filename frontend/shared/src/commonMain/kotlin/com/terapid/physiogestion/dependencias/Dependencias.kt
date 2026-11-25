@@ -15,8 +15,8 @@ import com.terapid.physiogestion.datos.local.AlmacenArchivos
 import com.terapid.physiogestion.datos.local.AlmacenPreferencias
 import com.terapid.physiogestion.datos.local.AlmacenSeguro
 import com.terapid.physiogestion.datos.local.AlmacenamientoLocal
-import com.terapid.physiogestion.datos.local.BaseDatosLocal
 import com.terapid.physiogestion.datos.local.PersistenciaSesion
+import com.terapid.physiogestion.datos.local.crearAlmacenamientoLocal
 import com.terapid.physiogestion.datos.remoto.AutenticacionApi
 import com.terapid.physiogestion.datos.remoto.AvisosApi
 import com.terapid.physiogestion.datos.remoto.ClinicaApi
@@ -35,7 +35,6 @@ import com.terapid.physiogestion.plataforma.Notificador
 import com.terapid.physiogestion.plataforma.SinNotificaciones
 import com.terapid.physiogestion.plataforma.ahoraEnMilisegundos
 import com.terapid.physiogestion.plataforma.claveDelDia
-import com.terapid.physiogestion.plataforma.rutaBaseDatos
 import com.terapid.physiogestion.servicio.AvisosLocales
 import com.terapid.physiogestion.servicio.SeguimientoServicio
 import kotlinx.serialization.json.Json
@@ -55,8 +54,8 @@ object Dependencias {
     private val clienteHttp by lazy { crearClienteHttp(json) }
 
     // ---- Almacenamiento local: base de datos, preferencias, archivos y almacén cifrado ----
-    private val baseDatos by lazy { BaseDatosLocal(rutaBaseDatos("physiogestion.db")) }
-    val almacenamiento: AlmacenamientoLocal by lazy { AlmacenamientoLocal(baseDatos, json) }
+    // (SQLite en Android, iOS y escritorio; memoria en el navegador)
+    val almacenamiento: AlmacenamientoLocal by lazy { crearAlmacenamientoLocal(json) }
     private val almacenPreferencias by lazy { AlmacenPreferencias() }
     val archivos: AlmacenArchivos by lazy { AlmacenArchivos() }
 
