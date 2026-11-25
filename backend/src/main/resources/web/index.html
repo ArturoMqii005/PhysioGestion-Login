@@ -1,112 +1,20 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PhysioGestion · Iniciar sesión</title>
-  <link rel="icon" href="icono.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="estilos.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0E0C17">
+    <title>PhysioGestion</title>
+    <link rel="icon" type="image/svg+xml" href="icono.svg">
+    <link rel="stylesheet" href="styles.css">
+    <!-- La app de Compose compilada a WebAssembly (shared/src/webMain). -->
+    <script src="physiogestion.js"></script>
 </head>
 <body>
-  <div class="portada" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-
-  <main class="contenedor">
-    <header class="marca">
-      <img class="logo" src="logo.svg" alt="" width="64" height="64">
-      <h1>PhysioGestion</h1>
-      <p class="subtitulo">Clínica Terapid By Farmacias · Personal de la clínica</p>
-    </header>
-
-    <form id="formulario" class="tarjeta" novalidate>
-      <h2>Inicia sesión</h2>
-
-      <div class="campo">
-        <label for="usuario">Usuario o correo</label>
-        <div class="entrada">
-          <input id="usuario" name="usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-        </div>
-      </div>
-
-      <div class="campo">
-        <label for="contrasena">Contraseña</label>
-        <div class="entrada">
-          <input id="contrasena" name="contrasena" type="password" autocomplete="current-password" required>
-          <button id="verContrasena" class="boton-texto" type="button" aria-controls="contrasena" aria-pressed="false">Mostrar</button>
-        </div>
-      </div>
-
-      <p id="error" class="error" role="alert" aria-live="assertive"></p>
-
-      <button id="entrar" class="boton" type="submit">Iniciar sesión</button>
-      <p class="centrado"><a class="enlace" href="recuperar.html">¿Olvidaste tu contraseña?</a></p>
-    </form>
-
-    <section class="tarjeta">
-      <p class="nota">¿Eres paciente? Entra desde la app móvil de PhysioGestion. La versión web es para administración, recepción y fisioterapeutas.</p>
-    </section>
-
-    <p class="pie"><a class="enlace tenue" href="privacidad.html">Aviso de privacidad</a></p>
-  </main>
-
-  <script type="module">
-    import { guardarSesion, leerSesion, llamarApi } from "./js/api.js";
-
-    const formulario = document.getElementById("formulario");
-    const campoUsuario = document.getElementById("usuario");
-    const campoContrasena = document.getElementById("contrasena");
-    const botonEntrar = document.getElementById("entrar");
-    const botonVer = document.getElementById("verContrasena");
-    const textoError = document.getElementById("error");
-
-    // Si ya hay una sesión abierta en esta pestaña, ir directo a la aplicación.
-    if (leerSesion()) location.replace("panel.html");
-
-    const consulta = new URLSearchParams(location.search);
-    if (consulta.get("vencida") === "1") textoError.textContent = "Tu sesión venció. Vuelve a iniciar sesión.";
-    if (consulta.get("restablecida") === "1") {
-      textoError.classList.add("exito");
-      textoError.textContent = "Listo, ya puedes entrar con tu contraseña nueva.";
-    }
-
-    botonVer.addEventListener("click", () => {
-      const visible = campoContrasena.type === "text";
-      campoContrasena.type = visible ? "password" : "text";
-      botonVer.textContent = visible ? "Mostrar" : "Ocultar";
-      botonVer.setAttribute("aria-pressed", String(!visible));
-    });
-
-    formulario.addEventListener("submit", async (evento) => {
-      evento.preventDefault();
-      textoError.classList.remove("exito");
-      const usuario = campoUsuario.value.trim();
-      const contrasena = campoContrasena.value;
-      if (!usuario || !contrasena) {
-        textoError.textContent = "Escribe tu usuario y tu contraseña.";
-        (usuario ? campoContrasena : campoUsuario).focus();
-        return;
-      }
-
-      textoError.textContent = "";
-      botonEntrar.disabled = true;
-      botonEntrar.textContent = "Entrando…";
-      try {
-        const sesion = await llamarApi("/auth/login", { metodo: "POST", cuerpo: { usuario, contrasena }, sinSesion: true });
-        if (sesion.usuario.rol === "PACIENTE") {
-          // La web es solo para el personal: se cierra la sesión que se acaba de abrir.
-          llamarApi("/auth/logout", { metodo: "POST", token: sesion.token }).catch(() => {});
-          textoError.textContent = "La versión web es para el personal de la clínica. Como paciente, entra desde la app móvil.";
-          return;
-        }
-        guardarSesion({ token: sesion.token, usuario: sesion.usuario, debeCambiarContrasena: sesion.debeCambiarContrasena });
-        location.replace(sesion.debeCambiarContrasena ? "panel.html#/cuenta" : "panel.html");
-      } catch (e) {
-        textoError.textContent = e.message;
-        campoContrasena.select();
-      } finally {
-        botonEntrar.disabled = false;
-        botonEntrar.textContent = "Iniciar sesión";
-      }
-    });
-  </script>
+    <div id="cargando">
+        <img src="icono.svg" alt="" width="72" height="72">
+        <p>Cargando PhysioGestion…</p>
+        <noscript>Activa JavaScript para usar PhysioGestion.</noscript>
+    </div>
 </body>
 </html>
