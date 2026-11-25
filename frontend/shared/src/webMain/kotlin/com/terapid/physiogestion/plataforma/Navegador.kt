@@ -16,6 +16,12 @@ package com.terapid.physiogestion.plataforma
 /** Dominio de la página, por ejemplo "localhost" o "physiogestion-login-production.up.railway.app". */
 internal fun dominioDeLaPagina(): String = js("window.location.hostname")
 
+/** Puerto de la página («8081» con el servidor de desarrollo; vacío con el puerto normal de https). */
+internal fun puertoDeLaPagina(): String = js("window.location.port")
+
+/** Protocolo, dominio y puerto de la página, por ejemplo "http://localhost:8080". */
+internal fun origenDeLaPagina(): String = js("window.location.origin")
+
 /** Navegador y sistema, por ejemplo "Mozilla/5.0 (Windows NT 10.0; ...) Chrome/142.0 ...". */
 internal fun agenteDelNavegador(): String = js("navigator.userAgent")
 

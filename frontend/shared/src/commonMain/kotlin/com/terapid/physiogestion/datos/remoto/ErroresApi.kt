@@ -91,13 +91,20 @@ suspend fun <T> llamarApi(esLogin: Boolean = false, llamada: suspend () -> T): T
         throw RespuestaInesperada(e)
     } catch (e: Exception) {
         throw ServidorNoDisponible(e)
+    } catch (e: Throwable) {
+        // En la web (WebAssembly), cuando fetch() no llega al servidor («Failed to fetch»),
+        // Ktor lanza kotlin.Error, que no es Exception. Sin esto la app se cerraba con un
+        // error en lugar de decir que no hay conexión.
+        throw ServidorNoDisponible(e)
     }
 
 /** Lee el JSON de error del backend ({"mensaje", "codigo", "correo"}), si viene. */
 private suspend fun errorDelServidor(e: ResponseException): ErrorRespuesta? =
     try {
         e.response.body<ErrorRespuesta>()
-    } catch (_: Exception) {
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Throwable) {
         null
     }
 

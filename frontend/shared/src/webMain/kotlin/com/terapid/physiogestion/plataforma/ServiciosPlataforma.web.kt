@@ -28,7 +28,18 @@ actual fun fechaHoraIso(millis: Long): String {
     return claveDelDia(millis) + "T${dosDigitos(horaDe(m))}:${dosDigitos(minutoDe(m))}:${dosDigitos(segundoDe(m))}"
 }
 
-/** En desarrollo, el backend corre en la misma computadora que el navegador. */
-actual fun urlServidorPorDefecto(): String = "http://localhost:8080"
+/**
+ * En desarrollo (página abierta en localhost):
+ *  - Desde el servidor de desarrollo de Gradle (wasmJsBrowserDevelopmentRun, puerto 8081)
+ *    se usa el backend de Railway: así basta con correr la web, sin levantar el backend,
+ *    y no choca con otro programa que ocupe el puerto 8080 en la computadora.
+ *  - Desde el backend local (http://localhost:8080/web/), ese mismo backend.
+ * Se puede cambiar en el login con «Servidor · Cambiar».
+ */
+actual fun urlServidorPorDefecto(): String =
+    if (puertoDeLaPagina() == PUERTO_DESARROLLO_WEB) Entorno.URL_SERVIDOR_NUBE else origenDeLaPagina()
+
+/** Puerto de webpack-dev-server (devServer.port en shared/build.gradle.kts). */
+private const val PUERTO_DESARROLLO_WEB = "8081"
 
 private fun dosDigitos(n: Int): String = n.toString().padStart(2, '0')
